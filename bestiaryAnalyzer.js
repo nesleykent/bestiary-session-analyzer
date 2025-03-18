@@ -10,6 +10,20 @@ async function loadBestiaryData() {
     }
 }
 
+function pasteLog() {
+    navigator.clipboard.readText()
+        .then(text => {
+            document.getElementById("sessionLog").value = text;
+        })
+        .catch(err => {
+            alert("Failed to paste. Ensure clipboard permissions are enabled.");
+        });
+}
+
+function clearLog() {
+    document.getElementById("sessionLog").value = "";
+}
+
 function extractLogData() {
     let logText = document.getElementById("sessionLog").value.trim();
     if (!logText) {
