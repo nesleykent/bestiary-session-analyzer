@@ -74,7 +74,11 @@ function matchBestiaryData(killedMonsters, sessionDuration) {
         let remainingKills = Math.max(0, killsToUnlock);
         let timeRemaining = killRate > 0 ? (remainingKills / killRate) : 0;
         let formattedTimeRemaining = timeRemaining > 0 ? formatTime(timeRemaining) : "∞";
-        let charmsPerHour = timeRemaining > 0 ? ((charms / timeRemaining) * 60).toFixed(2) : "∞";
+        let computedCharmsPerHour = timeRemaining > 0 ? ((charms / timeRemaining) * 60).toFixed(2) : "∞";
+
+        let charmsPerHour = computedCharmsPerHour !== "∞" 
+            ? Math.min(parseFloat(computedCharmsPerHour), charms).toFixed(2) 
+            : "∞";
 
         return {
             name: bestiaryEntry.Name,
@@ -110,7 +114,11 @@ function updateRemainingTime() {
         let timeRemaining = killRate > 0 ? (remainingKills / killRate) : 0;
         let formattedTimeRemaining = timeRemaining > 0 ? formatTime(timeRemaining) : "∞";
         let charms = parseInt(m.charms.replace(",", ""));
-        let charmsPerHour = timeRemaining > 0 ? ((charms / timeRemaining) * 60).toFixed(2) : "∞";
+        let computedCharmsPerHour = timeRemaining > 0 ? ((charms / timeRemaining) * 60).toFixed(2) : "∞";
+
+        let charmsPerHour = computedCharmsPerHour !== "∞" 
+            ? Math.min(parseFloat(computedCharmsPerHour), charms).toFixed(2) 
+            : "∞";
 
         m.remainingKills = formatNumber(remainingKills);
         m.timeRemaining = formattedTimeRemaining;
@@ -148,13 +156,19 @@ function displayExtractedData(matchedMonsters, totalCharms = null, maxTimeRemain
 
         matchedMonsters.forEach(m => {
             if (m.rawTimeRemaining > 0) {
-                totalCharms += m.rawCharms;
+                totalCharms += parseFloat(m.charmsPerHour) !== "∞" ? parseFloat(m.charmsPerHour) * (m.rawTimeRemaining / 60) : 0;
                 maxTimeRemaining = Math.max(maxTimeRemaining, m.rawTimeRemaining);
             }
         });
     }
 
-    let totalCharmsPerHour = maxTimeRemaining > 0 ? ((totalCharms / maxTimeRemaining) * 60).toFixed(2) : "∞";
+    let totalCharmCap = totalCharms; // The max possible charms
+    let calculatedCharmsPerHour = maxTimeRemaining > 0 
+        ? ((totalCharms / maxTimeRemaining) * 60) 
+        : 0;
+
+    let totalCharmsPerHour = Math.min(calculatedCharmsPerHour, totalCharmCap).toFixed(2);
+
     let formattedMaxTimeRemaining = maxTimeRemaining > 0 ? formatTime(maxTimeRemaining) : "∞";
 
     let tableHTML = `
