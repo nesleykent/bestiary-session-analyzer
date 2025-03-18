@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bestiary Session Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>Bestiary Session Analyzer</h1>
+    <p class="description">
+        This tool analyses your hunting session log to extract monster kill data, calculate your kill rate, and determine the number of remaining kills required to complete a creature's Bestiary entry. It estimates the time needed to reach the final stage by using your current kill speed. This allows you to evaluate and improve your hunting efficiency for Bestiary completion.
+    </p>
+
+    <button class="btn" onclick="pasteLog()">Paste Log</button>
+    <button class="btn" onclick="clearLog()">Clear</button>
+    <br><br>
+    <textarea id="sessionLog" placeholder="Paste your log here..."></textarea>
+    <button class="btn" onclick="extractLogData()">Process Log</button>
+
+    <div id="output"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
