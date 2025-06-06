@@ -94,7 +94,10 @@ textarea {
 .table-container {
     margin-top: 20px;
     border-radius: 8px;
-    overflow: hidden;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: block;
     border: 1px solid #dbdbdb;
     background: white;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -103,6 +106,7 @@ textarea {
 table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: auto;
 }
 
 th {
