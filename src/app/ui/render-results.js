@@ -33,7 +33,10 @@ function buildRow(monster) {
 export function renderResults(container, monsters, summary) {
     if (!monsters.length) {
         container.className = "empty-state";
-        container.textContent = "No Bestiary creatures from this log matched the dataset.";
+        container.innerHTML = `
+            <strong>No matching creatures found.</strong>
+            <span>The log was processed, but none of the killed creatures matched the available Bestiary dataset.</span>
+        `;
         return;
     }
 
@@ -57,6 +60,10 @@ export function renderResults(container, monsters, summary) {
                 <strong>${formatCharmsPerHour(summary.totalCharmsPerHour)}</strong>
             </article>
         </div>
+
+        <p class="results-intro">
+            Add your current total kills below if you want the remaining time estimate to reflect your existing Bestiary progress.
+        </p>
 
         <div class="table-container">
             <table>

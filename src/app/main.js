@@ -9,6 +9,7 @@ const elements = {
     pasteLogButton: document.getElementById("pasteLogButton"),
     processLogButton: document.getElementById("processLogButton"),
     sessionLog: document.getElementById("sessionLog"),
+    statusHint: document.getElementById("statusHint"),
     statusMessage: document.getElementById("statusMessage")
 };
 
@@ -18,18 +19,26 @@ const state = {
     sessionDuration: 0
 };
 
-function setStatus(message, isError = false) {
+function setStatus(message, isError = false, hint = "") {
     elements.statusMessage.textContent = message;
     elements.statusMessage.dataset.state = isError ? "error" : "default";
+    elements.statusHint.textContent = hint;
+}
+
+function setBusyState(isBusy) {
+    elements.processLogButton.disabled = isBusy;
+    elements.pasteLogButton.disabled = isBusy;
+    elements.clearLogButton.disabled = isBusy;
 }
 
 async function pasteLog() {
     try {
         const clipboardText = await navigator.clipboard.readText();
         elements.sessionLog.value = clipboardText;
-        setStatus("Log pasted");
+        setStatus("Log pasted", false, "Review the text, then process the session.");
+        elements.sessionLog.focus();
     } catch (error) {
-        setStatus("Clipboard access blocked", true);
+        setStatus("Clipboard access blocked", true, "Paste manually if your browser blocks clipboard access.");
         window.alert("Failed to paste. Ensure clipboard permissions are enabled.");
     }
 }
@@ -37,11 +46,15 @@ async function pasteLog() {
 function clearLog() {
     elements.sessionLog.value = "";
     elements.output.className = "empty-state";
-    elements.output.textContent = "Process a session log to view results.";
+    elements.output.innerHTML = `
+        <strong>No analysis yet.</strong>
+        <span>Process a session log to view matched creatures, projected time remaining, and charm efficiency.</span>
+    `;
     state.matchedMonsters = [];
     state.sessionDuration = 0;
     clearSessionState();
-    setStatus("Input cleared");
+    setStatus("Input cleared", false, "Paste a new session log whenever you’re ready.");
+    elements.sessionLog.focus();
 }
 
 function persistState() {
@@ -73,17 +86,26 @@ function renderCurrentResults(summary) {
 function processLog() {
     const logText = elements.sessionLog.value.trim();
     if (!logText) {
-        setStatus("Paste a session log first", true);
+        setStatus("Session log required", true, "Paste a hunting session log before running the analyzer.");
+        elements.sessionLog.focus();
         window.alert("Paste the session log first.");
         return;
     }
 
+    setBusyState(true);
     const { monsters, sessionDuration, summary } = analyzeSession(logText, state.bestiaryData);
     state.matchedMonsters = monsters;
     state.sessionDuration = sessionDuration;
     renderCurrentResults(summary);
     persistState();
-    setStatus(monsters.length ? "Analysis updated" : "No matching creatures found");
+    setStatus(
+        monsters.length ? "Analysis updated" : "No matching creatures found",
+        false,
+        monsters.length
+            ? "Review the summary first, then add total kills if you want a better projection."
+            : "Check creature names in the log or confirm the session includes a killed-monsters section."
+    );
+    setBusyState(false);
 }
 
 function readTotalKillsInputs() {
@@ -107,7 +129,7 @@ function updateRemainingTime() {
     state.matchedMonsters = monsters;
     renderCurrentResults(summary);
     persistState();
-    setStatus("Remaining time recalculated");
+    setStatus("Estimate updated", false, "The remaining-time projection now reflects the total kills you entered.");
 }
 
 function clearInputs() {
@@ -121,7 +143,7 @@ function clearInputs() {
     state.matchedMonsters = monsters;
     renderCurrentResults(summary);
     persistState();
-    setStatus("Manual totals cleared");
+    setStatus("Manual totals cleared", false, "The estimate now uses session kills only.");
 }
 
 function restorePreviousSession() {
@@ -145,18 +167,21 @@ function restorePreviousSession() {
         );
 
         renderCurrentResults(summary);
-        setStatus("Previous session restored");
+        setStatus("Previous session restored", false, "You can edit the pasted log or update total kills at any time.");
     }
 }
 
 async function initializeApp() {
     try {
+        setBusyState(true);
         state.bestiaryData = await loadBestiaryData();
         restorePreviousSession();
-        setStatus("Ready");
+        setStatus("Ready", false, "Load a log to start an estimate.");
     } catch (error) {
-        setStatus("Failed to load data", true);
+        setStatus("Failed to load data", true, "Refresh the page and try again. The dataset could not be loaded.");
         window.alert("Failed to load Bestiary data.");
+    } finally {
+        setBusyState(false);
     }
 }
 

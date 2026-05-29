@@ -7,22 +7,68 @@
     <link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
-    <main>
-        <h1>Bestiary Session Analyzer</h1>
-        <p class="description">
-            This tool analyses your hunting session log to extract monster kill data, calculate your kill rate, and determine the number of remaining kills required to complete a creature's Bestiary entry. It estimates the time needed to reach the final stage by using your current kill speed. This allows you to evaluate and improve your hunting efficiency for Bestiary completion.
-        </p>
+    <main class="app-shell">
+        <header class="hero-card">
+            <div class="hero-copy-block">
+                <h1>Bestiary Session Analyzer</h1>
+                <p class="description">
+                    Paste a Tibia hunting session log to estimate Bestiary progress, compare kill efficiency, and project how long a creature may take to finish at your current pace.
+                </p>
+            </div>
+            <div class="status-panel" aria-live="polite" aria-atomic="true">
+                <p class="status-label">Status</p>
+                <p class="status-message" id="statusMessage">Ready</p>
+                <p class="status-hint" id="statusHint">Load a log to start an estimate.</p>
+            </div>
+        </header>
 
-        <p class="status-message" id="statusMessage">Ready</p>
+        <section class="panel-card" aria-labelledby="inputTitle">
+            <div class="section-heading">
+                <div>
+                    <h2 id="inputTitle">Session Log</h2>
+                    <p class="section-copy">
+                        Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.
+                    </p>
+                </div>
+            </div>
 
-        <button class="btn" id="pasteLogButton" type="button">Paste Log</button>
-        <button class="btn" id="clearLogButton" type="button">Clear</button>
-        <br><br>
-        <label class="sr-only" for="sessionLog">Session log</label>
-        <textarea id="sessionLog" placeholder="Paste your log here..."></textarea>
-        <button class="btn" id="processLogButton" type="button">Process Log</button>
+            <label class="input-label" for="sessionLog">Paste hunting session log</label>
+            <textarea
+                id="sessionLog"
+                placeholder="Example:
+Session: 1:30h
+Killed Monsters:
+    250x Rotworm
+Looted Items:"
+                spellcheck="false"
+            ></textarea>
 
-        <div id="output" class="empty-state">Process a session log to view results.</div>
+            <div class="helper-row">
+                <p class="helper-text">For the most accurate result, paste the full session block including duration and killed monsters.</p>
+            </div>
+
+            <div class="toolbar" role="group" aria-label="Session actions">
+                <button class="btn btn-secondary" id="pasteLogButton" type="button">Paste Log</button>
+                <button class="btn" id="processLogButton" type="button">Process Log</button>
+                <button class="btn btn-tertiary" id="clearLogButton" type="button">Clear</button>
+            </div>
+        </section>
+
+        <section class="panel-card" aria-labelledby="resultsTitle">
+            <div class="section-heading">
+                <div>
+                    <h2 id="resultsTitle">Analysis</h2>
+                    <p class="section-copy">
+                        Review the matched creatures first, then add your current total kills if you want a better remaining-time estimate.
+                    </p>
+                </div>
+            </div>
+
+            <div id="output" class="empty-state" role="status">
+                <strong>No analysis yet.</strong>
+                <span>Process a session log to view matched creatures, projected time remaining, and charm efficiency.</span>
+            </div>
+        </section>
     </main>
 
     <footer class="site-disclaimer">
