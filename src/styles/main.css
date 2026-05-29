@@ -310,7 +310,17 @@ a:focus-visible {
 
 .results-shell {
     display: grid;
-    gap: 16px;
+    gap: 20px;
+}
+
+.results-section {
+    display: grid;
+    gap: 12px;
+}
+
+.results-section + .results-section {
+    padding-top: 20px;
+    border-top: 1px solid #ececec;
 }
 
 .summary-grid {
@@ -321,11 +331,9 @@ a:focus-visible {
 
 .summary-card {
     padding: 14px;
-    background: #fff;
-    border-left: 4px solid #fd5949;
+    background: #fcfcfc;
     border-radius: 14px;
     border: 1px solid #ececec;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
 }
 
 .summary-card strong {
@@ -343,14 +351,6 @@ a:focus-visible {
     margin: 0;
     font-size: 14px;
     line-height: 1.6;
-}
-
-.task-picker-card,
-.task-estimate-card {
-    padding: 16px;
-    border: 1px solid #ececec;
-    border-radius: 16px;
-    background: #fff;
 }
 
 .subsection-title {
@@ -442,7 +442,6 @@ a:focus-visible {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    margin-top: 16px;
 }
 
 .table-container {

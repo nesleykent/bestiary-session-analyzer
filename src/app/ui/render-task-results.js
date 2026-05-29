@@ -104,26 +104,18 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
             </article>
         </div>
 
-        <div class="task-picker-card">
-            <div class="section-heading section-heading-compact">
-                <div>
-                    <h3 class="subsection-title">Select Task Creature</h3>
-                    <p class="section-copy">Choose one of the creatures found in this session log.</p>
-                </div>
-            </div>
+        <section class="results-section" aria-labelledby="taskSelectionTitle">
+            <h3 class="subsection-title" id="taskSelectionTitle">Select Task Creature</h3>
+            <p class="section-copy">Choose one of the creatures found in this session log.</p>
             <div class="task-monster-list" role="list">
                 ${monsters.map((monster) => buildTaskMonsterButton(monster, estimate.selectedMonster?.name)).join("")}
             </div>
-        </div>
+        </section>
 
-        <div class="task-estimate-card">
-            <div class="section-heading section-heading-compact">
-                <div>
-                    <h3 class="subsection-title">Task Estimate</h3>
-                    <p class="section-copy">Use the selected creature and task target to project the time remaining.</p>
-                </div>
-            </div>
+        <section class="results-section" aria-labelledby="taskEstimateTitle">
+            <h3 class="subsection-title" id="taskEstimateTitle">Task Estimate</h3>
+            <p class="section-copy">Use the selected creature and task target to project the time remaining.</p>
             ${buildEstimateMarkup(estimate)}
-        </div>
+        </section>
     `;
 }

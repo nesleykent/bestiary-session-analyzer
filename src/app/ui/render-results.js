@@ -80,41 +80,40 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
             </article>
         </div>
 
-        <section class="task-picker-card" aria-labelledby="bestiarySelectionTitle">
-            <div class="section-heading section-heading-compact">
-                <div>
-                    <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>
-                    <p class="section-copy">Choose the creatures you want to keep in this Bestiary estimate.</p>
-                </div>
-            </div>
+        <section class="results-section" aria-labelledby="bestiarySelectionTitle">
+            <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>
+            <p class="section-copy">Choose the creatures you want to keep in this Bestiary estimate.</p>
             <div class="task-monster-list" role="list">
                 ${monsters.map((monster) => buildBestiaryMonsterButton(monster, selectedMonsterNames)).join("")}
             </div>
         </section>
 
         ${selectedMonsters.length ? `
-            <p class="results-intro">Add your current total kills to refine the time remaining for the selected creatures.</p>
+            <section class="results-section" aria-labelledby="bestiaryTableTitle">
+                <h3 class="subsection-title" id="bestiaryTableTitle">Bestiary Estimate</h3>
+                <p class="results-intro">Add your current total kills to refine the time remaining for the selected creatures.</p>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Creature</th>
-                            <th>Charm Points</th>
-                            <th>Session Kills</th>
-                            <th>Total Kills</th>
-                            <th>Unlock Target</th>
-                            <th>Kill Rate</th>
-                            <th>Kills Remaining</th>
-                            <th>Time Remaining</th>
-                            <th>Charms/hr</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${selectedMonsters.map(buildRow).join("")}
-                    </tbody>
-                </table>
-            </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Creature</th>
+                                <th>Charm Points</th>
+                                <th>Session Kills</th>
+                                <th>Total Kills</th>
+                                <th>Unlock Target</th>
+                                <th>Kill Rate</th>
+                                <th>Kills Remaining</th>
+                                <th>Time Remaining</th>
+                                <th>Charms/hr</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${selectedMonsters.map(buildRow).join("")}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         ` : `
             <div class="empty-state">
                 <strong>No creatures selected.</strong>
