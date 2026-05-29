@@ -16,6 +16,7 @@ function buildBestiaryMonsterButton(monster, selectedMonsterNames) {
             data-bestiary-monster="${monster.name}"
             aria-pressed="${isSelected ? "true" : "false"}"
         >
+            ${isSelected ? '<span class="selection-badge">Selected</span>' : ""}
             <span class="task-monster-name">${label}</span>
             <span class="task-monster-count">${formatNumber(monster.killsThisSession)}x</span>
         </button>
@@ -28,7 +29,7 @@ function buildRow(monster) {
             <td><a href="${monster.wikiLink}" target="_blank" rel="noreferrer">${monster.name}</a></td>
             <td>${formatNumber(monster.charms)}</td>
             <td>${formatNumber(monster.killsThisSession)}</td>
-            <td>
+            <td class="editable-cell">
                 <input
                     type="number"
                     class="kills-input"
@@ -47,9 +48,9 @@ function buildRow(monster) {
     `;
 }
 
-function buildMetric(label, value) {
+function buildMetric(label, value, emphasized = false) {
     return `
-        <article class="summary-card">
+        <article class="summary-card${emphasized ? " summary-card-primary" : ""}">
             <span class="summary-label">${label}</span>
             <strong>${value}</strong>
         </article>
@@ -72,14 +73,14 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
     container.innerHTML = `
         <div class="summary-grid">
             ${buildMetric("Creatures Selected", formatNumber(selectedMonsters.length))}
-            ${buildMetric("Total Charms", formatNumber(summary.totalCharms))}
-            ${buildMetric("Longest Time Remaining", formatTime(summary.maxTimeRemainingMinutes))}
+            ${buildMetric("Longest Time Remaining", formatTime(summary.maxTimeRemainingMinutes), true)}
+            ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
             ${buildMetric("Total Charms/hr", formatCharmsPerHour(summary.totalCharmsPerHour))}
         </div>
 
         <section class="results-section" aria-labelledby="bestiarySelectionTitle">
             <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>
-            <p class="section-copy">Choose the creatures you want to keep in this Bestiary estimate.</p>
+            <p class="section-copy">Only selected creatures remain in the estimate table.</p>
             <div class="creature-chip-grid" role="list">
                 ${monsters.map((monster) => buildBestiaryMonsterButton(monster, selectedMonsterNames)).join("")}
             </div>
@@ -88,7 +89,7 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
         ${selectedMonsters.length ? `
             <section class="results-section" aria-labelledby="bestiaryTableTitle">
                 <h3 class="subsection-title" id="bestiaryTableTitle">Bestiary Estimate</h3>
-                <p class="results-intro">Add your current total kills to refine the time remaining for the selected creatures.</p>
+                <p class="results-intro">Enter current total kills in the highlighted column to refine the estimate.</p>
 
                 <div class="table-container">
                     <table>
@@ -120,7 +121,7 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
 
         <div class="action-row">
             <button class="btn" id="updateRemainingTimeButton" type="button">Update Estimate</button>
-            <button class="btn btn-secondary" id="clearInputsButton" type="button">Clear Totals</button>
+            <button class="btn btn-tertiary" id="clearInputsButton" type="button">Reset Totals</button>
         </div>
     `;
 }

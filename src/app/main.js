@@ -24,13 +24,13 @@ const MODE_CONTENT = {
     bestiary: {
         inputCopy: "Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.",
         inputHint: "For the most accurate result, paste the full session block including duration and killed creatures.",
-        resultsCopy: "Select the creatures you want to analyze, then add your current total kills to refine the Bestiary estimate.",
+        resultsCopy: "Process the session log, choose the creatures you want to keep, then enter total kills to refine the Bestiary estimate.",
         readyHint: "Load a log to start a Bestiary estimate."
     },
     tasks: {
         inputCopy: "Task mode uses the same hunt analyzer log. After processing the session, choose one creature from the hunt and enter the task target.",
         inputHint: "Process the log first, then select the task creature and enter the task target.",
-        resultsCopy: "Task mode estimates one creature at a time from the current session. Choose the task creature from the hunt results and provide the task target.",
+        resultsCopy: "Process the session log, choose the task creature, then enter the task target to project the time remaining.",
         readyHint: "Load a log to start a task estimate."
     }
 };
@@ -211,7 +211,7 @@ function setMode(mode) {
 
     if (mode === "bestiary" && state.matchedMonsters.length) {
         renderBestiaryMode();
-        setStatus("Bestiary mode", false, "Select the creatures you want to keep, then update total kills if needed.");
+        setStatus("Bestiary mode", false, "Choose the creatures you want to keep, then update total kills if needed.");
         persistState();
         return;
     }
@@ -256,7 +256,7 @@ function attachResultActions() {
 
             renderBestiaryMode();
             persistState();
-            setStatus("Creature selection updated", false, "Only the selected creatures remain in the Bestiary summary and table.");
+            setStatus("Creature selection updated", false, "Only the selected creatures remain in the Bestiary estimate below.");
         });
     });
 
@@ -315,7 +315,7 @@ function processLog() {
             monsters.length ? "Analysis updated" : "No matching creatures found",
             false,
             monsters.length
-                ? "Select the creatures you want to keep, then add total kills to refine the estimate."
+                ? "Choose the creatures you want to keep, then add total kills to refine the estimate."
                 : "Check creature names in the log or confirm the session includes a killed-creatures section."
         );
     } else {
@@ -376,7 +376,7 @@ function clearInputs() {
     state.matchedMonsters = monsters;
     renderBestiaryMode();
     persistState();
-    setStatus("Totals cleared", false, "The estimate now uses session kills only.");
+    setStatus("Totals reset", false, "The estimate now uses session kills only.");
 }
 
 function restorePreviousSession() {

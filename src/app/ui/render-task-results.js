@@ -10,15 +10,16 @@ function buildTaskMonsterButton(monster, selectedMonsterName) {
             data-task-monster="${monster.name}"
             aria-pressed="${isSelected ? "true" : "false"}"
         >
+            ${isSelected ? '<span class="selection-badge">Selected</span>' : ""}
             <span class="task-monster-name">${monster.displayName}</span>
             <span class="task-monster-count">${formatNumber(monster.killsThisSession)}x</span>
         </button>
     `;
 }
 
-function buildMetric(label, value) {
+function buildMetric(label, value, emphasized = false) {
     return `
-        <article class="summary-card">
+        <article class="summary-card${emphasized ? " summary-card-primary" : ""}">
             <span class="summary-label">${label}</span>
             <strong>${value}</strong>
         </article>
@@ -46,25 +47,28 @@ function buildEstimateMarkup(estimate) {
             <p class="task-selection-copy">${formatNumber(estimate.selectedMonster.killsThisSession)} killed in this session</p>
         </div>
 
-        <label class="input-label" for="taskTotalKills">Task target</label>
-        <input
-            id="taskTotalKills"
-            class="task-total-input"
-            type="number"
-            min="1"
-            step="1"
-            inputmode="numeric"
-            value="${hasTaskTotal ? estimate.taskTotalKills : ""}"
-            placeholder="Example: 500"
-        >
+        <div class="task-target-block">
+            <label class="input-label" for="taskTotalKills">Task target</label>
+            <input
+                id="taskTotalKills"
+                class="task-total-input"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                value="${hasTaskTotal ? estimate.taskTotalKills : ""}"
+                placeholder="Example: 500"
+            >
+            <p class="helper-text">Enter the total kills required for this task.</p>
+        </div>
 
         ${hasTaskTotal ? `
             <div class="summary-grid">
-                ${buildMetric("Time Remaining", formatTimeDetailed(estimate.remainingTimeMinutes))}
+                ${buildMetric("Time Remaining", formatTimeDetailed(estimate.remainingTimeMinutes), true)}
                 ${buildMetric("Kill Rate", formatTaskRate(estimate.killRatePerHour))}
                 ${buildMetric("Killed This Session", formatNumber(estimate.alreadyKilled))}
                 ${buildMetric("Kills Remaining", formatNumber(estimate.remainingKills))}
-                ${buildMetric("Total Time Estimate", formatTimeDetailed(estimate.totalEstimatedTimeMinutes))}
+                ${buildMetric("Total Time Estimate", formatTimeDetailed(estimate.totalEstimatedTimeMinutes), true)}
             </div>
         ` : `
             <div class="empty-state">
@@ -88,13 +92,13 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
     container.className = "results-shell";
     container.innerHTML = `
         <div class="summary-grid">
-            ${buildMetric("Session Time", formatTimeDetailed(sessionDuration))}
+            ${buildMetric("Session Time", formatTimeDetailed(sessionDuration), true)}
             ${buildMetric("Creature Types", formatNumber(estimate.totalMonsterTypes))}
         </div>
 
         <section class="results-section" aria-labelledby="taskSelectionTitle">
             <h3 class="subsection-title" id="taskSelectionTitle">Select Task Creature</h3>
-            <p class="section-copy">Choose one of the creatures found in this session log.</p>
+            <p class="section-copy">Choose one creature from this session to calculate the task estimate.</p>
             <div class="creature-chip-grid" role="list">
                 ${monsters.map((monster) => buildTaskMonsterButton(monster, estimate.selectedMonster?.name)).join("")}
             </div>
@@ -102,7 +106,6 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
 
         <section class="results-section" aria-labelledby="taskEstimateTitle">
             <h3 class="subsection-title" id="taskEstimateTitle">Task Estimate</h3>
-            <p class="section-copy">Use the selected creature and task target to project the time remaining.</p>
             ${buildEstimateMarkup(estimate)}
         </section>
     `;

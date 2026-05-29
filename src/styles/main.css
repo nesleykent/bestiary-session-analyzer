@@ -74,6 +74,7 @@ h3.subsection-title {
 
 .status-block {
     margin-bottom: 12px;
+    min-height: 42px;
 }
 
 .status-message {
@@ -206,6 +207,7 @@ textarea {
 
 .btn-tertiary {
     background: #f7f7f7;
+    color: #666;
 }
 
 .toolbar,
@@ -235,9 +237,15 @@ textarea {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
+.summary-card-primary {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
 .summary-card strong {
     display: block;
     margin-top: 6px;
+    font-size: 18px;
+    color: #262626;
 }
 
 .results-section {
@@ -260,6 +268,7 @@ textarea {
     min-height: 72px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+    position: relative;
 }
 
 .task-monster-button:hover {
@@ -269,7 +278,21 @@ textarea {
 
 .task-monster-button.is-selected {
     border-color: #d6249f;
+    background: rgba(214, 36, 159, 0.06);
     box-shadow: 0 0 0 2px rgba(214, 36, 159, 0.14);
+}
+
+.selection-badge {
+    display: inline-block;
+    margin-bottom: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(214, 36, 159, 0.12);
+    color: #9c166f;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .task-monster-name,
@@ -310,6 +333,10 @@ textarea {
     width: 220px;
     max-width: 100%;
     margin-bottom: 16px;
+}
+
+.task-target-block {
+    margin-bottom: 8px;
 }
 
 .table-container {
@@ -363,6 +390,16 @@ input[type="number"] {
     text-align: center;
 }
 
+.editable-cell {
+    background: rgba(250, 145, 55, 0.08);
+}
+
+.kills-input {
+    background: #fff8ef;
+    border-color: #f1c28a;
+    font-weight: 600;
+}
+
 a {
     color: #285AEB;
     text-decoration: none;
@@ -378,6 +415,9 @@ a:hover {
     padding: 20px;
     text-align: center;
     color: #555;
+    border: 1px dashed #d7d7d7;
+    border-radius: 8px;
+    background: #fff;
 }
 
 .empty-state strong {
@@ -460,5 +500,9 @@ a:hover {
 
     .task-selection-copy {
         margin-top: 8px;
+    }
+
+    .task-total-input {
+        width: 100%;
     }
 }
