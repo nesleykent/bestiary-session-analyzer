@@ -1,6 +1,49 @@
 # Bestiary Session Analyzer
 
-Static web tool for analyzing Tibia hunting session logs against Bestiary progression data.
+Bestiary Session Analyzer for Tibia extracts monster kill data from your hunting log, calculates your kill rate, and estimates the time required to complete a Bestiary entry. It is meant to help you evaluate and improve hunting efficiency for faster Bestiary completion.
+
+## What The Tool Does
+
+- Parses a Tibia hunting session log.
+- Extracts the session duration and killed monsters.
+- Matches those monsters against the Bestiary dataset.
+- Calculates kill rate, remaining kills, and estimated time to unlock.
+- Lets you enter your current total kills to recalculate remaining time more accurately.
+
+## How To Use It
+
+1. Start a local static server from the repository root:
+
+```bash
+python3 -m http.server 4173
+```
+
+2. Open the app in your browser:
+
+- `http://127.0.0.1:4173/src/`
+
+3. Paste your hunting session log into the text area.
+4. Click `Process Log`.
+5. Review the generated table for:
+   - Creature name
+   - Session kills
+   - Kills to unlock
+   - Kill rate
+   - Kills left
+   - Estimated time remaining
+   - Charms per hour
+6. Optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
+7. Use `Clear` or `Clear Inputs` to reset the log or manual kill totals.
+
+## Example Log Format
+
+```text
+Session: 1:30h
+Killed Monsters:
+    250x Rotworm
+    500x Cyclops
+Looted Items:
+```
 
 ## Repository Layout
 
@@ -50,17 +93,13 @@ bestiary-session-analyzer/
 - `src/app/state` persists the last processed session in `sessionStorage`.
 - `src/data` stores application-owned datasets.
 
-## Local Development
+## Data Source
 
-Because the app fetches JSON assets, serve the repository over HTTP instead of opening files directly.
+The application loads creature metadata from:
 
-```bash
-python3 -m http.server 4173
-```
+- `src/data/bestiary-data.json`
 
-Then open:
-
-- `http://127.0.0.1:4173/src/`
+Each entry includes Bestiary values such as creature name, charm points, and kills required to unlock.
 
 ## Automation
 
