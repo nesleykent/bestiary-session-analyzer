@@ -24,7 +24,7 @@ jobs:
           test -f src/app/ui/render-results.js
           test -f src/app/utils/formatters.js
           test -f src/styles/main.css
-          test -f src/data/bestiary-data.json
+          test -f src/data/bestiary.json
 
       - name: Validate bestiary dataset
-        run: python3 -m json.tool src/data/bestiary-data.json > /dev/null
+        run: python3 -m json.tool src/data/bestiary.json > /dev/null

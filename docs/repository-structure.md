@@ -25,7 +25,7 @@ bestiary-session-analyzer/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
 |   |-- data/
-|   |   `-- bestiary-data.json
+|   |   `-- bestiary.json
 |   |-- styles/
 |   |   `-- main.css
 |   `-- index.html

@@ -72,7 +72,7 @@ bestiary-session-analyzer/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
 |   |-- data/
-|   |   `-- bestiary-data.json
+|   |   `-- bestiary.json
 |   |-- styles/
 |   |   `-- main.css
 |   `-- index.html
@@ -97,9 +97,9 @@ bestiary-session-analyzer/
 
 The application loads creature metadata from:
 
-- `src/data/bestiary-data.json`
+- `src/data/bestiary.json`
 
-Each entry includes Bestiary values such as creature name, charm points, and kills required to unlock.
+The app normalizes that richer dataset into the internal fields it already uses, including creature name, charm points, and kills required to unlock.
 
 ## Automation
 

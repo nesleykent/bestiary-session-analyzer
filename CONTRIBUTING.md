@@ -20,6 +20,6 @@ Then open `http://127.0.0.1:4173/src/`.
 
 Before opening a pull request:
 
-1. Verify `src/data/bestiary-data.json` is valid JSON.
+1. Verify `src/data/bestiary.json` is valid JSON.
 2. Confirm any new source files are placed under the correct `src/app/*` functional area.
 3. Update `README.md` and `docs/repository-structure.md` if the repository layout changes.
