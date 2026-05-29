@@ -14,13 +14,16 @@ bestiary-session-analyzer/
 |-- src/
 |   |-- app/
 |   |   |-- features/
-|   |   |   `-- session-analysis.js
+|   |   |   |-- session-analysis.js
+|   |   |   |-- session-parser.js
+|   |   |   `-- task-analysis.js
 |   |   |-- services/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   `-- session-store.js
 |   |   |-- ui/
-|   |   |   `-- render-results.js
+|   |   |   |-- render-results.js
+|   |   |   `-- render-task-results.js
 |   |   |-- utils/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
@@ -39,5 +42,6 @@ bestiary-session-analyzer/
 ## Notes
 
 - All application runtime code lives under `src/`.
+- Bestiary and Tasks mode share the same session-log input but use separate feature and UI modules.
 - The repository root is limited to metadata, documentation, license material, and the GitHub Pages redirect entry point.
 - GitHub automation lives under `.github/` and is separated from application source.

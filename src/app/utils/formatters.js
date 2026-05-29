@@ -22,8 +22,40 @@ export function formatTime(minutes) {
     return `${(minutes / 60).toFixed(1)} hr`;
 }
 
+export function formatTimeDetailed(minutes) {
+    if (!Number.isFinite(minutes)) {
+        return "\u221e";
+    }
+
+    if (minutes <= 0) {
+        return "0 min";
+    }
+
+    const roundedMinutes = Math.round(minutes);
+    const hours = Math.floor(roundedMinutes / 60);
+    const remainingMinutes = roundedMinutes % 60;
+
+    if (hours === 0) {
+        return `${remainingMinutes} min`;
+    }
+
+    if (remainingMinutes === 0) {
+        return `${hours}h`;
+    }
+
+    return `${hours}h ${remainingMinutes}min`;
+}
+
 export function formatKillRate(killsPerMinute) {
     return `${killsPerMinute.toFixed(2)} kills/min`;
+}
+
+export function formatTaskRate(killsPerHour) {
+    if (!Number.isFinite(killsPerHour) || killsPerHour <= 0) {
+        return "~0/h";
+    }
+
+    return `~${Math.round(killsPerHour)}/h`;
 }
 
 export function formatCharmsPerHour(charmsPerHour) {

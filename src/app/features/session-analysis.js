@@ -1,38 +1,4 @@
-function extractSessionDuration(logText) {
-    const match = logText.match(/Session:\s*(\d+):(\d+)h/i);
-    return match ? (Number.parseInt(match[1], 10) * 60) + Number.parseInt(match[2], 10) : 0;
-}
-
-function extractKilledMonsters(logText) {
-    const killedMonsters = {};
-    let capturing = false;
-
-    logText.split("\n").forEach((line) => {
-        if (line.includes("Killed Monsters:")) {
-            capturing = true;
-            return;
-        }
-
-        if (line.includes("Looted Items:")) {
-            capturing = false;
-        }
-
-        if (!capturing) {
-            return;
-        }
-
-        const match = line.match(/\s*(\d+)x\s+(.+)/);
-        if (!match) {
-            return;
-        }
-
-        const count = Number.parseInt(match[1], 10);
-        const name = match[2].trim().toLowerCase();
-        killedMonsters[name] = (killedMonsters[name] || 0) + count;
-    });
-
-    return killedMonsters;
-}
+import { extractKilledMonsters, extractSessionDuration } from "./session-parser.js";
 
 function buildMonsterProgress(entry, killsThisSession, sessionDuration, totalKills = 0) {
     const killsToUnlock = Number(entry["Kills to Unlock"]) || 0;

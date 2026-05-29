@@ -12,13 +12,13 @@
             <div class="hero-copy-block">
                 <h1>Bestiary Session Analyzer</h1>
                 <p class="description">
-                    Paste a Tibia hunting session log to estimate Bestiary progress, compare kill efficiency, and project how long a creature may take to finish at your current pace.
+                    Paste a Tibia hunting session log to estimate either Bestiary progress or task completion time from the same hunt data.
                 </p>
             </div>
             <div class="status-panel" aria-live="polite" aria-atomic="true">
                 <p class="status-label">Status</p>
                 <p class="status-message" id="statusMessage">Ready</p>
-                <p class="status-hint" id="statusHint">Load a log to start an estimate.</p>
+                <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
             </div>
         </header>
 
@@ -26,10 +26,19 @@
             <div class="section-heading">
                 <div>
                     <h2 id="inputTitle">Session Log</h2>
-                    <p class="section-copy">
+                    <p class="section-copy" id="inputCopy">
                         Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.
                     </p>
                 </div>
+            </div>
+
+            <div class="mode-switch" role="tablist" aria-label="Analyzer mode">
+                <button class="mode-switch-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output" data-mode="bestiary">
+                    Bestiary
+                </button>
+                <button class="mode-switch-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output" data-mode="tasks">
+                    Tasks
+                </button>
             </div>
 
             <label class="input-label" for="sessionLog">Paste hunting session log</label>
@@ -44,7 +53,7 @@ Looted Items:"
             ></textarea>
 
             <div class="helper-row">
-                <p class="helper-text">For the most accurate result, paste the full session block including duration and killed monsters.</p>
+                <p class="helper-text" id="inputHint">For the most accurate result, paste the full session block including duration and killed monsters.</p>
             </div>
 
             <div class="toolbar" role="group" aria-label="Session actions">
@@ -58,7 +67,7 @@ Looted Items:"
             <div class="section-heading">
                 <div>
                     <h2 id="resultsTitle">Analysis</h2>
-                    <p class="section-copy">
+                    <p class="section-copy" id="resultsCopy">
                         Review the matched creatures first, then add your current total kills if you want a better remaining-time estimate.
                     </p>
                 </div>
@@ -74,8 +83,8 @@ Looted Items:"
     <footer class="site-disclaimer">
         <h2 class="disclaimer-title">About This Site</h2>
         <p>
-            This site does one thing: it reads a pasted hunting session log and estimates Bestiary progress for the creatures it can match.
-            It is not a save tracker, an official profile mirror, or a source of authoritative in-game progress.
+            This site reads a pasted hunting session log and estimates either Bestiary progress or task completion time for the creatures it
+            can match. It is not a save tracker, an official profile mirror, or a source of authoritative in-game progress.
         </p>
         <p>
             Creature metadata used by the calculator is loaded from the

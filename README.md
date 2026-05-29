@@ -1,14 +1,15 @@
 # Bestiary Session Analyzer
 
-Bestiary Session Analyzer for Tibia extracts monster kill data from your hunting log, calculates your kill rate, and estimates the time required to complete a Bestiary entry. It is meant to help you evaluate and improve hunting efficiency for faster Bestiary completion.
+Bestiary Session Analyzer for Tibia extracts monster kill data from your hunting log and can now estimate either Bestiary progress or task completion time from the same session data.
 
 ## What The Tool Does
 
 - Parses a Tibia hunting session log.
 - Extracts the session duration and killed monsters.
-- Matches those monsters against the Bestiary dataset.
-- Calculates kill rate, remaining kills, and estimated time to unlock.
-- Lets you enter your current total kills to recalculate remaining time more accurately.
+- In `Bestiary` mode, matches those monsters against the Bestiary dataset.
+- In `Bestiary` mode, calculates kill rate, remaining kills, and estimated time to unlock.
+- In `Bestiary` mode, lets you enter your current total kills to recalculate remaining time more accurately.
+- In `Tasks` mode, lets you choose one creature from the session and estimate how long a task may take based on that hunt.
 
 ## How To Use It
 
@@ -22,9 +23,10 @@ python3 -m http.server 4173
 
 - `http://127.0.0.1:4173/src/`
 
-3. Paste your hunting session log into the text area.
-4. Click `Process Log`.
-5. Review the generated table for:
+3. Choose `Bestiary` or `Tasks`.
+4. Paste your hunting session log into the text area.
+5. Click `Process Log`.
+6. In `Bestiary` mode, review the generated table for:
    - Creature name
    - Session kills
    - Kills to unlock
@@ -32,8 +34,9 @@ python3 -m http.server 4173
    - Kills left
    - Estimated time remaining
    - Charms per hour
-6. Optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
-7. Use `Clear` or `Clear Inputs` to reset the log or manual kill totals.
+7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
+8. In `Tasks` mode, select the task creature found in the session and enter the total kills required by that task.
+9. Use `Clear` or `Clear Inputs` to reset the log or manual kill totals.
 
 ## Example Log Format
 
@@ -61,13 +64,16 @@ bestiary-session-analyzer/
 |-- src/
 |   |-- app/
 |   |   |-- features/
-|   |   |   `-- session-analysis.js
+|   |   |   |-- session-analysis.js
+|   |   |   |-- session-parser.js
+|   |   |   `-- task-analysis.js
 |   |   |-- services/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   `-- session-store.js
 |   |   |-- ui/
-|   |   |   `-- render-results.js
+|   |   |   |-- render-results.js
+|   |   |   `-- render-task-results.js
 |   |   |-- utils/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
@@ -87,9 +93,9 @@ bestiary-session-analyzer/
 
 - `src/index.html` is the application entry point.
 - `src/app/main.js` wires browser events, state restoration, and rendering.
-- `src/app/features` contains log parsing and progression calculations.
+- `src/app/features` contains shared log parsing plus the Bestiary and Tasks calculation flows.
 - `src/app/services` contains data-loading concerns.
-- `src/app/ui` renders result tables and summary metrics.
+- `src/app/ui` renders mode-specific result views and summary metrics.
 - `src/app/state` persists the last processed session in `sessionStorage`.
 - `src/data` stores application-owned datasets.
 
