@@ -7,6 +7,7 @@ import {
 
 function buildBestiaryMonsterButton(monster, selectedMonsterNames) {
     const isSelected = selectedMonsterNames.includes(monster.name);
+    const label = monster.displayName || monster.name;
 
     return `
         <button
@@ -15,7 +16,7 @@ function buildBestiaryMonsterButton(monster, selectedMonsterNames) {
             data-bestiary-monster="${monster.name}"
             aria-pressed="${isSelected ? "true" : "false"}"
         >
-            <span class="task-monster-name">${monster.displayName}</span>
+            <span class="task-monster-name">${label}</span>
             <span class="task-monster-count">${formatNumber(monster.killsThisSession)}x</span>
         </button>
     `;
@@ -62,7 +63,7 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
     container.innerHTML = `
         <div class="summary-grid">
             <article class="summary-card">
-                <span class="summary-label">Selected Creatures</span>
+                <span class="summary-label">Creatures Selected</span>
                 <strong>${formatNumber(selectedMonsters.length)}</strong>
             </article>
             <article class="summary-card">
@@ -70,35 +71,29 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
                 <strong>${formatNumber(summary.totalCharms)}</strong>
             </article>
             <article class="summary-card">
-                <span class="summary-label">Slowest Unlock</span>
+                <span class="summary-label">Longest Time Remaining</span>
                 <strong>${formatTime(summary.maxTimeRemainingMinutes)}</strong>
             </article>
             <article class="summary-card">
-                <span class="summary-label">Total Charms / Hour</span>
+                <span class="summary-label">Total Charms/hr</span>
                 <strong>${formatCharmsPerHour(summary.totalCharmsPerHour)}</strong>
             </article>
         </div>
 
-        <p class="results-intro">
-            Choose which matched creatures should count for this Bestiary estimate. Only selected creatures appear in the table and summary below.
-        </p>
-
-        <div class="task-picker-card">
+        <section class="task-picker-card" aria-labelledby="bestiarySelectionTitle">
             <div class="section-heading section-heading-compact">
                 <div>
-                    <h3 class="subsection-title">Select Bestiary Creatures</h3>
-                    <p class="section-copy">Only the selected creatures will remain in the Bestiary table and projection.</p>
+                    <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>
+                    <p class="section-copy">Choose the creatures you want to keep in this Bestiary estimate.</p>
                 </div>
             </div>
             <div class="task-monster-list" role="list">
                 ${monsters.map((monster) => buildBestiaryMonsterButton(monster, selectedMonsterNames)).join("")}
             </div>
-        </div>
+        </section>
 
         ${selectedMonsters.length ? `
-            <p class="results-intro">
-                Add your current total kills below if you want the remaining time estimate to reflect your existing Bestiary progress.
-            </p>
+            <p class="results-intro">Add your current total kills to refine the time remaining for the selected creatures.</p>
 
             <div class="table-container">
                 <table>
@@ -108,11 +103,11 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
                             <th>Charm Points</th>
                             <th>Session Kills</th>
                             <th>Total Kills</th>
-                            <th>Kills to Unlock</th>
+                            <th>Unlock Target</th>
                             <th>Kill Rate</th>
-                            <th>Kills Left</th>
+                            <th>Kills Remaining</th>
                             <th>Time Remaining</th>
-                            <th>Charms per Hour</th>
+                            <th>Charms/hr</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,13 +118,13 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
         ` : `
             <div class="empty-state">
                 <strong>No creatures selected.</strong>
-                <span>Select at least one matched creature to show its Bestiary row and estimate.</span>
+                <span>Select at least one creature to show its Bestiary summary and table.</span>
             </div>
         `}
 
         <div class="action-row action-row-spaced">
-            <button class="btn" id="updateRemainingTimeButton" type="button">Update Remaining Time</button>
-            <button class="btn btn-secondary" id="clearInputsButton" type="button">Clear Inputs</button>
+            <button class="btn" id="updateRemainingTimeButton" type="button">Update Estimate</button>
+            <button class="btn btn-secondary" id="clearInputsButton" type="button">Clear Totals</button>
         </div>
     `;
 }

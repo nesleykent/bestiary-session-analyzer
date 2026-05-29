@@ -23,14 +23,14 @@ const elements = {
 const MODE_CONTENT = {
     bestiary: {
         inputCopy: "Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.",
-        inputHint: "For the most accurate result, paste the full session block including duration and killed monsters.",
-        resultsCopy: "Review the matched creatures first, then add your current total kills if you want a better remaining-time estimate.",
+        inputHint: "For the most accurate result, paste the full session block including duration and killed creatures.",
+        resultsCopy: "Select the creatures you want to analyze, then add your current total kills to refine the Bestiary estimate.",
         readyHint: "Load a log to start a Bestiary estimate."
     },
     tasks: {
         inputCopy: "Tasks mode uses the same hunt analyzer log. After processing the session, choose one creature from the hunt and enter the total kills required by that task.",
-        inputHint: "Process the log first, then select the task monster and enter the task size in total kills.",
-        resultsCopy: "Tasks mode estimates one creature at a time from the current session. Choose the task monster from the hunt results and provide the task total.",
+        inputHint: "Process the log first, then select the task creature and enter the task target.",
+        resultsCopy: "Tasks mode estimates one creature at a time from the current session. Choose the task creature from the hunt results and provide the task target.",
         readyHint: "Load a log to start a task estimate."
     }
 };
@@ -62,13 +62,13 @@ function getEmptyStateMarkup() {
     if (state.mode === "tasks") {
         return `
             <strong>No task estimate yet.</strong>
-            <span>Process a session log to choose a task creature and project how long that task may take.</span>
+            <span>Process a session log to choose a task creature and project the time remaining.</span>
         `;
     }
 
     return `
         <strong>No analysis yet.</strong>
-        <span>Process a session log to view matched creatures, projected time remaining, and charm efficiency.</span>
+        <span>Process a session log to view matched creatures, time remaining, and charm efficiency.</span>
     `;
 }
 
@@ -211,14 +211,14 @@ function setMode(mode) {
 
     if (mode === "bestiary" && state.matchedMonsters.length) {
         renderBestiaryMode();
-        setStatus("Bestiary mode", false, "Review the matched creatures or update total kills.");
+        setStatus("Bestiary mode", false, "Select the creatures you want to keep, then update total kills if needed.");
         persistState();
         return;
     }
 
     if (mode === "tasks" && state.taskMonsters.length) {
         renderTaskMode();
-        setStatus("Tasks mode", false, "Select the task creature and enter the total task kills.");
+        setStatus("Tasks mode", false, "Select the task creature and enter the task target.");
         persistState();
         return;
     }
@@ -256,7 +256,7 @@ function attachResultActions() {
 
             renderBestiaryMode();
             persistState();
-            setStatus("Creature selection updated", false, "Only the selected Bestiary creatures remain in the summary and table.");
+            setStatus("Creature selection updated", false, "Only the selected creatures remain in the Bestiary summary and table.");
         });
     });
 
@@ -265,7 +265,7 @@ function attachResultActions() {
             state.selectedTaskMonsterName = button.dataset.taskMonster;
             persistState();
             renderTaskMode();
-            setStatus("Task monster selected", false, "Enter the total kills for the selected task to calculate the remaining time.");
+            setStatus("Task creature selected", false, "Enter the task target to calculate the time remaining.");
         });
     });
 
@@ -315,8 +315,8 @@ function processLog() {
             monsters.length ? "Analysis updated" : "No matching creatures found",
             false,
             monsters.length
-                ? "Choose the Bestiary creatures you want to keep, then add total kills if you want a better projection."
-                : "Check creature names in the log or confirm the session includes a killed-monsters section."
+                ? "Select the creatures you want to keep, then add total kills to refine the estimate."
+                : "Check creature names in the log or confirm the session includes a killed-creatures section."
         );
     } else {
         const { monsters, sessionDuration } = analyzeTaskSession(logText);
@@ -331,8 +331,8 @@ function processLog() {
             monsters.length ? "Task analysis updated" : "No task candidates found",
             false,
             monsters.length
-                ? "Select the task creature from this session, then enter the total task kills."
-                : "Check that the pasted session includes the killed-monsters block."
+                ? "Select the task creature from this session, then enter the task target."
+                : "Check that the pasted session includes the killed-creatures block."
         );
     }
 
@@ -362,7 +362,7 @@ function updateRemainingTime() {
     state.matchedMonsters = monsters;
     renderBestiaryMode();
     persistState();
-    setStatus("Estimate updated", false, "The remaining-time projection now reflects the total kills you entered.");
+    setStatus("Estimate updated", false, "The time remaining now reflects the total kills you entered.");
 }
 
 function clearInputs() {
@@ -376,7 +376,7 @@ function clearInputs() {
     state.matchedMonsters = monsters;
     renderBestiaryMode();
     persistState();
-    setStatus("Manual totals cleared", false, "The estimate now uses session kills only.");
+    setStatus("Totals cleared", false, "The estimate now uses session kills only.");
 }
 
 function restorePreviousSession() {
@@ -399,13 +399,13 @@ function restorePreviousSession() {
 
     if (state.mode === "bestiary" && state.matchedMonsters.length) {
         renderBestiaryMode();
-        setStatus("Previous session restored", false, "You can edit the pasted log or update total kills at any time.");
+        setStatus("Previous session restored", false, "You can edit the session log, selection, or total kills at any time.");
         return true;
     }
 
     if (state.mode === "tasks" && state.taskMonsters.length) {
         renderTaskMode();
-        setStatus("Previous task session restored", false, "You can change the selected monster or the task size at any time.");
+        setStatus("Previous task session restored", false, "You can change the selected creature or task target at any time.");
         return true;
     }
 

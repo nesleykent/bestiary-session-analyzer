@@ -20,7 +20,7 @@ function buildEstimateMarkup(estimate) {
     if (!estimate.selectedMonster) {
         return `
             <div class="empty-state">
-                <strong>No monster selected.</strong>
+                <strong>No creature selected.</strong>
                 <span>Select a creature from the session to estimate task completion.</span>
             </div>
         `;
@@ -31,13 +31,13 @@ function buildEstimateMarkup(estimate) {
     return `
         <div class="task-selection-header">
             <div>
-                <p class="task-selection-label">Selected Monster</p>
+                <p class="task-selection-label">Selected Creature</p>
                 <strong class="task-selection-value">${estimate.selectedMonster.displayName}</strong>
             </div>
             <p class="task-selection-copy">${formatNumber(estimate.selectedMonster.killsThisSession)} killed in this session</p>
         </div>
 
-        <label class="input-label" for="taskTotalKills">Task total kills</label>
+        <label class="input-label" for="taskTotalKills">Task target</label>
         <input
             id="taskTotalKills"
             class="task-total-input"
@@ -52,7 +52,7 @@ function buildEstimateMarkup(estimate) {
         ${hasTaskTotal ? `
             <div class="task-estimate-grid">
                 <article class="summary-card">
-                    <span class="summary-label">Time Left</span>
+                    <span class="summary-label">Time Remaining</span>
                     <strong>${formatTimeDetailed(estimate.remainingTimeMinutes)}</strong>
                 </article>
                 <article class="summary-card">
@@ -60,15 +60,15 @@ function buildEstimateMarkup(estimate) {
                     <strong>${formatTaskRate(estimate.killRatePerHour)}</strong>
                 </article>
                 <article class="summary-card">
-                    <span class="summary-label">Already Killed</span>
+                    <span class="summary-label">Killed This Session</span>
                     <strong>${formatNumber(estimate.alreadyKilled)}</strong>
                 </article>
                 <article class="summary-card">
-                    <span class="summary-label">Remaining</span>
+                    <span class="summary-label">Kills Remaining</span>
                     <strong>${formatNumber(estimate.remainingKills)}</strong>
                 </article>
                 <article class="summary-card summary-card-wide">
-                    <span class="summary-label">Total Estimated Time</span>
+                    <span class="summary-label">Total Time Estimate</span>
                     <strong>${formatTimeDetailed(estimate.totalEstimatedTimeMinutes)}</strong>
                 </article>
             </div>
@@ -86,7 +86,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
         container.className = "empty-state";
         container.innerHTML = `
             <strong>No task candidates found.</strong>
-            <span>The log was processed, but no killed monsters were detected in the session block.</span>
+            <span>The log was processed, but no killed creatures were detected in the session block.</span>
         `;
         return;
     }
@@ -99,7 +99,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
                 <strong>${formatTimeDetailed(sessionDuration)}</strong>
             </article>
             <article class="summary-card">
-                <span class="summary-label">Monster Types</span>
+                <span class="summary-label">Creature Types</span>
                 <strong>${formatNumber(estimate.totalMonsterTypes)}</strong>
             </article>
         </div>
@@ -107,7 +107,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
         <div class="task-picker-card">
             <div class="section-heading section-heading-compact">
                 <div>
-                    <h3 class="subsection-title">Select Task Monster</h3>
+                    <h3 class="subsection-title">Select Task Creature</h3>
                     <p class="section-copy">Choose one of the creatures found in this session log.</p>
                 </div>
             </div>
@@ -120,7 +120,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
             <div class="section-heading section-heading-compact">
                 <div>
                     <h3 class="subsection-title">Task Estimate</h3>
-                    <p class="section-copy">Use the selected creature and your task target to project the remaining time.</p>
+                    <p class="section-copy">Use the selected creature and task target to project the time remaining.</p>
                 </div>
             </div>
             ${buildEstimateMarkup(estimate)}

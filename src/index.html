@@ -12,7 +12,7 @@
             <div class="hero-copy-block">
                 <h1>Bestiary Session Analyzer</h1>
                 <p class="description">
-                    Paste a Tibia hunting session log to estimate either Bestiary progress or task completion time from the same hunt data.
+                    Paste a Tibia hunting session log to estimate Bestiary progress or task completion time from the same hunt data.
                 </p>
             </div>
             <div class="status-panel" aria-live="polite" aria-atomic="true">
@@ -53,7 +53,7 @@ Looted Items:"
             ></textarea>
 
             <div class="helper-row">
-                <p class="helper-text" id="inputHint">For the most accurate result, paste the full session block including duration and killed monsters.</p>
+                <p class="helper-text" id="inputHint">For the most accurate result, paste the full session block including duration and killed creatures.</p>
             </div>
 
             <div class="toolbar" role="group" aria-label="Session actions">
@@ -68,14 +68,14 @@ Looted Items:"
                 <div>
                     <h2 id="resultsTitle">Analysis</h2>
                     <p class="section-copy" id="resultsCopy">
-                        Review the matched creatures first, then add your current total kills if you want a better remaining-time estimate.
+                        Select the creatures you want to analyze, then add your current total kills to refine the estimate.
                     </p>
                 </div>
             </div>
 
             <div id="output" class="empty-state" role="status">
                 <strong>No analysis yet.</strong>
-                <span>Process a session log to view matched creatures, projected time remaining, and charm efficiency.</span>
+                <span>Process a session log to view matched creatures, time remaining, and charm efficiency.</span>
             </div>
         </section>
     </main>
