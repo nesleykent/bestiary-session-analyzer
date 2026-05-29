@@ -18,9 +18,9 @@ function buildTaskMonsterButton(monster, selectedMonsterName) {
 
 function buildMetric(label, value) {
     return `
-        <article class="metric-item">
-            <span class="metric-label">${label}</span>
-            <strong class="metric-value">${value}</strong>
+        <article class="summary-card">
+            <span class="summary-label">${label}</span>
+            <strong>${value}</strong>
         </article>
     `;
 }
@@ -59,7 +59,7 @@ function buildEstimateMarkup(estimate) {
         >
 
         ${hasTaskTotal ? `
-            <div class="metric-grid">
+            <div class="summary-grid">
                 ${buildMetric("Time Remaining", formatTimeDetailed(estimate.remainingTimeMinutes))}
                 ${buildMetric("Kill Rate", formatTaskRate(estimate.killRatePerHour))}
                 ${buildMetric("Killed This Session", formatNumber(estimate.alreadyKilled))}
@@ -87,7 +87,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
 
     container.className = "results-shell";
     container.innerHTML = `
-        <div class="metric-grid">
+        <div class="summary-grid">
             ${buildMetric("Session Time", formatTimeDetailed(sessionDuration))}
             ${buildMetric("Creature Types", formatNumber(estimate.totalMonsterTypes))}
         </div>

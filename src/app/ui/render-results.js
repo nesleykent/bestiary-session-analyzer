@@ -49,9 +49,9 @@ function buildRow(monster) {
 
 function buildMetric(label, value) {
     return `
-        <article class="metric-item">
-            <span class="metric-label">${label}</span>
-            <strong class="metric-value">${value}</strong>
+        <article class="summary-card">
+            <span class="summary-label">${label}</span>
+            <strong>${value}</strong>
         </article>
     `;
 }
@@ -70,7 +70,7 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
 
     container.className = "results-shell";
     container.innerHTML = `
-        <div class="metric-grid">
+        <div class="summary-grid">
             ${buildMetric("Creatures Selected", formatNumber(selectedMonsters.length))}
             ${buildMetric("Total Charms", formatNumber(summary.totalCharms))}
             ${buildMetric("Longest Time Remaining", formatTime(summary.maxTimeRemainingMinutes))}
@@ -118,7 +118,7 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
             </div>
         `}
 
-        <div class="action-row action-row-spaced">
+        <div class="action-row">
             <button class="btn" id="updateRemainingTimeButton" type="button">Update Estimate</button>
             <button class="btn btn-secondary" id="clearInputsButton" type="button">Clear Totals</button>
         </div>
