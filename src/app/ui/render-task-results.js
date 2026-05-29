@@ -16,6 +16,15 @@ function buildTaskMonsterButton(monster, selectedMonsterName) {
     `;
 }
 
+function buildMetric(label, value) {
+    return `
+        <article class="metric-item">
+            <span class="metric-label">${label}</span>
+            <strong class="metric-value">${value}</strong>
+        </article>
+    `;
+}
+
 function buildEstimateMarkup(estimate) {
     if (!estimate.selectedMonster) {
         return `
@@ -50,27 +59,12 @@ function buildEstimateMarkup(estimate) {
         >
 
         ${hasTaskTotal ? `
-            <div class="task-estimate-grid">
-                <article class="summary-card">
-                    <span class="summary-label">Time Remaining</span>
-                    <strong>${formatTimeDetailed(estimate.remainingTimeMinutes)}</strong>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-label">Kill Rate</span>
-                    <strong>${formatTaskRate(estimate.killRatePerHour)}</strong>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-label">Killed This Session</span>
-                    <strong>${formatNumber(estimate.alreadyKilled)}</strong>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-label">Kills Remaining</span>
-                    <strong>${formatNumber(estimate.remainingKills)}</strong>
-                </article>
-                <article class="summary-card summary-card-wide">
-                    <span class="summary-label">Total Time Estimate</span>
-                    <strong>${formatTimeDetailed(estimate.totalEstimatedTimeMinutes)}</strong>
-                </article>
+            <div class="metric-grid">
+                ${buildMetric("Time Remaining", formatTimeDetailed(estimate.remainingTimeMinutes))}
+                ${buildMetric("Kill Rate", formatTaskRate(estimate.killRatePerHour))}
+                ${buildMetric("Killed This Session", formatNumber(estimate.alreadyKilled))}
+                ${buildMetric("Kills Remaining", formatNumber(estimate.remainingKills))}
+                ${buildMetric("Total Time Estimate", formatTimeDetailed(estimate.totalEstimatedTimeMinutes))}
             </div>
         ` : `
             <div class="empty-state">
@@ -93,21 +87,15 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
 
     container.className = "results-shell";
     container.innerHTML = `
-        <div class="summary-grid">
-            <article class="summary-card">
-                <span class="summary-label">Session Time</span>
-                <strong>${formatTimeDetailed(sessionDuration)}</strong>
-            </article>
-            <article class="summary-card">
-                <span class="summary-label">Creature Types</span>
-                <strong>${formatNumber(estimate.totalMonsterTypes)}</strong>
-            </article>
+        <div class="metric-grid">
+            ${buildMetric("Session Time", formatTimeDetailed(sessionDuration))}
+            ${buildMetric("Creature Types", formatNumber(estimate.totalMonsterTypes))}
         </div>
 
         <section class="results-section" aria-labelledby="taskSelectionTitle">
             <h3 class="subsection-title" id="taskSelectionTitle">Select Task Creature</h3>
             <p class="section-copy">Choose one of the creatures found in this session log.</p>
-            <div class="task-monster-list" role="list">
+            <div class="creature-chip-grid" role="list">
                 ${monsters.map((monster) => buildTaskMonsterButton(monster, estimate.selectedMonster?.name)).join("")}
             </div>
         </section>

@@ -47,6 +47,15 @@ function buildRow(monster) {
     `;
 }
 
+function buildMetric(label, value) {
+    return `
+        <article class="metric-item">
+            <span class="metric-label">${label}</span>
+            <strong class="metric-value">${value}</strong>
+        </article>
+    `;
+}
+
 export function renderResults(container, monsters, selectedMonsterNames, summary) {
     if (!monsters.length) {
         container.className = "empty-state";
@@ -61,29 +70,17 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
 
     container.className = "results-shell";
     container.innerHTML = `
-        <div class="summary-grid">
-            <article class="summary-card">
-                <span class="summary-label">Creatures Selected</span>
-                <strong>${formatNumber(selectedMonsters.length)}</strong>
-            </article>
-            <article class="summary-card">
-                <span class="summary-label">Total Charms</span>
-                <strong>${formatNumber(summary.totalCharms)}</strong>
-            </article>
-            <article class="summary-card">
-                <span class="summary-label">Longest Time Remaining</span>
-                <strong>${formatTime(summary.maxTimeRemainingMinutes)}</strong>
-            </article>
-            <article class="summary-card">
-                <span class="summary-label">Total Charms/hr</span>
-                <strong>${formatCharmsPerHour(summary.totalCharmsPerHour)}</strong>
-            </article>
+        <div class="metric-grid">
+            ${buildMetric("Creatures Selected", formatNumber(selectedMonsters.length))}
+            ${buildMetric("Total Charms", formatNumber(summary.totalCharms))}
+            ${buildMetric("Longest Time Remaining", formatTime(summary.maxTimeRemainingMinutes))}
+            ${buildMetric("Total Charms/hr", formatCharmsPerHour(summary.totalCharmsPerHour))}
         </div>
 
         <section class="results-section" aria-labelledby="bestiarySelectionTitle">
             <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>
             <p class="section-copy">Choose the creatures you want to keep in this Bestiary estimate.</p>
-            <div class="task-monster-list" role="list">
+            <div class="creature-chip-grid" role="list">
                 ${monsters.map((monster) => buildBestiaryMonsterButton(monster, selectedMonsterNames)).join("")}
             </div>
         </section>
