@@ -19,7 +19,7 @@ export function formatTime(minutes) {
         return `${minutes.toFixed(1)} min`;
     }
 
-    return `${(minutes / 60).toFixed(1)} h`;
+    return `${(minutes / 60).toFixed(1)} hr`;
 }
 
 export function formatTimeDetailed(minutes) {
@@ -40,10 +40,10 @@ export function formatTimeDetailed(minutes) {
     }
 
     if (remainingMinutes === 0) {
-        return `${hours}h`;
+        return `${hours} hr`;
     }
 
-    return `${hours}h ${remainingMinutes}min`;
+    return `${hours} hr ${remainingMinutes} min`;
 }
 
 export function formatKillRate(killsPerMinute) {

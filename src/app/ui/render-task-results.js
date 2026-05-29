@@ -74,8 +74,8 @@ function buildEstimateMarkup(estimate) {
             </div>
         ` : `
             <div class="empty-state">
-                <strong>Enter the task size.</strong>
-                <span>Type the total kills required for the selected task to calculate the remaining time.</span>
+                <strong>Enter the task target.</strong>
+                <span>Type the target kills required for the selected task to calculate the time remaining.</span>
             </div>
         `}
     `;

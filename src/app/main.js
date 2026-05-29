@@ -28,9 +28,9 @@ const MODE_CONTENT = {
         readyHint: "Load a log to start a Bestiary estimate."
     },
     tasks: {
-        inputCopy: "Tasks mode uses the same hunt analyzer log. After processing the session, choose one creature from the hunt and enter the total kills required by that task.",
+        inputCopy: "Task mode uses the same hunt analyzer log. After processing the session, choose one creature from the hunt and enter the task target.",
         inputHint: "Process the log first, then select the task creature and enter the task target.",
-        resultsCopy: "Tasks mode estimates one creature at a time from the current session. Choose the task creature from the hunt results and provide the task target.",
+        resultsCopy: "Task mode estimates one creature at a time from the current session. Choose the task creature from the hunt results and provide the task target.",
         readyHint: "Load a log to start a task estimate."
     }
 };
@@ -218,7 +218,7 @@ function setMode(mode) {
 
     if (mode === "tasks" && state.taskMonsters.length) {
         renderTaskMode();
-        setStatus("Tasks mode", false, "Select the task creature and enter the task target.");
+        setStatus("Task mode", false, "Select the task creature and enter the task target.");
         persistState();
         return;
     }
