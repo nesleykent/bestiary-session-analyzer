@@ -68,7 +68,7 @@ function buildEstimateMarkup(estimate) {
                 ${buildMetric("Kill Rate", formatTaskRate(estimate.killRatePerHour))}
                 ${buildMetric("Killed This Session", formatNumber(estimate.alreadyKilled))}
                 ${buildMetric("Kills Remaining", formatNumber(estimate.remainingKills))}
-                ${buildMetric("Total Time Estimate", formatTimeDetailed(estimate.totalEstimatedTimeMinutes), true)}
+                ${buildMetric("Total Time", formatTimeDetailed(estimate.totalEstimatedTimeMinutes), true)}
             </div>
         ` : `
             <div class="empty-state">
@@ -97,8 +97,8 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
         </div>
 
         <section class="results-section" aria-labelledby="taskSelectionTitle">
-            <h3 class="subsection-title" id="taskSelectionTitle">Select Task Creature</h3>
-            <p class="section-copy">Choose one creature from this session to calculate the task estimate.</p>
+            <h3 class="subsection-title" id="taskSelectionTitle">Select Creature</h3>
+            <p class="section-copy">Select one creature from this session to calculate the task estimate.</p>
             <div class="creature-chip-grid" role="list">
                 ${monsters.map((monster) => buildTaskMonsterButton(monster, estimate.selectedMonster?.name)).join("")}
             </div>

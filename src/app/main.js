@@ -22,15 +22,15 @@ const elements = {
 
 const MODE_CONTENT = {
     bestiary: {
-        inputCopy: "Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.",
+        inputCopy: "Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.",
         inputHint: "For the most accurate result, paste the full session block including duration and killed creatures.",
-        resultsCopy: "Process the session log, choose the creatures you want to keep, then enter total kills to refine the Bestiary estimate.",
+        resultsCopy: "Process the session log, then select creatures and enter total kills to refine the Bestiary estimate.",
         readyHint: "Load a log to start a Bestiary estimate."
     },
     tasks: {
-        inputCopy: "Task mode uses the same hunt analyzer log. After processing the session, choose one creature from the hunt and enter the task target.",
-        inputHint: "Process the log first, then select the task creature and enter the task target.",
-        resultsCopy: "Process the session log, choose the task creature, then enter the task target to project the time remaining.",
+        inputCopy: "Tasks mode uses the same hunting session log. After processing the log, select one creature and enter the task target.",
+        inputHint: "Process the log first, then select the creature and enter the task target.",
+        resultsCopy: "Process the session log, then select the creature and enter the task target to project the time remaining.",
         readyHint: "Load a log to start a task estimate."
     }
 };
@@ -62,13 +62,13 @@ function getEmptyStateMarkup() {
     if (state.mode === "tasks") {
         return `
             <strong>No task estimate yet.</strong>
-            <span>Process a session log to choose a task creature and project the time remaining.</span>
+            <span>Process a session log to select a creature and project the time remaining.</span>
         `;
     }
 
     return `
         <strong>No analysis yet.</strong>
-        <span>Process a session log to view matched creatures, time remaining, and charm efficiency.</span>
+        <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
     `;
 }
 
@@ -211,14 +211,14 @@ function setMode(mode) {
 
     if (mode === "bestiary" && state.matchedMonsters.length) {
         renderBestiaryMode();
-        setStatus("Bestiary mode", false, "Choose the creatures you want to keep, then update total kills if needed.");
+        setStatus("Bestiary mode", false, "Select the creatures you want to keep, then update total kills if needed.");
         persistState();
         return;
     }
 
     if (mode === "tasks" && state.taskMonsters.length) {
         renderTaskMode();
-        setStatus("Task mode", false, "Select the task creature and enter the task target.");
+        setStatus("Tasks mode", false, "Select the creature and enter the task target.");
         persistState();
         return;
     }
@@ -265,7 +265,7 @@ function attachResultActions() {
             state.selectedTaskMonsterName = button.dataset.taskMonster;
             persistState();
             renderTaskMode();
-            setStatus("Task creature selected", false, "Enter the task target to calculate the time remaining.");
+            setStatus("Creature selected", false, "Enter the task target to calculate the time remaining.");
         });
     });
 
@@ -315,7 +315,7 @@ function processLog() {
             monsters.length ? "Analysis updated" : "No matching creatures found",
             false,
             monsters.length
-                ? "Choose the creatures you want to keep, then add total kills to refine the estimate."
+                ? "Select the creatures you want to keep, then enter total kills to refine the estimate."
                 : "Check creature names in the log or confirm the session includes a killed-creatures section."
         );
     } else {
@@ -331,7 +331,7 @@ function processLog() {
             monsters.length ? "Task analysis updated" : "No task candidates found",
             false,
             monsters.length
-                ? "Select the task creature from this session, then enter the task target."
+                ? "Select the creature from this session, then enter the task target."
                 : "Check that the pasted session includes the killed-creatures block."
         );
     }

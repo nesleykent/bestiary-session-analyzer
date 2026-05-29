@@ -48,15 +48,15 @@ export function formatTimeDetailed(minutes) {
 
 export function formatKillRate(killsPerMinute) {
     const killsPerHour = killsPerMinute * 60;
-    return `${killsPerHour.toFixed(1)} kills/hr`;
+    return `${killsPerHour.toFixed(1)} kills/h`;
 }
 
 export function formatTaskRate(killsPerHour) {
     if (!Number.isFinite(killsPerHour) || killsPerHour <= 0) {
-        return "~0/hr";
+        return "~0/h";
     }
 
-    return `~${Math.round(killsPerHour)}/hr`;
+    return `~${Math.round(killsPerHour)}/h`;
 }
 
 export function formatCharmsPerHour(charmsPerHour) {
@@ -64,5 +64,5 @@ export function formatCharmsPerHour(charmsPerHour) {
         return "\u221e";
     }
 
-    return `${charmsPerHour.toFixed(2)} charms/hr`;
+    return `${charmsPerHour.toFixed(2)} charms/h`;
 }

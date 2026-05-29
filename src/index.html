@@ -21,7 +21,7 @@
         <section class="content-section" aria-labelledby="inputTitle">
             <h2 id="inputTitle">Session Log</h2>
             <p class="section-copy" id="inputCopy">
-                Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.
+                Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.
             </p>
 
             <div class="mode-switch" role="tablist" aria-label="Analyzer mode">
@@ -29,7 +29,7 @@
                     Bestiary
                 </button>
                 <button class="mode-switch-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output" data-mode="tasks">
-                    Task
+                    Tasks
                 </button>
             </div>
 
@@ -56,12 +56,12 @@ Looted Items:"
         <section class="content-section" aria-labelledby="resultsTitle">
             <h2 id="resultsTitle">Analysis</h2>
             <p class="section-copy" id="resultsCopy">
-                Process the session log, review the matched creatures, then refine the estimate with your target or total kills.
+                Process the session log, then refine the estimate with creature selection and target values.
             </p>
 
             <div id="output" class="empty-state" role="status">
                 <strong>No analysis yet.</strong>
-                <span>Process a session log to view matched creatures, time remaining, and charm efficiency.</span>
+                <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
             </div>
         </section>
     </main>

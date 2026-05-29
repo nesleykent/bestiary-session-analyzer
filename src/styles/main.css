@@ -41,17 +41,14 @@ h3.subsection-title {
 .description {
     font-size: 14px;
     color: #555;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     line-height: 1.6;
-    background: #fff;
-    padding: 12px;
-    border-radius: 8px;
-    border-left: 4px solid #fd5949;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ececec;
 }
 
 .content-section {
-    margin-top: 20px;
+    margin-top: 24px;
 }
 
 .section-copy,
@@ -73,7 +70,7 @@ h3.subsection-title {
 }
 
 .status-block {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     min-height: 42px;
 }
 
@@ -219,7 +216,7 @@ textarea {
 }
 
 .results-shell {
-    margin-top: 20px;
+    margin-top: 16px;
 }
 
 .summary-grid {
@@ -230,15 +227,15 @@ textarea {
 }
 
 .summary-card {
-    padding: 12px;
+    padding: 12px 0 14px;
     background: #fff;
-    border-left: 4px solid #fd5949;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    border-top: 3px solid #fd5949;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .summary-card-primary {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    border-top-color: #d6249f;
 }
 
 .summary-card strong {
@@ -250,6 +247,8 @@ textarea {
 
 .results-section {
     margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #ececec;
 }
 
 .creature-chip-grid {
@@ -278,8 +277,8 @@ textarea {
 
 .task-monster-button.is-selected {
     border-color: #d6249f;
-    background: rgba(214, 36, 159, 0.06);
-    box-shadow: 0 0 0 2px rgba(214, 36, 159, 0.14);
+    background: rgba(214, 36, 159, 0.1);
+    box-shadow: 0 0 0 2px rgba(214, 36, 159, 0.2);
 }
 
 .selection-badge {
@@ -412,12 +411,12 @@ a:hover {
 
 .empty-state {
     margin-top: 20px;
-    padding: 20px;
+    padding: 18px 0;
     text-align: center;
     color: #555;
-    border: 1px dashed #d7d7d7;
-    border-radius: 8px;
-    background: #fff;
+    border-top: 1px dashed #d7d7d7;
+    border-bottom: 1px dashed #d7d7d7;
+    background: transparent;
 }
 
 .empty-state strong {
@@ -428,11 +427,11 @@ a:hover {
 
 .site-disclaimer {
     margin-top: 32px;
-    padding: 16px;
-    background: #fff;
-    border: 1px solid #dbdbdb;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    padding: 18px 0 0;
+    background: transparent;
+    border-top: 1px solid #ececec;
+    border-radius: 0;
+    box-shadow: none;
     font-size: 13px;
 }
 

@@ -72,15 +72,15 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
     container.className = "results-shell";
     container.innerHTML = `
         <div class="summary-grid">
-            ${buildMetric("Creatures Selected", formatNumber(selectedMonsters.length))}
+            ${buildMetric("Selected Creatures", formatNumber(selectedMonsters.length))}
             ${buildMetric("Longest Time Remaining", formatTime(summary.maxTimeRemainingMinutes), true)}
             ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
-            ${buildMetric("Total Charms/hr", formatCharmsPerHour(summary.totalCharmsPerHour))}
+            ${buildMetric("Charm Rate", formatCharmsPerHour(summary.totalCharmsPerHour))}
         </div>
 
         <section class="results-section" aria-labelledby="bestiarySelectionTitle">
             <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>
-            <p class="section-copy">Only selected creatures remain in the estimate table.</p>
+            <p class="section-copy">Only selected creatures appear in the estimate table.</p>
             <div class="creature-chip-grid" role="list">
                 ${monsters.map((monster) => buildBestiaryMonsterButton(monster, selectedMonsterNames)).join("")}
             </div>
@@ -103,7 +103,7 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
                                 <th>Kill Rate</th>
                                 <th>Kills Remaining</th>
                                 <th>Time Remaining</th>
-                                <th>Charms/hr</th>
+                                <th>Charm Rate</th>
                             </tr>
                         </thead>
                         <tbody>
