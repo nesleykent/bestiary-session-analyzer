@@ -7,30 +7,23 @@
     <link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
-    <main class="app-shell">
-        <header class="hero-card">
-            <div class="hero-copy-block">
-                <h1>Bestiary Session Analyzer</h1>
-                <p class="description">
-                    Paste a Tibia hunting session log to estimate Bestiary progress or task completion time from the same hunt data.
-                </p>
-            </div>
-            <div class="status-panel" aria-live="polite" aria-atomic="true">
-                <p class="status-label">Status</p>
-                <p class="status-message" id="statusMessage">Ready</p>
-                <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
-            </div>
-        </header>
+    <main>
+        <h1>Bestiary Session Analyzer</h1>
+        <p class="description">
+            Paste a Tibia hunting session log to estimate Bestiary progress or task completion time from the same hunt data.
+        </p>
 
-        <section class="panel-card" aria-labelledby="inputTitle">
-            <div class="section-heading">
-                <div>
-                    <h2 id="inputTitle">Session Log</h2>
-                    <p class="section-copy" id="inputCopy">
-                        Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.
-                    </p>
-                </div>
-            </div>
+        <div class="status-block" aria-live="polite" aria-atomic="true">
+            <p class="status-label">Status</p>
+            <p class="status-message" id="statusMessage">Ready</p>
+            <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
+        </div>
+
+        <section class="content-section" aria-labelledby="inputTitle">
+            <h2 id="inputTitle">Session Log</h2>
+            <p class="section-copy" id="inputCopy">
+                Use the exported hunting session text from Tibia. The analyzer reads session duration and killed creatures from the pasted log.
+            </p>
 
             <div class="mode-switch" role="tablist" aria-label="Analyzer mode">
                 <button class="mode-switch-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output" data-mode="bestiary">
@@ -52,9 +45,7 @@ Looted Items:"
                 spellcheck="false"
             ></textarea>
 
-            <div class="helper-row">
-                <p class="helper-text" id="inputHint">For the most accurate result, paste the full session block including duration and killed creatures.</p>
-            </div>
+            <p class="helper-text" id="inputHint">For the most accurate result, paste the full session block including duration and killed creatures.</p>
 
             <div class="toolbar" role="group" aria-label="Session actions">
                 <button class="btn btn-secondary" id="pasteLogButton" type="button">Paste Log</button>
@@ -63,15 +54,11 @@ Looted Items:"
             </div>
         </section>
 
-        <section class="panel-card" aria-labelledby="resultsTitle">
-            <div class="section-heading">
-                <div>
-                    <h2 id="resultsTitle">Analysis</h2>
-                    <p class="section-copy" id="resultsCopy">
-                        Select the creatures you want to analyze, then add your current total kills to refine the estimate.
-                    </p>
-                </div>
-            </div>
+        <section class="content-section" aria-labelledby="resultsTitle">
+            <h2 id="resultsTitle">Analysis</h2>
+            <p class="section-copy" id="resultsCopy">
+                Select the creatures you want to analyze, then add your current total kills to refine the estimate.
+            </p>
 
             <div id="output" class="empty-state" role="status">
                 <strong>No analysis yet.</strong>
