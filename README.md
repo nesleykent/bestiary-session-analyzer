@@ -99,7 +99,7 @@ The application loads creature metadata from:
 
 - `src/data/bestiary.json`
 
-The app normalizes that richer dataset into the internal fields it already uses, including creature name, charm points, and kills required to unlock.
+This dataset is sourced from the Tibiadraptor Bestiary API and normalized into the internal fields the app already uses, including creature name, charm points, and kills required to unlock.
 
 ## Automation
 
