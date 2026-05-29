@@ -167,6 +167,32 @@ a:hover {
     margin-top: 20px;
 }
 
+.site-disclaimer {
+    margin-top: 32px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    color: #555;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.disclaimer-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.site-disclaimer p + p {
+    margin-top: 10px;
+}
+
+.copyright-line {
+    font-weight: 700;
+    color: #333;
+}
+
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
