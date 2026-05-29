@@ -39,6 +39,7 @@ const state = {
     bestiaryData: [],
     matchedMonsters: [],
     mode: "bestiary",
+    selectedBestiaryMonsterNames: [],
     selectedTaskMonsterName: "",
     sessionDuration: 0,
     taskMonsters: [],
@@ -93,6 +94,7 @@ function persistState() {
     saveSessionState({
         matchedMonsters: state.matchedMonsters,
         mode: state.mode,
+        selectedBestiaryMonsterNames: state.selectedBestiaryMonsterNames,
         selectedTaskMonsterName: state.selectedTaskMonsterName,
         sessionDuration: state.sessionDuration,
         sessionLog: elements.sessionLog.value,
@@ -116,6 +118,7 @@ async function pasteLog() {
 function clearLog() {
     elements.sessionLog.value = "";
     state.matchedMonsters = [];
+    state.selectedBestiaryMonsterNames = [];
     state.selectedTaskMonsterName = "";
     state.sessionDuration = 0;
     state.taskMonsters = [];
@@ -126,8 +129,47 @@ function clearLog() {
     elements.sessionLog.focus();
 }
 
+function summarizeBestiaryMonsters(monsters) {
+    return monsters.reduce((summary, monster) => {
+        summary.totalCharms += monster.charms;
+        summary.totalCharmsPerHour += monster.charmsPerHour;
+        summary.maxTimeRemainingMinutes = Math.max(
+            summary.maxTimeRemainingMinutes,
+            monster.timeRemainingMinutes
+        );
+        return summary;
+    }, {
+        maxTimeRemainingMinutes: 0,
+        totalCharms: 0,
+        totalCharmsPerHour: 0
+    });
+}
+
+function getSelectedBestiaryMonsterNames(monsters) {
+    const availableMonsterNames = new Set(monsters.map((monster) => monster.name));
+
+    return state.selectedBestiaryMonsterNames.filter((monsterName) => availableMonsterNames.has(monsterName));
+}
+
+function getSelectedBestiaryMonsters(monsters) {
+    const selectedMonsterNames = new Set(getSelectedBestiaryMonsterNames(monsters));
+    return monsters.filter((monster) => selectedMonsterNames.has(monster.name));
+}
+
+function syncVisibleBestiaryTotalsToState() {
+    const totalKillsByName = readTotalKillsInputs();
+    if (!Object.keys(totalKillsByName).length) {
+        return;
+    }
+
+    state.matchedMonsters = state.matchedMonsters.map((monster) => ({
+        ...monster,
+        totalKills: totalKillsByName[monster.name] ?? monster.totalKills ?? 0
+    }));
+}
+
 function renderBestiaryMode() {
-    const { summary } = recalculateProgress(
+    const { monsters } = recalculateProgress(
         state.matchedMonsters,
         state.bestiaryData,
         state.sessionDuration,
@@ -136,7 +178,18 @@ function renderBestiaryMode() {
         )
     );
 
-    renderResults(elements.output, state.matchedMonsters, summary);
+    state.matchedMonsters = monsters;
+    state.selectedBestiaryMonsterNames = getSelectedBestiaryMonsterNames(state.matchedMonsters);
+
+    const selectedMonsters = getSelectedBestiaryMonsters(state.matchedMonsters);
+    const summary = summarizeBestiaryMonsters(selectedMonsters);
+
+    renderResults(
+        elements.output,
+        state.matchedMonsters,
+        state.selectedBestiaryMonsterNames,
+        summary
+    );
     attachResultActions();
 }
 
@@ -177,6 +230,7 @@ function setMode(mode) {
 
 function attachResultActions() {
     const updateButton = document.getElementById("updateRemainingTimeButton");
+    const bestiaryMonsterButtons = document.querySelectorAll("[data-bestiary-monster]");
     const clearInputsButton = document.getElementById("clearInputsButton");
     const taskMonsterButtons = document.querySelectorAll("[data-task-monster]");
     const taskTotalInput = document.getElementById("taskTotalKills");
@@ -188,6 +242,23 @@ function attachResultActions() {
     if (clearInputsButton) {
         clearInputsButton.addEventListener("click", clearInputs);
     }
+
+    bestiaryMonsterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            syncVisibleBestiaryTotalsToState();
+
+            const monsterName = button.dataset.bestiaryMonster;
+            const isSelected = state.selectedBestiaryMonsterNames.includes(monsterName);
+
+            state.selectedBestiaryMonsterNames = isSelected
+                ? state.selectedBestiaryMonsterNames.filter((name) => name !== monsterName)
+                : [...state.selectedBestiaryMonsterNames, monsterName];
+
+            renderBestiaryMode();
+            persistState();
+            setStatus("Creature selection updated", false, "Only the selected Bestiary creatures remain in the summary and table.");
+        });
+    });
 
     taskMonsterButtons.forEach((button) => {
         button.addEventListener("click", () => {
@@ -231,25 +302,26 @@ function processLog() {
     setBusyState(true);
 
     if (state.mode === "bestiary") {
-        const { monsters, sessionDuration, summary } = analyzeSession(logText, state.bestiaryData);
+        const { monsters, sessionDuration } = analyzeSession(logText, state.bestiaryData);
         state.matchedMonsters = monsters;
+        state.selectedBestiaryMonsterNames = monsters.map((monster) => monster.name);
         state.sessionDuration = sessionDuration;
         state.taskMonsters = [];
         state.taskTotalKills = "";
         state.selectedTaskMonsterName = "";
-        renderResults(elements.output, state.matchedMonsters, summary);
-        attachResultActions();
+        renderBestiaryMode();
         persistState();
         setStatus(
             monsters.length ? "Analysis updated" : "No matching creatures found",
             false,
             monsters.length
-                ? "Review the summary first, then add total kills if you want a better projection."
+                ? "Choose the Bestiary creatures you want to keep, then add total kills if you want a better projection."
                 : "Check creature names in the log or confirm the session includes a killed-monsters section."
         );
     } else {
         const { monsters, sessionDuration } = analyzeTaskSession(logText);
         state.matchedMonsters = [];
+        state.selectedBestiaryMonsterNames = [];
         state.sessionDuration = sessionDuration;
         state.taskMonsters = monsters;
         state.selectedTaskMonsterName = monsters[0]?.name ?? "";
@@ -273,12 +345,14 @@ function readTotalKillsInputs() {
     return Array.from(inputs).reduce((totals, input) => {
         totals[input.dataset.monsterName] = Number.parseInt(input.value, 10) || 0;
         return totals;
-    }, {});
+    }, Object.fromEntries(
+        state.matchedMonsters.map((monster) => [monster.name, monster.totalKills || 0])
+    ));
 }
 
 function updateRemainingTime() {
     const totalKillsByName = readTotalKillsInputs();
-    const { monsters, summary } = recalculateProgress(
+    const { monsters } = recalculateProgress(
         state.matchedMonsters,
         state.bestiaryData,
         state.sessionDuration,
@@ -286,14 +360,13 @@ function updateRemainingTime() {
     );
 
     state.matchedMonsters = monsters;
-    renderResults(elements.output, state.matchedMonsters, summary);
-    attachResultActions();
+    renderBestiaryMode();
     persistState();
     setStatus("Estimate updated", false, "The remaining-time projection now reflects the total kills you entered.");
 }
 
 function clearInputs() {
-    const { monsters, summary } = recalculateProgress(
+    const { monsters } = recalculateProgress(
         state.matchedMonsters,
         state.bestiaryData,
         state.sessionDuration,
@@ -301,8 +374,7 @@ function clearInputs() {
     );
 
     state.matchedMonsters = monsters;
-    renderResults(elements.output, state.matchedMonsters, summary);
-    attachResultActions();
+    renderBestiaryMode();
     persistState();
     setStatus("Manual totals cleared", false, "The estimate now uses session kills only.");
 }
@@ -316,6 +388,9 @@ function restorePreviousSession() {
     elements.sessionLog.value = savedState.sessionLog || "";
     state.mode = savedState.mode || "bestiary";
     state.matchedMonsters = savedState.matchedMonsters || [];
+    state.selectedBestiaryMonsterNames = Object.prototype.hasOwnProperty.call(savedState, "selectedBestiaryMonsterNames")
+        ? savedState.selectedBestiaryMonsterNames || []
+        : state.matchedMonsters.map((monster) => monster.name);
     state.selectedTaskMonsterName = savedState.selectedTaskMonsterName || "";
     state.sessionDuration = savedState.sessionDuration || 0;
     state.taskMonsters = savedState.taskMonsters || [];
