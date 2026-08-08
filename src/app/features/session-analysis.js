@@ -26,31 +26,24 @@ function buildMonsterProgress(entry, killsThisSession, sessionDuration, totalKil
     };
 }
 
-export function calculateSummary(monsters) {
-    if (!monsters.length) {
-        return {
-            totalCharms: 0,
-            maxTimeRemainingMinutes: 0,
-            totalCharmsPerHour: 0
-        };
-    }
+function isBestiaryEntryComplete(monster) {
+    return (monster.totalKills || 0) >= monster.killsToUnlock;
+}
 
-    const inProgressMonsters = monsters.filter((monster) => monster.remainingKills > 0);
-    const hasInfiniteTime = inProgressMonsters.some((monster) => !Number.isFinite(monster.timeRemainingMinutes));
-    const finiteMonsters = inProgressMonsters.filter((monster) => Number.isFinite(monster.timeRemainingMinutes));
-    const totalCharms = inProgressMonsters.reduce((sum, monster) => sum + monster.charms, 0);
-    const maxTimeRemainingMinutes = hasInfiniteTime
-        ? Number.POSITIVE_INFINITY
-        : finiteMonsters.reduce((max, monster) => Math.max(max, monster.timeRemainingMinutes), 0);
-    const totalCharmsPerHour = Number.isFinite(maxTimeRemainingMinutes) && maxTimeRemainingMinutes > 0
-        ? Math.min((totalCharms / maxTimeRemainingMinutes) * 60, totalCharms)
-        : 0;
-
-    return {
-        totalCharms,
-        maxTimeRemainingMinutes,
-        totalCharmsPerHour
-    };
+export function summarizeBestiaryMonsters(monsters) {
+    return monsters.reduce((summary, monster) => {
+        summary.totalCharms += isBestiaryEntryComplete(monster) ? 0 : monster.charms;
+        summary.totalCharmsPerHour += monster.charmsPerHour;
+        summary.maxTimeRemainingMinutes = Math.max(
+            summary.maxTimeRemainingMinutes,
+            monster.timeRemainingMinutes
+        );
+        return summary;
+    }, {
+        maxTimeRemainingMinutes: 0,
+        totalCharms: 0,
+        totalCharmsPerHour: 0
+    });
 }
 
 export function analyzeSession(logText, bestiaryData) {
@@ -66,21 +59,15 @@ export function analyzeSession(logText, bestiaryData) {
 
     return {
         sessionDuration,
-        monsters,
-        summary: calculateSummary(monsters)
+        monsters
     };
 }
 
 export function recalculateProgress(monsters, bestiaryData, sessionDuration, totalKillsByName) {
-    const updatedMonsters = monsters.map((monster) => {
+    return monsters.map((monster) => {
         const bestiaryEntry = bestiaryData.find((entry) => entry.Name === monster.name);
         const totalKills = Number(totalKillsByName[monster.name] || 0);
 
         return buildMonsterProgress(bestiaryEntry, monster.killsThisSession, sessionDuration, totalKills);
     });
-
-    return {
-        monsters: updatedMonsters,
-        summary: calculateSummary(updatedMonsters)
-    };
 }

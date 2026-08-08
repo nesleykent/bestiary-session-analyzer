@@ -14,14 +14,18 @@ bestiary-session-analyzer/
 |-- src/
 |   |-- app/
 |   |   |-- features/
+|   |   |   |-- hunt-comparison.js
 |   |   |   |-- session-analysis.js
 |   |   |   |-- session-parser.js
 |   |   |   `-- task-analysis.js
 |   |   |-- services/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
+|   |   |   |-- hunt-workspace.js
 |   |   |   `-- session-store.js
 |   |   |-- ui/
+|   |   |   |-- render-comparison.js
+|   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
 |   |   |   `-- render-task-results.js
 |   |   |-- utils/
@@ -43,5 +47,7 @@ bestiary-session-analyzer/
 
 - All application runtime code lives under `src/`.
 - Bestiary and Tasks mode share the same session-log input but use separate feature and UI modules.
+- `state/hunt-workspace.js` owns the hunt tab collection, and every hunt keeps its own log, analysis, and mode.
+- `features/hunt-comparison.js` only ranks Bestiary summaries that the hunt tabs already calculated.
 - The repository root is limited to metadata, documentation, license material, and the GitHub Pages redirect entry point.
 - GitHub automation lives under `.github/` and is separated from application source.

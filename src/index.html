@@ -11,6 +11,7 @@
         <h1>Bestiary Session Analyzer</h1>
         <p class="description">
             Paste a Tibia hunting session log to estimate Bestiary progress or task completion time from the same hunt data.
+            Keep several hunts in separate tabs and compare which one is the better source of charm points.
         </p>
 
         <div class="status-block" aria-live="polite" aria-atomic="true">
@@ -18,7 +19,16 @@
             <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
         </div>
 
-        <section class="content-section" aria-labelledby="inputTitle">
+        <nav class="hunt-workspace" aria-label="Hunt analyses">
+            <div class="hunt-tab-strip" id="huntTabStrip"></div>
+            <div class="hunt-workspace-actions">
+                <button class="btn btn-secondary" id="compareHuntsButton" type="button" aria-pressed="false" disabled>
+                    Compare Hunts
+                </button>
+            </div>
+        </nav>
+
+        <section class="content-section" id="inputSection" aria-labelledby="inputTitle">
             <h2 id="inputTitle">Session Log</h2>
             <p class="section-copy" id="inputCopy">
                 Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.
@@ -53,7 +63,7 @@ Looted Items:"
             </div>
         </section>
 
-        <section class="content-section" aria-labelledby="resultsTitle">
+        <section class="content-section" id="analysisSection" aria-labelledby="resultsTitle">
             <h2 id="resultsTitle">Analysis</h2>
             <p class="section-copy" id="resultsCopy">
                 Process the session log, then refine the estimate with creature selection and target values.
@@ -62,6 +72,19 @@ Looted Items:"
             <div id="output" class="empty-state" role="status">
                 <strong>No analysis yet.</strong>
                 <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
+            </div>
+        </section>
+
+        <section class="content-section" id="comparisonSection" aria-labelledby="comparisonTitle" hidden>
+            <h2 id="comparisonTitle">Hunt Comparison</h2>
+            <p class="section-copy">
+                Compares the Bestiary result already calculated in each hunt tab. Charm Rate ranks which hunt turns hunting
+                time into charm points most efficiently for your current Bestiary progress.
+            </p>
+
+            <div id="comparisonOutput" class="empty-state" role="status">
+                <strong>Not enough analyzed hunts.</strong>
+                <span>Process at least two hunts in Bestiary mode to compare their charm rate.</span>
             </div>
         </section>
     </main>
