@@ -14,18 +14,18 @@
             finish and where to hunt for the most charm points. Tasks is a separate estimate for a single task target.
         </p>
 
+        <div class="app-nav" role="tablist" aria-label="Analyzer">
+            <button class="app-nav-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output">
+                Bestiary
+            </button>
+            <button class="app-nav-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output">
+                Tasks
+            </button>
+        </div>
+
         <div class="status-block" aria-live="polite" aria-atomic="true">
             <p class="status-message" id="statusMessage">Ready</p>
             <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
-        </div>
-
-        <div class="app-nav" role="tablist" aria-label="Analyzer">
-            <button class="mode-switch-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output">
-                Bestiary
-            </button>
-            <button class="mode-switch-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output">
-                Tasks
-            </button>
         </div>
 
         <nav class="hunt-workspace" id="huntWorkspace" aria-label="Hunt analyses">

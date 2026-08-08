@@ -508,7 +508,7 @@ function setMode(mode) {
 
     if (mode === "tasks") {
         setStatus(
-            "Tasks",
+            "Tasks selected",
             false,
             state.taskSession.monsters.length
                 ? "Select the creature and enter the task target."
@@ -518,7 +518,7 @@ function setMode(mode) {
     }
 
     setStatus(
-        "Bestiary",
+        "Bestiary selected",
         false,
         getComparableHunts().length
             ? "Switch hunt tabs to review an analysis, or open Charm Plan to plan your available time."
