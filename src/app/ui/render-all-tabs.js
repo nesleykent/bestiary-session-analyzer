@@ -76,16 +76,17 @@ export function renderAllTabs(container, analysis, summary) {
     container.innerHTML = `
         <div class="summary-grid">
             ${buildMetric("Selected Creatures", formatNumber(selectedEntries.length))}
-            ${buildMetric("Longest Time Remaining", formatTime(summary.maxTimeRemainingMinutes), true)}
+            ${buildMetric("All Tabs Time", formatTime(summary.totalTimeMinutes), true)}
             ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
-            ${buildMetric("Charm Rate", formatCharmsPerHour(summary.totalCharmsPerHour))}
+            ${buildMetric("Charm Rate", formatCharmsPerHour(summary.charmRate))}
         </div>
 
         <section class="results-section" aria-labelledby="allTabsSelectionTitle">
             <h3 class="subsection-title" id="allTabsSelectionTitle">Select Creatures</h3>
             <p class="section-copy">
                 A creature analyzed in several hunts appears once per hunt. Keep the hunt you plan to use for it, so its charm
-                points are counted once.
+                points are counted once. All Tabs Time adds the longest time remaining of each hunt that still has a selected
+                entry, and Charm Rate divides Total Charms by that time.
             </p>
             <div class="creature-chip-grid" role="list">
                 ${analysis.rows.map(buildEntryButton).join("")}
@@ -96,8 +97,8 @@ export function renderAllTabs(container, analysis, summary) {
             <section class="results-section" aria-labelledby="allTabsTableTitle">
                 <h3 class="subsection-title" id="allTabsTableTitle">Bestiary Estimate</h3>
                 <p class="results-intro">
-                    Enter current total kills in the highlighted column to refine the estimate. The tag next to a creature is
-                    the hunt that produced the entry, and the total kills you enter belong to that hunt.
+                    Every row is the row of its source hunt tab. The tag next to a creature is the hunt that produced the
+                    entry, and the total kills you enter there belong to that hunt.
                 </p>
 
                 <div class="table-container">

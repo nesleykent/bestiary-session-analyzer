@@ -57,15 +57,26 @@ python3 -m http.server 4173
 `All Tabs` is the first tab of the tab bar, before the hunt tabs. It cannot be closed and never changes position
 when hunt tabs are added, closed, or switched. It is the combined Bestiary workspace across every analyzed hunt:
 
-- A creature analyzed in several hunts appears once per hunt, tagged with the hunt that produced it.
-- The entries are grouped by creature, so the same creature from different hunts sits side by side.
+- The entries are the `Bestiary Estimate` rows of each hunt tab, so a creature selected in several hunts appears once
+  per hunt, tagged with the hunt that produced it, and entries grouped by creature sit side by side.
+- Every row mirrors its source hunt row. Its total kills, unlock target, kill rate, kills remaining, time remaining,
+  and per-creature charm rate are the values of that hunt. `All Tabs` never derives a combined kill rate or a new
+  per-creature completion estimate.
 - `All Tabs` keeps its own selection. Deselect the entries you do not plan to hunt, so a creature you analyzed in
   several hunts contributes its charm points once.
 - Total kills are editable here. A value entered on an entry belongs to the hunt that produced it, so the same
   creature in another hunt keeps its own total.
-- The combined estimate uses the same `Selected Creatures`, `Longest Time Remaining`, `Total Charms`, and
-  `Charm Rate` metrics as a single hunt, calculated over the selected entries.
 - `Reset Totals` here clears the total kills of every hunt.
+
+Only the summary is aggregated across hunts:
+
+- `Total Charms` adds the remaining charm points of the selected entries, per hunt.
+- `All Tabs Time` takes the longest time remaining among each hunt's selected entries and adds those hunt times
+  together, because the hunts are hunted one after another. Two hunts needing 3.0 h and 4.8 h give 7.8 h.
+- `Charm Rate` is `Total Charms / All Tabs Time`. With 175 charm points over 7.8 h it is 22.44 charms/h.
+
+Individual hunt tabs keep their own `Longest Time Remaining` and `Charm Rate` calculation unchanged, so a hunt tab's
+charm rate and the `All Tabs` charm rate are deliberately different metrics.
 
 `Compare Hunts` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
 

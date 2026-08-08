@@ -1,4 +1,9 @@
-import { buildAllTabsAnalysis, buildHuntComparison, isEntryKeyForHunt } from "./features/hunt-comparison.js";
+import {
+    aggregateAllTabsSummary,
+    buildAllTabsAnalysis,
+    buildHuntComparison,
+    isEntryKeyForHunt
+} from "./features/hunt-comparison.js";
 import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js";
 import { analyzeTaskSession, calculateTaskEstimate } from "./features/task-analysis.js";
 import { loadBestiaryData } from "./services/bestiary-repository.js";
@@ -226,6 +231,7 @@ function calculateBestiaryResult(hunt) {
     return {
         monsters,
         selectedMonsterNames,
+        selectedMonsters,
         summary: summarizeBestiaryMonsters(selectedMonsters)
     };
 }
@@ -265,16 +271,19 @@ function getAnalyzedHuntEntries() {
         .map((huntEntry) => ({
             id: huntEntry.hunt.id,
             label: huntEntry.label,
-            monsters: calculateBestiaryResult(huntEntry.hunt).monsters
-        }));
+            monsters: calculateBestiaryResult(huntEntry.hunt).selectedMonsters
+        }))
+        .filter((huntEntry) => huntEntry.monsters.length > 0);
 }
 
 function calculateAllTabsResult() {
     const analysis = buildAllTabsAnalysis(getAnalyzedHuntEntries(), state.excludedAllTabsEntries);
+    const huntSummaries = analysis.participatingHunts
+        .map((participatingHunt) => summarizeBestiaryMonsters(participatingHunt.selectedMonsters));
 
     return {
         analysis,
-        summary: summarizeBestiaryMonsters(analysis.selectedMonsters)
+        summary: aggregateAllTabsSummary(huntSummaries)
     };
 }
 
@@ -282,7 +291,7 @@ function renderHuntTabStrip() {
     const { analysis, summary } = calculateAllTabsResult();
     const allTabsTab = {
         label: "All Tabs",
-        charmRate: analysis.rows.length ? summary.totalCharmsPerHour : null,
+        charmRate: analysis.rows.length ? summary.charmRate : null,
         isActive: state.view === "allTabs"
     };
     const tabs = state.hunts.map((hunt, index) => ({
