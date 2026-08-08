@@ -86,10 +86,10 @@ function buildRoute(plan) {
 
     return `
         <section class="results-section" aria-labelledby="planRouteTitle">
-            <h3 class="subsection-title" id="planRouteTitle">Recommended Hunt Route</h3>
+            <h3 class="subsection-title" id="planRouteTitle">Recommended Route</h3>
             <p class="section-copy">
-                Time spent in a hunt progresses all of its selected entries at once and the progress is kept, so each hunt
-                needs only one visit. Steps are ordered to bank charm points as early as possible.
+                Time you spend on a session progresses all of its selected entries at once, and that progress is kept, so each
+                session needs only one visit. Steps are ordered to bank charm points as early as possible.
             </p>
             <ol class="plan-route" role="list">
                 ${plan.route.map(buildRouteStep).join("")}
@@ -106,8 +106,8 @@ export function buildCharmPlanResultMarkup(planView) {
     if (!planView.hasAnalyzedHunts) {
         return `
             <div class="empty-state">
-                <strong>No analyzed hunts.</strong>
-                <span>Process at least one hunt in Bestiary mode, then come back to plan your available time.</span>
+                <strong>No analyzed sessions.</strong>
+                <span>Process at least one Hunt Analyzer, then come back to plan your available time.</span>
             </div>
         `;
     }
@@ -136,7 +136,7 @@ export function buildCharmPlanResultMarkup(planView) {
             <h3 class="subsection-title" id="planEntriesTitle">Bestiaries You Can Finish</h3>
             <p class="section-copy">
                 Charm points are only awarded when an entry is complete, so an entry at partial progress contributes
-                nothing. Select a hunt tag to open that hunt and adjust its total kills or creature selection.
+                nothing. Select a session tag to open that session and adjust its total kills or creature selection.
             </p>
             ${buildEntryList(plan)}
         </section>

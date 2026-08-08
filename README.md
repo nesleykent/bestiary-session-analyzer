@@ -7,17 +7,28 @@ data out of your session logs and turns it into a hunt route.
 `Tasks` is a separate estimate for a single task target, kept apart from Bestiary because a task target is a number you
 choose rather than a fixed unlock threshold.
 
+## Terminology
+
+- **Hunt Analyzer** is the data you paste. It is Tibia's own tool, named for hunting because that is what it is mostly
+  used for.
+- **Session** is what this app builds from one Hunt Analyzer: the Bestiary analysis derived from it. `+` adds a session
+  by pasting and processing another Hunt Analyzer.
+- **All Sessions** is the aggregated Bestiary workspace across every processed session.
+- **Compare Sessions** ranks those sessions by their Bestiary result.
+- **Charm Plan** optimizes across the sessions for the play time you have.
+- **Bestiary** is what the player is completing, and **charm points** are the reward being optimized.
+
 ## Navigation
 
 Two levels:
 
-- `Bestiary` and `Tasks` are the top-level choice. They do not share a session log or a workspace.
-- Inside `Bestiary`, the tab bar holds the fixed `All Tabs` and `Charm Plan` views, then one tab per analyzed hunt, then
-  `+` to add a hunt. `Compare Hunts` stays a separate action on the right.
+- `Bestiary` and `Tasks` are the top-level choice. They do not share a Hunt Analyzer paste or a workspace.
+- Inside `Bestiary`, the tab bar reads `Charm Plan`, `All Sessions`, one tab per session, then `+` to add a session.
+  `Compare Sessions` stays a separate action on the right.
 
 Every view is one click from every other view, so re-checking a single creature never means restarting. From
-`Charm Plan`, selecting the hunt tag on an entry or a route step opens that hunt directly; adjust its total kills and
-return to `Charm Plan` to see the updated plan.
+`Charm Plan`, selecting the session tag on an entry or a route step opens that session directly; adjust its total kills
+and return to `Charm Plan` to see the updated plan.
 
 ## What The Tool Does
 
@@ -27,9 +38,9 @@ return to `Charm Plan` to see the updated plan.
 - In `Bestiary` mode, calculates kill rate, remaining kills, and estimated time to unlock.
 - In `Bestiary` mode, lets you enter your current total kills to recalculate remaining time more accurately.
 - In `Tasks` mode, lets you choose one creature from the session and estimate how long a task may take based on that hunt.
-- Keeps each hunting session in its own hunt tab, with its own log, creature selection, total kills, and mode.
-- Compares the Bestiary result of the analyzed hunts and highlights the hunt with the highest charm rate.
-- Provides a fixed `All Tabs` tab that combines the creatures of every analyzed hunt, once per hunt, into one Bestiary estimate.
+- Keeps each processed Hunt Analyzer as its own session, with its own creature selection and total kills.
+- Compares the Bestiary result of the analyzed sessions and highlights the one with the highest charm rate.
+- Provides a fixed `All Sessions` tab that combines the creatures of every analyzed session, once per session, into one Bestiary estimate.
 - Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
 
 ## How To Use It
@@ -59,50 +70,50 @@ python3 -m http.server 4173
 8. In `Tasks`, paste a session, select the task creature, and enter the total kills that task requires.
 9. Use `Clear Log` or `Reset Totals` to reset the log or manual kill totals of the selected hunt.
 
-## Comparing Several Hunts
+## Comparing Several Sessions
 
-1. Analyze the first hunt as described above.
-2. Click `+` to open another hunt tab, then paste and process the next hunting session.
-3. Switch between hunt tabs at any time. Each tab keeps its own log, creature selection, total kills, and mode.
-4. Once two hunts have a Bestiary analysis, click `Compare Hunts`.
-5. The comparison lists the `Total Charms`, `Longest Time Remaining`, and `Charm Rate` already calculated in each hunt tab, and marks the hunt with the highest charm rate as the best Bestiary hunt.
-6. Change the creature selection or total kills inside any hunt tab and compare again to see the updated ranking.
+1. Analyze the first session as described above.
+2. Click `+` to add another session, then paste and process the next Hunt Analyzer.
+3. Switch between sessions at any time. Each keeps its own Hunt Analyzer, creature selection, and total kills.
+4. Once two sessions have a Bestiary analysis, click `Compare Sessions`.
+5. The comparison lists the `Total Charms`, `Longest Time Remaining`, and `Charm Rate` already calculated in each session, and marks the session with the highest charm rate as the best session.
+6. Change the creature selection or total kills inside any session and compare again to see the updated ranking.
 
-`Tasks` mode stays per hunt and is never part of the Bestiary comparison.
+`Tasks` is separate and is never part of the Bestiary comparison.
 
-### All Tabs
+### All Sessions
 
-`All Tabs` is the first tab of the tab bar, before the hunt tabs. It cannot be closed and never changes position
-when hunt tabs are added, closed, or switched. It is the combined Bestiary workspace across every analyzed hunt:
+`All Sessions` is a fixed tab that cannot be closed and never changes position when sessions are added, closed, or
+switched. It is the combined Bestiary workspace across every analyzed session:
 
-- The entries are the `Bestiary Estimate` rows of each hunt tab, so a creature selected in several hunts appears once
-  per hunt, tagged with the hunt that produced it, and entries grouped by creature sit side by side.
-- Every row mirrors its source hunt row. Its total kills, unlock target, kill rate, kills remaining, time remaining,
-  and per-creature charm rate are the values of that hunt. `All Tabs` never derives a combined kill rate or a new
+- The entries are the `Bestiary Estimate` rows of each session, so a creature selected in several sessions appears once
+  per session, tagged with the session that produced it, and entries grouped by creature sit side by side.
+- Every row mirrors its source session row. Its total kills, unlock target, kill rate, kills remaining, time remaining,
+  and per-creature charm rate are the values of that session. `All Sessions` never derives a combined kill rate or a new
   per-creature completion estimate.
-- `All Tabs` keeps its own selection. Deselect the entries you do not plan to hunt, so a creature you analyzed in
-  several hunts contributes its charm points once.
-- Total kills are editable here. A value entered on an entry belongs to the hunt that produced it, so the same
-  creature in another hunt keeps its own total.
-- `Reset Totals` here clears the total kills of every hunt.
+- `All Sessions` keeps its own selection. Deselect the entries you do not plan to hunt, so a creature you analyzed in
+  several sessions contributes its charm points once.
+- Total kills are editable here. A value entered on an entry belongs to the session that produced it, so the same
+  creature in another session keeps its own total.
+- `Reset Totals` here clears the total kills of every session.
 
 Only the summary is aggregated across hunts:
 
 - `Total Charms` adds the remaining charm points of the selected entries, per hunt.
-- `All Tabs Time` takes the longest time remaining among each hunt's selected entries and adds those hunt times
-  together, because the hunts are hunted one after another. Two hunts needing 3.0 h and 4.8 h give 7.8 h.
-- `Charm Rate` is `Total Charms / All Tabs Time`. With 175 charm points over 7.8 h it is 22.44 charms/h.
+- `All Sessions Time` takes the longest time remaining among each session's selected entries and adds those times
+  together, because the sessions are hunted one after another. Two sessions needing 3.0 h and 4.8 h give 7.8 h.
+- `Charm Rate` is `Total Charms / All Sessions Time`. With 175 charm points over 7.8 h it is 22.44 charms/h.
 
 `Charm Rate` means the same thing everywhere. A hunt tab divides its `Total Charms` by its `Longest Time Remaining`,
-and `All Tabs` divides its `Total Charms` by `All Tabs Time`, so with a single analyzed hunt both views show the same
+and `All Sessions` divides its `Total Charms` by `All Sessions Time`, so with a single analyzed session both views show the same
 rate. The per-creature `Charm Rate` column stays a per-creature value and is not the sum of the hunt's rate.
 
-`Compare Hunts` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
+`Compare Sessions` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
 
 ## Charm Plan
 
-`Charm Plan` is its own fixed tab, next to `All Tabs` and before the hunt tabs. It cannot be closed. It answers a
-different question from the estimate: given the time you actually have, how many charm points can you finish?
+`Charm Plan` is the first fixed tab and cannot be closed. It answers a different question from the estimate: given the
+time you actually have, how many charm points can you finish?
 
 - Accepts `90 min`, `1.5 h`, `2h 30min`, or `2:30`. A plain number counts as hours.
 - Charm points are discrete completion rewards. An entry at 80% progress contributes nothing, so only entries whose
@@ -112,18 +123,18 @@ different question from the estimate: given the time you actually have, how many
 - The summary shows `Play Time Available`, `Charm Points Obtainable`, `Time Used`, `Unused Time`, and
   `Bestiaries Completed`, followed by the entries that fit.
 
-It plans across every analyzed hunt and uses the same entries as `All Tabs`, so the creature you picked there for a
-Bestiary that appears in several hunts is the one the plan uses.
+It plans across every analyzed session and uses the same entries as `All Sessions`, so the session you picked there for
+a Bestiary that appears in several sessions is the one the plan uses.
 
-Inside one hunt, the selected creatures progress at the same time, so the planner never adds their times together: an
-entry is finishable when its `Time Remaining` fits the time spent in that hunt. Across hunts, time is sequential, so the
-planner treats each hunt's completion thresholds as its allocation options and searches every combination of per-hunt
-time under the budget for the highest number of fully earned charm points, preferring the plan that uses less time when
-two tie.
+Inside one session, the selected creatures progress at the same time, so the planner never adds their times together: an
+entry is finishable when its `Time Remaining` fits the time spent on that session. Across sessions, time is sequential,
+so the planner treats each session's completion thresholds as its allocation options and searches every combination of
+per-session time under the budget for the highest number of fully earned charm points, preferring the plan that uses
+less time when two tie.
 
-The `Recommended Hunt Route` then lists the order, the time for each step, the Bestiaries completed there, the charm
-points earned, and the running total. Progress inside a hunt is kept, so returning to a hunt resumes where it left off
-and each hunt needs only one visit.
+The `Recommended Route` then lists the order, the time for each step, the Bestiaries completed there, the charm points
+earned, and the running total. Progress on a session is kept, so returning to it resumes where it left off and each
+session needs only one visit.
 
 ## Example Log Format
 

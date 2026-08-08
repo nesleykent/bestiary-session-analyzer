@@ -10,8 +10,9 @@
     <main>
         <h1>Bestiary Session Analyzer</h1>
         <p class="description">
-            Paste the hunting sessions you actually played, say how much time you have, and see which Bestiary entries you can
-            finish and where to hunt for the most charm points. Tasks is a separate estimate for a single task target.
+            Paste a Hunt Analyzer from Tibia for each hunt you are weighing up, say how much time you have, and see which
+            Bestiary entries you can finish and where to hunt for the most charm points. Each Hunt Analyzer you process
+            becomes a session. Tasks is a separate estimate for a single task target.
         </p>
 
         <div class="app-nav" role="tablist" aria-label="Analyzer">
@@ -28,22 +29,22 @@
             <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
         </div>
 
-        <nav class="hunt-workspace" id="huntWorkspace" aria-label="Hunt analyses">
+        <nav class="hunt-workspace" id="huntWorkspace" aria-label="Sessions">
             <div class="hunt-tab-strip" id="huntTabStrip"></div>
             <div class="hunt-workspace-actions">
                 <button class="btn btn-secondary" id="compareHuntsButton" type="button" aria-pressed="false" disabled>
-                    Compare Hunts
+                    Compare Sessions
                 </button>
             </div>
         </nav>
 
         <section class="content-section" id="inputSection" aria-labelledby="inputTitle">
-            <h2 id="inputTitle">Session Log</h2>
+            <h2 id="inputTitle">Hunt Analyzer</h2>
             <p class="section-copy" id="inputCopy">
                 Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.
             </p>
 
-            <label class="input-label" for="sessionLog">Paste hunting session log</label>
+            <label class="input-label" for="sessionLog">Paste Hunt Analyzer text</label>
             <textarea
                 id="sessionLog"
                 placeholder="Example:
@@ -54,7 +55,7 @@ Looted Items:"
                 spellcheck="false"
             ></textarea>
 
-            <p class="helper-text" id="inputHint">For the most accurate result, paste the full session block including duration and killed creatures.</p>
+            <p class="helper-text" id="inputHint">For the most accurate result, paste the full Hunt Analyzer block including duration and killed creatures.</p>
 
             <div class="toolbar" role="group" aria-label="Session actions">
                 <button class="btn btn-secondary" id="pasteLogButton" type="button">Paste Log</button>
@@ -76,15 +77,15 @@ Looted Items:"
         </section>
 
         <section class="content-section" id="comparisonSection" aria-labelledby="comparisonTitle" hidden>
-            <h2 id="comparisonTitle">Hunt Comparison</h2>
+            <h2 id="comparisonTitle">Session Comparison</h2>
             <p class="section-copy">
-                Compares the Bestiary result already calculated in each hunt tab. Charm Rate ranks which hunt turns hunting
-                time into charm points most efficiently for your current Bestiary progress.
+                Compares the Bestiary result already calculated in each session. Charm Rate ranks which session turns
+                hunting time into charm points most efficiently for your current Bestiary progress.
             </p>
 
             <div id="comparisonOutput" class="empty-state" role="status">
-                <strong>Not enough analyzed hunts.</strong>
-                <span>Process at least two hunts in Bestiary mode to compare their charm rate.</span>
+                <strong>Not enough analyzed sessions.</strong>
+                <span>Process at least two sessions in Bestiary to compare their charm rate.</span>
             </div>
         </section>
     </main>

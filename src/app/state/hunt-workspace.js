@@ -44,7 +44,7 @@ export function createWorkspace() {
 }
 
 export function getHuntLabel(index) {
-    return `Hunt ${index + 1}`;
+    return `Session ${index + 1}`;
 }
 
 export function addHunt(hunts) {

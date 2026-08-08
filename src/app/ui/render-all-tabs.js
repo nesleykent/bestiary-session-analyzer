@@ -65,7 +65,7 @@ export function renderAllTabs(container, analysis, summary) {
         container.className = "empty-state";
         container.innerHTML = `
             <strong>No analyzed creatures.</strong>
-            <span>Process a hunt in Bestiary mode to list its creatures here.</span>
+            <span>Process a Hunt Analyzer to list a session's creatures here.</span>
         `;
         return;
     }
@@ -76,7 +76,7 @@ export function renderAllTabs(container, analysis, summary) {
     container.innerHTML = `
         <div class="summary-grid">
             ${buildMetric("Selected Creatures", formatNumber(selectedEntries.length))}
-            ${buildMetric("All Tabs Time", formatTime(summary.totalTimeMinutes), true)}
+            ${buildMetric("All Sessions Time", formatTime(summary.totalTimeMinutes), true)}
             ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
             ${buildMetric("Charm Rate", formatCharmsPerHour(summary.charmRate))}
         </div>
@@ -84,9 +84,9 @@ export function renderAllTabs(container, analysis, summary) {
         <section class="results-section" aria-labelledby="allTabsSelectionTitle">
             <h3 class="subsection-title" id="allTabsSelectionTitle">Select Creatures</h3>
             <p class="section-copy">
-                A creature analyzed in several hunts appears once per hunt. Keep the hunt you plan to use for it, so its charm
-                points are counted once. All Tabs Time adds the longest time remaining of each hunt that still has a selected
-                entry, and Charm Rate divides Total Charms by that time.
+                A creature analyzed in several sessions appears once per session. Keep the session you plan to use for it, so
+                its charm points are counted once. All Sessions Time adds the longest time remaining of each session that still
+                has a selected entry, and Charm Rate divides Total Charms by that time.
             </p>
             <div class="creature-chip-grid" role="list">
                 ${analysis.rows.map(buildEntryButton).join("")}
@@ -97,8 +97,8 @@ export function renderAllTabs(container, analysis, summary) {
             <section class="results-section" aria-labelledby="allTabsTableTitle">
                 <h3 class="subsection-title" id="allTabsTableTitle">Bestiary Estimate</h3>
                 <p class="results-intro">
-                    Every row is the row of its source hunt tab. The tag next to a creature is the hunt that produced the
-                    entry, and the total kills you enter there belong to that hunt.
+                    Every row is the row of its source session. The tag next to a creature is the session that produced the
+                    entry, and the total kills you enter there belong to that session.
                 </p>
 
                 <div class="table-container">

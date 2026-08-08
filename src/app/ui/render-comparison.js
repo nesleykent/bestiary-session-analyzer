@@ -12,11 +12,11 @@ function buildWinnerCard(bestRow) {
 
     return `
         <article class="comparison-winner">
-            <span class="summary-label">Best Bestiary Hunt</span>
+            <span class="summary-label">Best Session</span>
             <strong class="comparison-winner-hunt">${bestRow.label}</strong>
             <span class="comparison-winner-rate">${formatCharmsPerHour(bestRow.totalCharmsPerHour)}</span>
             <p class="comparison-winner-copy">
-                Highest charm rate of the analyzed hunts, with ${formatNumber(bestRow.totalCharms)} charm points still available
+                Highest charm rate of your analyzed sessions, with ${formatNumber(bestRow.totalCharms)} charm points still available
                 over ${formatTime(bestRow.maxTimeRemainingMinutes)} of projected hunting time.
             </p>
         </article>
@@ -56,8 +56,8 @@ export function renderComparison(container, comparison) {
     if (comparison.rows.length < 2) {
         container.className = "empty-state";
         container.innerHTML = `
-            <strong>Not enough analyzed hunts.</strong>
-            <span>Process at least two hunts in Bestiary mode to compare their charm rate.</span>
+            <strong>Not enough analyzed sessions.</strong>
+            <span>Process at least two sessions to compare their charm rate.</span>
         `;
         return;
     }
@@ -69,7 +69,7 @@ export function renderComparison(container, comparison) {
         <section class="results-section" aria-labelledby="comparisonTableTitle">
             <h3 class="subsection-title" id="comparisonTableTitle">Charm Rate Ranking</h3>
             <p class="results-intro">
-                Every row is the Bestiary result already calculated inside that hunt tab: its matched creatures, your creature
+                Every row is the Bestiary result already calculated inside that session: its matched creatures, your creature
                 selection, and the total kills you entered there.
             </p>
 
@@ -77,7 +77,7 @@ export function renderComparison(container, comparison) {
                 <table>
                     <thead>
                         <tr>
-                            <th>Hunt</th>
+                            <th>Session</th>
                             <th>Total Charms</th>
                             <th>Longest Time Remaining</th>
                             <th>Charm Rate</th>

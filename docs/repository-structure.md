@@ -49,11 +49,11 @@ bestiary-session-analyzer/
 ## Notes
 
 - All application runtime code lives under `src/`.
-- Bestiary and Tasks are separate top-level modes with their own session state; hunts and the tab bar belong to Bestiary only.
-- `state/hunt-workspace.js` owns the hunt tab collection, and every hunt keeps its own log, analysis, and mode.
-- `features/hunt-comparison.js` only ranks and combines Bestiary results that the hunt tabs already calculated.
-- The tab bar holds fixed All Tabs and Charm Plan tabs before the hunt tabs; `Compare Hunts` renders the charm rate ranking separately.
-- `features/charm-plan.js` plans against available time only, and reads the per-creature times the estimate produced.
-- All Tabs rows are the hunt tabs' own estimate rows. Only its summary aggregates them, by adding each hunt's longest time.
+- Bestiary and Tasks are separate top-level modes with their own Hunt Analyzer paste; sessions and the tab bar belong to Bestiary only.
+- `state/hunt-workspace.js` owns the session collection. Each session is the Bestiary analysis of one pasted Hunt Analyzer.
+- `features/hunt-comparison.js` only ranks and combines Bestiary results that the sessions already calculated.
+- The tab bar reads Charm Plan, All Sessions, then one tab per session; `Compare Sessions` renders the charm rate ranking separately.
+- `features/charm-plan.js` plans against available time only, and reads the per-creature times the session estimates produced.
+- All Sessions rows are each session's own estimate rows. Only its summary aggregates them, by adding each session's longest time.
 - The repository root is limited to metadata, documentation, license material, and the GitHub Pages redirect entry point.
 - GitHub automation lives under `.github/` and is separated from application source.

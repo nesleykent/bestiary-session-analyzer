@@ -53,28 +53,27 @@ const elements = {
 
 const MODE_CONTENT = {
     bestiary: {
-        inputCopy: "Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.",
-        inputHint: "For the most accurate result, paste the full session block including duration and killed creatures.",
-        readyHint: "Load a log to start a Bestiary estimate."
+        inputHint: "For the most accurate result, paste the full Hunt Analyzer block including duration and killed creatures.",
+        readyHint: "Paste a Hunt Analyzer to create your first session."
     },
     tasks: {
-        inputCopy: "Tasks uses the same hunting session log, on its own. Process the log, then select one creature and enter the task target.",
-        inputHint: "Process the log first, then select the creature and enter the task target.",
-        readyHint: "Load a log to start a task estimate."
+        inputCopy: "Tasks keeps its own Hunt Analyzer paste, apart from your Bestiary sessions. Process it, then select one creature and enter the task target.",
+        inputHint: "Process the Hunt Analyzer first, then select the creature and enter the task target.",
+        readyHint: "Paste a Hunt Analyzer to start a task estimate."
     }
 };
 
 const VIEW_CONTENT = {
     allTabs: {
-        resultsTitle: "All Tabs Analysis",
-        resultsCopy: "Every creature of every analyzed hunt, listed once per hunt. Select the entries you want and enter total kills to refine the combined Bestiary estimate."
+        resultsTitle: "All Sessions Analysis",
+        resultsCopy: "Every creature of every analyzed session, listed once per session. Select the entries you want and enter total kills to refine the combined Bestiary estimate."
     },
     charmPlan: {
         resultsTitle: "Charm Plan",
-        resultsCopy: "Enter the hunting time you have available to see which selected Bestiary entries you can finish across the analyzed hunts, and how many charm points that earns."
+        resultsCopy: "Enter the hunting time you have available to see which selected Bestiary entries you can finish across your sessions, and how many charm points that earns."
     },
     tasks: {
-        inputTitle: "Task Session Log",
+        inputTitle: "Hunt Analyzer",
         resultsTitle: "Task Estimate",
         resultsCopy: "Process the session log, then select the creature and enter the task target to project the time remaining."
     }
@@ -82,12 +81,12 @@ const VIEW_CONTENT = {
 
 const FIXED_VIEW_STATUS = {
     allTabs: {
-        message: "All Tabs selected",
-        hint: "Every analyzed creature is listed once per hunt. Total kills entered here belong to the hunt that produced the entry."
+        message: "All Sessions selected",
+        hint: "Every analyzed creature is listed once per session. Total kills entered here belong to the session that produced the entry."
     },
     charmPlan: {
         message: "Charm Plan selected",
-        hint: "Enter the time you have available to see which Bestiary entries fit in it and the hunt route to follow."
+        hint: "Enter the time you have available to see which Bestiary entries fit in it and the route to follow."
     }
 };
 
@@ -316,11 +315,11 @@ function setEmptyOutput() {
     elements.output.innerHTML = state.mode === "tasks"
         ? `
             <strong>No task estimate yet.</strong>
-            <span>Process a session log to select a creature and project the time remaining.</span>
+            <span>Process a Hunt Analyzer to select a creature and project the time remaining.</span>
         `
         : `
             <strong>No analysis yet.</strong>
-            <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
+            <span>Process a Hunt Analyzer to view matched creatures, time remaining, and charm rate.</span>
         `;
 }
 
@@ -339,16 +338,16 @@ function renderHuntTabStrip() {
     const planView = getCharmPlanView();
     const fixedTabs = [
         {
-            key: "allTabs",
-            label: "All Tabs",
-            meta: analysis.rows.length ? formatCharmsPerHour(summary.charmRate) : "No analysis",
-            isActive: state.view === "allTabs"
-        },
-        {
             key: "charmPlan",
             label: "Charm Plan",
             meta: getCharmPlanTabMeta(planView),
             isActive: state.view === "charmPlan"
+        },
+        {
+            key: "allTabs",
+            label: "All Sessions",
+            meta: analysis.rows.length ? formatCharmsPerHour(summary.charmRate) : "No analysis",
+            isActive: state.view === "allTabs"
         }
     ];
     const huntTabs = state.hunts.map((hunt, index) => ({
@@ -377,11 +376,11 @@ function renderHuntView() {
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
     elements.sessionLog.value = hunt.sessionLog;
-    elements.inputTitle.textContent = `${huntLabel} Session Log`;
+    elements.inputTitle.textContent = "Hunt Analyzer";
     elements.resultsTitle.textContent = `${huntLabel} Analysis`;
-    elements.inputCopy.textContent = MODE_CONTENT.bestiary.inputCopy;
+    elements.inputCopy.textContent = `Paste the Hunt Analyzer text from Tibia. Processing it builds the Bestiary analysis for ${huntLabel}.`;
     elements.inputHint.textContent = MODE_CONTENT.bestiary.inputHint;
-    elements.resultsCopy.textContent = "Process the session log, then select creatures and enter total kills to refine the Bestiary estimate.";
+    elements.resultsCopy.textContent = "Select the creatures you want and enter total kills to refine the Bestiary estimate.";
 
     if (hunt.matchedMonsters.length || hunt.hasProcessedLog) {
         renderBestiaryMode(hunt);
@@ -521,7 +520,7 @@ function setMode(mode) {
         "Bestiary selected",
         false,
         getComparableHunts().length
-            ? "Switch hunt tabs to review an analysis, or open Charm Plan to plan your available time."
+            ? "Switch sessions to review an analysis, or open Charm Plan to plan your available time."
             : MODE_CONTENT.bestiary.readyHint
     );
 }
@@ -538,7 +537,7 @@ async function pasteLog() {
         }
 
         persistState();
-        setStatus("Log pasted", false, "Review the text, then process the session.");
+        setStatus("Hunt Analyzer pasted", false, "Review the text, then process it.");
         elements.sessionLog.focus();
     } catch (error) {
         setStatus("Clipboard access blocked", true, "Paste manually if your browser blocks clipboard access.");
@@ -583,7 +582,7 @@ function selectHunt(huntId, statusHint) {
     setStatus(
         `${getHuntLabelById(huntId)} selected`,
         false,
-        statusHint || "This hunt keeps its own session log, creature selection, and total kills."
+        statusHint || "This session keeps its own Hunt Analyzer, creature selection, and total kills."
     );
 }
 
@@ -600,7 +599,7 @@ function addHuntTab() {
     setStatus(
         `${getHuntLabelById(hunt.id)} added`,
         false,
-        "Paste the hunting session log for this hunt, then process it to add it to the comparison."
+        "Paste a Hunt Analyzer here and process it to add this session to the comparison."
     );
 }
 
@@ -620,7 +619,7 @@ function closeHuntTab(huntId) {
     normalizeView();
     renderApp();
     persistState();
-    setStatus(`${closedLabel} closed`, false, "The remaining hunts keep their own analysis.");
+    setStatus(`${closedLabel} closed`, false, "The remaining sessions keep their own analysis.");
 }
 
 function showComparison() {
@@ -628,9 +627,9 @@ function showComparison() {
 
     if (getComparableHunts().length < 2) {
         setStatus(
-            "Not enough analyzed hunts",
+            "Not enough analyzed sessions",
             true,
-            "Process at least two hunts before comparing them."
+            "Process at least two sessions before comparing them."
         );
         return;
     }
@@ -639,9 +638,9 @@ function showComparison() {
     renderApp();
     persistState();
     setStatus(
-        "Hunt comparison ready",
+        "Session comparison ready",
         false,
-        "Charm Rate ranks the hunts. Select a hunt tab to change its Bestiary configuration."
+        "Charm Rate ranks your sessions. Select a session to change its Bestiary configuration."
     );
 }
 
@@ -694,7 +693,7 @@ function resetAllTabsTotals() {
 
     renderApp();
     persistState();
-    setStatus("Totals reset", false, "Every hunt now estimates from session kills only.");
+    setStatus("Totals reset", false, "Every session now estimates from its own kills only.");
 }
 
 function toggleAllTabsEntry(entryKey) {
@@ -709,7 +708,7 @@ function toggleAllTabsEntry(entryKey) {
     renderApp();
     persistState();
     setStatus(
-        "All Tabs selection updated",
+        "All Sessions selection updated",
         false,
         "Only the selected entries are part of the combined Bestiary estimate."
     );
@@ -860,7 +859,7 @@ function processTaskLog(logText) {
         false,
         monsters.length
             ? "Select the creature from this session, then enter the task target."
-            : "Check that the pasted session includes the killed-creatures block."
+            : "Check that the pasted Hunt Analyzer includes the killed-creatures block."
     );
 }
 
@@ -879,7 +878,7 @@ function processHuntLog(hunt, logText) {
         false,
         monsters.length
             ? "Select the creatures you want to keep, then enter total kills to refine the estimate."
-            : "Check creature names in the log or confirm the session includes a killed-creatures section."
+            : "Check creature names in the Hunt Analyzer text, or confirm it includes a killed-creatures section."
     );
 }
 
@@ -891,9 +890,9 @@ function processLog() {
         : getActiveHunt().sessionLog.trim();
 
     if (!logText) {
-        setStatus("Session log required", true, "Paste a hunting session log before running the analyzer.");
+        setStatus("Hunt Analyzer required", true, "Paste the Hunt Analyzer text before processing.");
         elements.sessionLog.focus();
-        window.alert("Paste the session log first.");
+        window.alert("Paste the Hunt Analyzer text first.");
         return;
     }
 
@@ -935,7 +934,7 @@ async function initializeApp() {
             setStatus(
                 "Previous session restored",
                 false,
-                "Switch hunt tabs to review each analysis, or open Charm Plan to plan your available time."
+                "Switch sessions to review each analysis, or open Charm Plan to plan your available time."
             );
             return;
         }

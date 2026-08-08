@@ -42,6 +42,6 @@ export function renderHuntTabs(container, fixedTabs, huntTabs) {
     container.innerHTML = `
         ${fixedTabs.map(buildFixedTab).join("")}
         ${huntTabs.map((tab) => buildHuntTab(tab, canClose)).join("")}
-        <button class="hunt-tab-add" id="addHuntButton" type="button" aria-label="Add hunt">+</button>
+        <button class="hunt-tab-add" id="addHuntButton" type="button" aria-label="Add session">+</button>
     `;
 }
