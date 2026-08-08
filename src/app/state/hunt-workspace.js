@@ -136,7 +136,7 @@ export function restoreWorkspace(savedState) {
     return {
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
-        view: savedView === "comparison" || savedView === "allTabs" ? savedView : "hunt",
+        view: ["comparison", "allTabs", "charmPlan"].includes(savedView) ? savedView : "hunt",
         excludedAllTabsEntries: savedExcludedEntries,
         playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : ""
     };

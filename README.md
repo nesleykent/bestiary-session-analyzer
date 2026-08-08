@@ -84,8 +84,8 @@ rate. The per-creature `Charm Rate` column stays a per-creature value and is not
 
 ## Charm Plan
 
-Both `Bestiary` mode and `All Tabs` include a `Play Time Available` input that answers a different question from the
-estimate: given the time you actually have, how many charm points can you finish?
+`Charm Plan` is its own fixed tab, next to `All Tabs` and before the hunt tabs. It cannot be closed. It answers a
+different question from the estimate: given the time you actually have, how many charm points can you finish?
 
 - Accepts `90 min`, `1.5 h`, `2h 30min`, or `2:30`. A plain number counts as hours.
 - Charm points are discrete completion rewards. An entry at 80% progress contributes nothing, so only entries whose
@@ -95,13 +95,18 @@ estimate: given the time you actually have, how many charm points can you finish
 - The summary shows `Play Time Available`, `Charm Points Obtainable`, `Time Used`, `Unused Time`, and
   `Bestiaries Completed`, followed by the entries that fit.
 
-Inside one hunt, the selected creatures progress at the same time, so the planner never adds their times together: an
-entry is finishable when its `Time Remaining` fits the time spent in that hunt.
+It plans across every analyzed hunt and uses the same entries as `All Tabs`, so the creature you picked there for a
+Bestiary that appears in several hunts is the one the plan uses.
 
-In `All Tabs`, time is spent in one hunt at a time, so the planner searches every combination of per-hunt time to
-maximize fully earned charm points, and shows the resulting `Recommended Hunt Route` with the order, the time for each
-step, the Bestiaries completed there, the charm points earned, and the running total. Progress inside a hunt is kept, so
-returning to a hunt resumes where it left off and each hunt needs only one visit.
+Inside one hunt, the selected creatures progress at the same time, so the planner never adds their times together: an
+entry is finishable when its `Time Remaining` fits the time spent in that hunt. Across hunts, time is sequential, so the
+planner treats each hunt's completion thresholds as its allocation options and searches every combination of per-hunt
+time under the budget for the highest number of fully earned charm points, preferring the plan that uses less time when
+two tie.
+
+The `Recommended Hunt Route` then lists the order, the time for each step, the Bestiaries completed there, the charm
+points earned, and the running total. Progress inside a hunt is kept, so returning to a hunt resumes where it left off
+and each hunt needs only one visit.
 
 ## Example Log Format
 

@@ -20,11 +20,12 @@ import {
 } from "./state/hunt-workspace.js";
 import { loadSessionState, saveSessionState } from "./state/session-store.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
-import { buildCharmPlanResultMarkup } from "./ui/render-charm-plan.js";
+import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
 import { renderResults } from "./ui/render-results.js";
 import { renderTaskResults } from "./ui/render-task-results.js";
+import { formatCharmsPerHour, formatNumber } from "./utils/formatters.js";
 
 const elements = {
     analysisSection: document.getElementById("analysisSection"),
@@ -67,6 +68,11 @@ const MODE_CONTENT = {
 const ALL_TABS_CONTENT = {
     resultsCopy: "Every creature of every analyzed hunt, listed once per hunt. Select the entries you want and enter total kills to refine the combined Bestiary estimate.",
     resultsTitle: "All Tabs Analysis"
+};
+
+const CHARM_PLAN_CONTENT = {
+    resultsCopy: "Enter the hunting time you have available to see which selected Bestiary entries you can finish across the analyzed hunts, and how many charm points that earns.",
+    resultsTitle: "Charm Plan"
 };
 
 const state = {
@@ -240,34 +246,26 @@ function calculateBestiaryResult(hunt) {
     };
 }
 
-function buildCharmPlanView(huntGroups, showAllocations) {
+function getCharmPlanView() {
+    const { analysis } = calculateAllTabsResult();
+    const huntGroups = analysis.participatingHunts.map((participatingHunt) => ({
+        id: participatingHunt.id,
+        label: participatingHunt.label,
+        monsters: participatingHunt.selectedMonsters
+    }));
     const availableMinutes = parsePlayTimeMinutes(state.playTimeInput);
 
     return {
         playTimeValue: state.playTimeInput,
-        showAllocations,
-        plan: availableMinutes === null ? null : planCharmTime(huntGroups, availableMinutes)
+        hasAnalyzedHunts: huntGroups.length > 0,
+        plan: availableMinutes === null || !huntGroups.length
+            ? null
+            : planCharmTime(huntGroups, availableMinutes)
     };
 }
 
-function getActiveCharmPlanView() {
-    if (state.view === "allTabs") {
-        const { analysis } = calculateAllTabsResult();
-
-        return buildCharmPlanView(analysis.participatingHunts.map((participatingHunt) => ({
-            id: participatingHunt.id,
-            label: participatingHunt.label,
-            monsters: participatingHunt.selectedMonsters
-        })), true);
-    }
-
-    const hunt = getActiveHunt();
-
-    return buildCharmPlanView([{
-        id: hunt.id,
-        label: getHuntLabelById(hunt.id),
-        monsters: calculateBestiaryResult(hunt).selectedMonsters
-    }], false);
+function getCharmPlanTabMeta(planView) {
+    return planView.plan ? `+${formatNumber(planView.plan.charms)} charms` : "No play time";
 }
 
 function updateCharmPlanResult() {
@@ -277,7 +275,15 @@ function updateCharmPlanResult() {
         return;
     }
 
-    planResult.innerHTML = buildCharmPlanResultMarkup(getActiveCharmPlanView());
+    const planView = getCharmPlanView();
+    const planTabMeta = elements.huntTabStrip
+        .querySelector('[data-fixed-select="charmPlan"] .hunt-tab-meta');
+
+    planResult.innerHTML = buildCharmPlanResultMarkup(planView);
+
+    if (planTabMeta) {
+        planTabMeta.textContent = getCharmPlanTabMeta(planView);
+    }
 }
 
 function normalizeView() {
@@ -292,7 +298,7 @@ function renderBestiaryMode(hunt) {
     hunt.matchedMonsters = monsters;
     hunt.selectedBestiaryMonsterNames = selectedMonsterNames;
 
-    renderResults(elements.output, monsters, selectedMonsterNames, summary, getActiveCharmPlanView());
+    renderResults(elements.output, monsters, selectedMonsterNames, summary);
     attachResultActions();
 }
 
@@ -333,20 +339,32 @@ function calculateAllTabsResult() {
 
 function renderHuntTabStrip() {
     const { analysis, summary } = calculateAllTabsResult();
-    const allTabsTab = {
-        label: "All Tabs",
-        charmRate: analysis.rows.length ? summary.charmRate : null,
-        isActive: state.view === "allTabs"
-    };
-    const tabs = state.hunts.map((hunt, index) => ({
+    const planView = getCharmPlanView();
+    const fixedTabs = [
+        {
+            key: "allTabs",
+            label: "All Tabs",
+            meta: analysis.rows.length ? formatCharmsPerHour(summary.charmRate) : "No analysis",
+            isActive: state.view === "allTabs"
+        },
+        {
+            key: "charmPlan",
+            label: "Charm Plan",
+            meta: getCharmPlanTabMeta(planView),
+            isActive: state.view === "charmPlan"
+        }
+    ];
+    const huntTabs = state.hunts.map((hunt, index) => ({
         id: hunt.id,
         label: getHuntLabel(index),
-        charmRate: hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).summary.totalCharmsPerHour : null,
+        meta: hasBestiaryAnalysis(hunt)
+            ? formatCharmsPerHour(calculateBestiaryResult(hunt).summary.totalCharmsPerHour)
+            : "No analysis",
         isActive: state.view === "hunt" && hunt.id === state.activeHuntId
     }));
     const isComparing = state.view === "comparison";
 
-    renderHuntTabs(elements.huntTabStrip, allTabsTab, tabs);
+    renderHuntTabs(elements.huntTabStrip, fixedTabs, huntTabs);
     attachHuntTabActions();
 
     elements.compareHuntsButton.disabled = getComparableHunts().length < 2;
@@ -390,8 +408,19 @@ function renderAllTabsView() {
     elements.resultsTitle.textContent = ALL_TABS_CONTENT.resultsTitle;
     elements.resultsCopy.textContent = ALL_TABS_CONTENT.resultsCopy;
 
-    renderAllTabs(elements.output, analysis, summary, getActiveCharmPlanView());
+    renderAllTabs(elements.output, analysis, summary);
     attachAllTabsActions();
+}
+
+function renderCharmPlanView() {
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.resultsTitle.textContent = CHARM_PLAN_CONTENT.resultsTitle;
+    elements.resultsCopy.textContent = CHARM_PLAN_CONTENT.resultsCopy;
+
+    renderCharmPlan(elements.output, getCharmPlanView());
+    attachCharmPlanActions();
 }
 
 function renderComparisonView() {
@@ -418,6 +447,11 @@ function renderWorkspace() {
 
     if (state.view === "allTabs") {
         renderAllTabsView();
+        return;
+    }
+
+    if (state.view === "charmPlan") {
+        renderCharmPlanView();
         return;
     }
 
@@ -527,20 +561,27 @@ function showComparison() {
     );
 }
 
-function selectAllTabs() {
-    if (state.view === "allTabs") {
+const FIXED_VIEW_STATUS = {
+    allTabs: {
+        message: "All Tabs selected",
+        hint: "Every analyzed creature is listed once per hunt. Total kills entered here belong to the hunt that produced the entry."
+    },
+    charmPlan: {
+        message: "Charm Plan selected",
+        hint: "Enter the time you have available to see which Bestiary entries fit in it and the hunt route to follow."
+    }
+};
+
+function selectFixedView(view) {
+    if (state.view === view || !FIXED_VIEW_STATUS[view]) {
         return;
     }
 
     captureVisibleInputs();
-    state.view = "allTabs";
+    state.view = view;
     renderWorkspace();
     persistState();
-    setStatus(
-        "All Tabs selected",
-        false,
-        "Every analyzed creature is listed once per hunt. Total kills entered here belong to the hunt that produced the entry."
-    );
+    setStatus(FIXED_VIEW_STATUS[view].message, false, FIXED_VIEW_STATUS[view].hint);
 }
 
 function updateAllTabsEstimate() {
@@ -613,15 +654,13 @@ function setMode(mode) {
 
 function attachHuntTabActions() {
     const addHuntButton = document.getElementById("addHuntButton");
-    const allTabsButton = elements.huntTabStrip.querySelector("[data-all-tabs-select]");
-
     if (addHuntButton) {
         addHuntButton.addEventListener("click", addHuntTab);
     }
 
-    if (allTabsButton) {
-        allTabsButton.addEventListener("click", selectAllTabs);
-    }
+    elements.huntTabStrip.querySelectorAll("[data-fixed-select]").forEach((button) => {
+        button.addEventListener("click", () => selectFixedView(button.dataset.fixedSelect));
+    });
 
     elements.huntTabStrip.querySelectorAll("[data-hunt-select]").forEach((button) => {
         button.addEventListener("click", () => selectHunt(button.dataset.huntSelect));
@@ -661,8 +700,6 @@ function attachAllTabsActions() {
     elements.output.querySelectorAll("[data-all-tabs-entry]").forEach((button) => {
         button.addEventListener("click", () => toggleAllTabsEntry(button.dataset.allTabsEntry));
     });
-
-    attachCharmPlanActions();
 }
 
 function attachResultActions() {
@@ -671,8 +708,6 @@ function attachResultActions() {
     const clearInputsButton = document.getElementById("clearInputsButton");
     const taskMonsterButtons = document.querySelectorAll("[data-task-monster]");
     const taskTotalInput = document.getElementById("taskTotalKills");
-
-    attachCharmPlanActions();
 
     if (updateButton) {
         updateButton.addEventListener("click", updateRemainingTime);

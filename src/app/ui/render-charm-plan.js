@@ -17,12 +17,12 @@ function buildMetric(label, value, emphasized = false) {
     `;
 }
 
-function buildEntryRow(entry, showHuntLabel) {
+function buildEntryRow(entry) {
     return `
         <li class="plan-entry">
             <span class="plan-entry-name">
                 ${entry.name}
-                ${showHuntLabel ? `<span class="entry-hunt-tag">${entry.huntLabel}</span>` : ""}
+                <span class="entry-hunt-tag">${entry.huntLabel}</span>
             </span>
             <span class="plan-entry-time">${formatTime(entry.timeRemainingMinutes)}</span>
             <span class="plan-entry-charm">+${formatNumber(entry.charms)}</span>
@@ -30,7 +30,7 @@ function buildEntryRow(entry, showHuntLabel) {
     `;
 }
 
-function buildEntryList(plan, showHuntLabel) {
+function buildEntryList(plan) {
     if (!plan.entries.length) {
         return `
             <p class="helper-text">
@@ -47,7 +47,7 @@ function buildEntryList(plan, showHuntLabel) {
                 <span class="plan-entry-time">Time to Complete</span>
                 <span class="plan-entry-charm">Charm</span>
             </li>
-            ${plan.entries.map((entry) => buildEntryRow(entry, showHuntLabel)).join("")}
+            ${plan.entries.map(buildEntryRow).join("")}
         </ul>
     `;
 }
@@ -81,9 +81,9 @@ function buildRoute(plan) {
     }
 
     return `
-        <div class="plan-route-block">
-            <h4 class="plan-route-title">Recommended Hunt Route</h4>
-            <p class="helper-text">
+        <section class="results-section" aria-labelledby="planRouteTitle">
+            <h3 class="subsection-title" id="planRouteTitle">Recommended Hunt Route</h3>
+            <p class="section-copy">
                 Time spent in a hunt progresses all of its selected entries at once and the progress is kept, so each hunt
                 needs only one visit. Steps are ordered to bank charm points as early as possible.
             </p>
@@ -94,11 +94,20 @@ function buildRoute(plan) {
                 Total ${formatTime(plan.timeUsedMinutes)} for ${formatNumber(plan.charms)} charm points,
                 ${formatTime(plan.unusedMinutes)} unused.
             </p>
-        </div>
+        </section>
     `;
 }
 
 export function buildCharmPlanResultMarkup(planView) {
+    if (!planView.hasAnalyzedHunts) {
+        return `
+            <div class="empty-state">
+                <strong>No analyzed hunts.</strong>
+                <span>Process at least one hunt in Bestiary mode, then come back to plan your available time.</span>
+            </div>
+        `;
+    }
+
     if (!planView.plan) {
         return `
             <div class="empty-state">
@@ -119,36 +128,37 @@ export function buildCharmPlanResultMarkup(planView) {
             ${buildMetric("Bestiaries Completed", formatNumber(plan.completedCount))}
         </div>
 
-        ${buildEntryList(plan, planView.showAllocations)}
-        ${planView.showAllocations || plan.route.length > 1 ? buildRoute(plan) : ""}
+        <section class="results-section" aria-labelledby="planEntriesTitle">
+            <h3 class="subsection-title" id="planEntriesTitle">Bestiaries You Can Finish</h3>
+            <p class="section-copy">
+                Charm points are only awarded when an entry is complete, so an entry at partial progress contributes
+                nothing. Each entry is tagged with the hunt it belongs to.
+            </p>
+            ${buildEntryList(plan)}
+        </section>
+
+        ${buildRoute(plan)}
     `;
 }
 
-export function buildCharmPlanMarkup(planView) {
-    return `
-        <section class="results-section" aria-labelledby="charmPlanTitle">
-            <h3 class="subsection-title" id="charmPlanTitle">Charm Plan</h3>
-            <p class="section-copy">
-                Enter the hunting time you have available to see which of the selected Bestiary entries you can finish and
-                how many charm points that earns. Partial progress earns nothing, so an entry only counts once complete.
-            </p>
+export function renderCharmPlan(container, planView) {
+    container.className = "results-shell";
+    container.innerHTML = `
+        <div class="plan-input-block">
+            <label class="input-label" for="playTimeInput">Play Time Available</label>
+            <input
+                id="playTimeInput"
+                class="plan-time-input"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                spellcheck="false"
+                value="${escapeAttribute(planView.playTimeValue)}"
+                placeholder="Example: 2h 30min"
+            >
+            <p class="helper-text">Accepts 90 min, 1.5 h, 2h 30min, or 2:30. A plain number counts as hours.</p>
+        </div>
 
-            <div class="plan-input-block">
-                <label class="input-label" for="playTimeInput">Play Time Available</label>
-                <input
-                    id="playTimeInput"
-                    class="plan-time-input"
-                    type="text"
-                    inputmode="text"
-                    autocomplete="off"
-                    spellcheck="false"
-                    value="${escapeAttribute(planView.playTimeValue)}"
-                    placeholder="Example: 2h 30min"
-                >
-                <p class="helper-text">Accepts 90 min, 1.5 h, 2h 30min, or 2:30. A plain number counts as hours.</p>
-            </div>
-
-            <div id="charmPlanResult">${buildCharmPlanResultMarkup(planView)}</div>
-        </section>
+        <div id="charmPlanResult">${buildCharmPlanResultMarkup(planView)}</div>
     `;
 }

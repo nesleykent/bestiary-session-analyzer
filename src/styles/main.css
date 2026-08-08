@@ -164,7 +164,7 @@ h3.subsection-title {
     transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
 }
 
-.hunt-tab-all {
+.hunt-tab-fixed:last-of-type {
     margin-right: 10px;
 }
 
@@ -621,7 +621,9 @@ textarea:hover {
 }
 
 .plan-input-block {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-border-soft);
 }
 
 .plan-time-input {
@@ -1045,7 +1047,7 @@ a:hover {
         margin-top: 12px;
     }
 
-    .hunt-tab-all {
+    .hunt-tab-fixed:last-of-type {
         margin-right: 0;
     }
 

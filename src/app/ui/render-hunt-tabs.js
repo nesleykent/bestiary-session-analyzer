@@ -1,5 +1,3 @@
-import { formatCharmsPerHour } from "../utils/formatters.js";
-
 function buildTabButton(selectAttribute, tab) {
     return `
         <button
@@ -9,8 +7,16 @@ function buildTabButton(selectAttribute, tab) {
             aria-pressed="${tab.isActive ? "true" : "false"}"
         >
             <span class="hunt-tab-label">${tab.label}</span>
-            <span class="hunt-tab-meta">${tab.charmRate === null ? "No analysis" : formatCharmsPerHour(tab.charmRate)}</span>
+            <span class="hunt-tab-meta">${tab.meta}</span>
         </button>
+    `;
+}
+
+function buildFixedTab(tab) {
+    return `
+        <div class="hunt-tab hunt-tab-fixed${tab.isActive ? " is-active" : ""}">
+            ${buildTabButton(`data-fixed-select="${tab.key}"`, tab)}
+        </div>
     `;
 }
 
@@ -30,13 +36,11 @@ function buildHuntTab(tab, canClose) {
     `;
 }
 
-export function renderHuntTabs(container, allTabsTab, huntTabs) {
+export function renderHuntTabs(container, fixedTabs, huntTabs) {
     const canClose = huntTabs.length > 1;
 
     container.innerHTML = `
-        <div class="hunt-tab hunt-tab-all${allTabsTab.isActive ? " is-active" : ""}">
-            ${buildTabButton('data-all-tabs-select="true"', allTabsTab)}
-        </div>
+        ${fixedTabs.map(buildFixedTab).join("")}
         ${huntTabs.map((tab) => buildHuntTab(tab, canClose)).join("")}
         <button class="hunt-tab-add" id="addHuntButton" type="button" aria-label="Add hunt">+</button>
     `;
