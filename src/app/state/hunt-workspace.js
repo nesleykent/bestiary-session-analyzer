@@ -26,7 +26,8 @@ export function createWorkspace() {
     return {
         hunts: [hunt],
         activeHuntId: hunt.id,
-        view: "hunt"
+        view: "hunt",
+        excludedAllTabsEntries: []
     };
 }
 
@@ -71,12 +72,23 @@ export function removeHunt(hunts, huntId, activeHuntId) {
     };
 }
 
-function normalizeHunt(savedHunt) {
+function adoptSavedHuntId(savedId, generatedId, adoptedIds) {
+    const trimmedSavedId = typeof savedId === "string" ? savedId.trim() : "";
+    const id = trimmedSavedId && !adoptedIds.has(trimmedSavedId) ? trimmedSavedId : generatedId;
+
+    adoptedIds.add(id);
+
+    return id;
+}
+
+function normalizeHunt(savedHunt, adoptedIds) {
     const matchedMonsters = Array.isArray(savedHunt?.matchedMonsters) ? savedHunt.matchedMonsters : [];
     const isTasksMode = savedHunt?.mode === "tasks";
+    const hunt = createHunt(isTasksMode ? "tasks" : "bestiary");
 
     return {
-        ...createHunt(isTasksMode ? "tasks" : "bestiary"),
+        ...hunt,
+        id: adoptSavedHuntId(savedHunt?.id, hunt.id, adoptedIds),
         processedMode: savedHunt?.processedMode === "bestiary" || savedHunt?.processedMode === "tasks"
             ? savedHunt.processedMode
             : "",
@@ -92,6 +104,16 @@ function normalizeHunt(savedHunt) {
     };
 }
 
+function reserveSavedHuntIds(savedHunts) {
+    savedHunts.forEach((savedHunt) => {
+        const savedSequence = Number.parseInt(String(savedHunt?.id).replace("hunt-", ""), 10);
+
+        if (Number.isFinite(savedSequence) && savedSequence > huntSequence) {
+            huntSequence = savedSequence;
+        }
+    });
+}
+
 export function restoreWorkspace(savedState) {
     const savedHunts = Array.isArray(savedState?.hunts) ? savedState.hunts : [];
 
@@ -99,13 +121,22 @@ export function restoreWorkspace(savedState) {
         return null;
     }
 
-    const hunts = savedHunts.map(normalizeHunt);
+    reserveSavedHuntIds(savedHunts);
+
+    const adoptedIds = new Set();
+    const hunts = savedHunts.map((savedHunt) => normalizeHunt(savedHunt, adoptedIds));
     const savedActiveIndex = savedHunts.findIndex((hunt) => hunt?.id === savedState?.activeHuntId);
+    const savedExcludedEntries = Array.isArray(savedState?.excludedAllTabsEntries)
+        ? savedState.excludedAllTabsEntries.filter((entryKey) => typeof entryKey === "string")
+        : [];
+
+    const savedView = savedState?.view;
 
     return {
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
-        view: savedState?.view === "comparison" ? "comparison" : "hunt"
+        view: savedView === "comparison" || savedView === "allTabs" ? savedView : "hunt",
+        excludedAllTabsEntries: savedExcludedEntries
     };
 }
 

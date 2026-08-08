@@ -12,6 +12,7 @@ Bestiary Session Analyzer for Tibia extracts monster kill data from your hunting
 - In `Tasks` mode, lets you choose one creature from the session and estimate how long a task may take based on that hunt.
 - Keeps each hunting session in its own hunt tab, with its own log, creature selection, total kills, and mode.
 - Compares the Bestiary result of the analyzed hunts and highlights the hunt with the highest charm rate.
+- Provides a fixed `All Tabs` tab that combines the creatures of every analyzed hunt, once per hunt, into one Bestiary estimate.
 
 ## How To Use It
 
@@ -51,6 +52,23 @@ python3 -m http.server 4173
 
 `Tasks` mode stays per hunt and is never part of the Bestiary comparison.
 
+### All Tabs
+
+`All Tabs` is the first tab of the tab bar, before the hunt tabs. It cannot be closed and never changes position
+when hunt tabs are added, closed, or switched. It is the combined Bestiary workspace across every analyzed hunt:
+
+- A creature analyzed in several hunts appears once per hunt, tagged with the hunt that produced it.
+- The entries are grouped by creature, so the same creature from different hunts sits side by side.
+- `All Tabs` keeps its own selection. Deselect the entries you do not plan to hunt, so a creature you analyzed in
+  several hunts contributes its charm points once.
+- Total kills are editable here. A value entered on an entry belongs to the hunt that produced it, so the same
+  creature in another hunt keeps its own total.
+- The combined estimate uses the same `Selected Creatures`, `Longest Time Remaining`, `Total Charms`, and
+  `Charm Rate` metrics as a single hunt, calculated over the selected entries.
+- `Reset Totals` here clears the total kills of every hunt.
+
+`Compare Hunts` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
+
 ## Example Log Format
 
 ```text
@@ -87,6 +105,7 @@ bestiary-session-analyzer/
 |   |   |   |-- hunt-workspace.js
 |   |   |   `-- session-store.js
 |   |   |-- ui/
+|   |   |   |-- render-all-tabs.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js

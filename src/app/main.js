@@ -1,4 +1,4 @@
-import { buildHuntComparison } from "./features/hunt-comparison.js";
+import { buildAllTabsAnalysis, buildHuntComparison, isEntryKeyForHunt } from "./features/hunt-comparison.js";
 import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js";
 import { analyzeTaskSession, calculateTaskEstimate } from "./features/task-analysis.js";
 import { loadBestiaryData } from "./services/bestiary-repository.js";
@@ -13,6 +13,7 @@ import {
     restoreWorkspace
 } from "./state/hunt-workspace.js";
 import { loadSessionState, saveSessionState } from "./state/session-store.js";
+import { renderAllTabs } from "./ui/render-all-tabs.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
 import { renderResults } from "./ui/render-results.js";
@@ -56,9 +57,15 @@ const MODE_CONTENT = {
     }
 };
 
+const ALL_TABS_CONTENT = {
+    resultsCopy: "Every creature of every analyzed hunt, listed once per hunt. Select the entries you want and enter total kills to refine the combined Bestiary estimate.",
+    resultsTitle: "All Tabs Analysis"
+};
+
 const state = {
     activeHuntId: "",
     bestiaryData: [],
+    excludedAllTabsEntries: [],
     hunts: [],
     view: "hunt"
 };
@@ -129,6 +136,7 @@ function persistState() {
 
     saveSessionState({
         activeHuntId: state.activeHuntId,
+        excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
         view: state.view
     });
@@ -164,6 +172,42 @@ function captureActiveHuntInputs() {
     if (taskTotalInput) {
         hunt.taskTotalKills = taskTotalInput.value;
     }
+}
+
+function captureAllTabsInputs() {
+    if (state.view !== "allTabs") {
+        return;
+    }
+
+    const totalKillsByHuntId = new Map();
+
+    elements.output.querySelectorAll(".kills-input").forEach((input) => {
+        const huntTotals = totalKillsByHuntId.get(input.dataset.huntId) || {};
+        huntTotals[input.dataset.monsterName] = Number.parseInt(input.value, 10) || 0;
+        totalKillsByHuntId.set(input.dataset.huntId, huntTotals);
+    });
+
+    state.hunts.forEach((hunt) => {
+        const huntTotals = totalKillsByHuntId.get(hunt.id);
+
+        if (!huntTotals) {
+            return;
+        }
+
+        hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
+            ...monster,
+            totalKills: huntTotals[monster.name] ?? monster.totalKills ?? 0
+        }));
+    });
+}
+
+function captureVisibleInputs() {
+    if (state.view === "allTabs") {
+        captureAllTabsInputs();
+        return;
+    }
+
+    captureActiveHuntInputs();
 }
 
 function calculateBestiaryResult(hunt) {
@@ -214,7 +258,33 @@ function renderTaskMode(hunt) {
     attachResultActions();
 }
 
+function getAnalyzedHuntEntries() {
+    return state.hunts
+        .map((hunt, index) => ({ hunt, label: getHuntLabel(index) }))
+        .filter((huntEntry) => hasBestiaryAnalysis(huntEntry.hunt))
+        .map((huntEntry) => ({
+            id: huntEntry.hunt.id,
+            label: huntEntry.label,
+            monsters: calculateBestiaryResult(huntEntry.hunt).monsters
+        }));
+}
+
+function calculateAllTabsResult() {
+    const analysis = buildAllTabsAnalysis(getAnalyzedHuntEntries(), state.excludedAllTabsEntries);
+
+    return {
+        analysis,
+        summary: summarizeBestiaryMonsters(analysis.selectedMonsters)
+    };
+}
+
 function renderHuntTabStrip() {
+    const { analysis, summary } = calculateAllTabsResult();
+    const allTabsTab = {
+        label: "All Tabs",
+        charmRate: analysis.rows.length ? summary.totalCharmsPerHour : null,
+        isActive: state.view === "allTabs"
+    };
     const tabs = state.hunts.map((hunt, index) => ({
         id: hunt.id,
         label: getHuntLabel(index),
@@ -223,7 +293,7 @@ function renderHuntTabStrip() {
     }));
     const isComparing = state.view === "comparison";
 
-    renderHuntTabs(elements.huntTabStrip, tabs);
+    renderHuntTabs(elements.huntTabStrip, allTabsTab, tabs);
     attachHuntTabActions();
 
     elements.compareHuntsButton.disabled = getComparableHunts().length < 2;
@@ -258,16 +328,29 @@ function renderHuntView() {
     setEmptyOutput(hunt);
 }
 
-function renderComparisonView() {
-    elements.inputSection.hidden = true;
-    elements.analysisSection.hidden = true;
-    elements.comparisonSection.hidden = false;
+function renderAllTabsView() {
+    const { analysis, summary } = calculateAllTabsResult();
 
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.resultsTitle.textContent = ALL_TABS_CONTENT.resultsTitle;
+    elements.resultsCopy.textContent = ALL_TABS_CONTENT.resultsCopy;
+
+    renderAllTabs(elements.output, analysis, summary);
+    attachAllTabsActions();
+}
+
+function renderComparisonView() {
     const comparison = buildHuntComparison(state.hunts.map((hunt, index) => ({
         id: hunt.id,
         label: getHuntLabel(index),
         summary: hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).summary : null
     })));
+
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = true;
+    elements.comparisonSection.hidden = false;
 
     renderComparison(elements.comparisonOutput, comparison);
 }
@@ -277,6 +360,11 @@ function renderWorkspace() {
 
     if (state.view === "comparison") {
         renderComparisonView();
+        return;
+    }
+
+    if (state.view === "allTabs") {
+        renderAllTabsView();
         return;
     }
 
@@ -303,6 +391,7 @@ function clearLog() {
 
     state.hunts = state.hunts.map((current) => (current.id === hunt.id ? clearedHunt : current));
     state.activeHuntId = clearedHunt.id;
+    dropAllTabsEntriesOfHunt(hunt.id);
     normalizeView();
     renderWorkspace();
     persistState();
@@ -315,7 +404,7 @@ function selectHunt(huntId) {
         return;
     }
 
-    captureActiveHuntInputs();
+    captureVisibleInputs();
     state.activeHuntId = huntId;
     state.view = "hunt";
     renderWorkspace();
@@ -328,7 +417,7 @@ function selectHunt(huntId) {
 }
 
 function addHuntTab() {
-    captureActiveHuntInputs();
+    captureVisibleInputs();
 
     const { hunt, hunts } = addHunt(state.hunts);
 
@@ -349,13 +438,14 @@ function closeHuntTab(huntId) {
         return;
     }
 
-    captureActiveHuntInputs();
+    captureVisibleInputs();
 
     const closedLabel = getHuntLabelById(huntId);
     const { activeHuntId, hunts } = removeHunt(state.hunts, huntId, state.activeHuntId);
 
     state.hunts = hunts;
     state.activeHuntId = activeHuntId;
+    dropAllTabsEntriesOfHunt(huntId);
     normalizeView();
     renderWorkspace();
     persistState();
@@ -363,7 +453,7 @@ function closeHuntTab(huntId) {
 }
 
 function showComparison() {
-    captureActiveHuntInputs();
+    captureVisibleInputs();
 
     if (getComparableHunts().length < 2) {
         setStatus(
@@ -382,6 +472,65 @@ function showComparison() {
         false,
         "Charm Rate ranks the hunts. Select a hunt tab to change its Bestiary configuration."
     );
+}
+
+function selectAllTabs() {
+    if (state.view === "allTabs") {
+        return;
+    }
+
+    captureVisibleInputs();
+    state.view = "allTabs";
+    renderWorkspace();
+    persistState();
+    setStatus(
+        "All Tabs selected",
+        false,
+        "Every analyzed creature is listed once per hunt. Total kills entered here belong to the hunt that produced the entry."
+    );
+}
+
+function updateAllTabsEstimate() {
+    captureAllTabsInputs();
+    renderWorkspace();
+    persistState();
+    setStatus("Estimate updated", false, "The combined estimate now reflects the total kills you entered.");
+}
+
+function resetAllTabsTotals() {
+    state.hunts.forEach((hunt) => {
+        hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
+            ...monster,
+            totalKills: 0
+        }));
+    });
+
+    renderWorkspace();
+    persistState();
+    setStatus("Totals reset", false, "Every hunt now estimates from session kills only.");
+}
+
+function toggleAllTabsEntry(entryKey) {
+    captureAllTabsInputs();
+
+    const isExcluded = state.excludedAllTabsEntries.includes(entryKey);
+
+    state.excludedAllTabsEntries = isExcluded
+        ? state.excludedAllTabsEntries.filter((key) => key !== entryKey)
+        : [...state.excludedAllTabsEntries, entryKey];
+
+    renderWorkspace();
+    persistState();
+    setStatus(
+        "All Tabs selection updated",
+        false,
+        "Only the selected entries are part of the combined Bestiary estimate."
+    );
+}
+
+function dropAllTabsEntriesOfHunt(huntId) {
+    state.excludedAllTabsEntries = state.excludedAllTabsEntries
+        .filter((entryKey) => !isEntryKeyForHunt(entryKey, huntId));
 }
 
 function setMode(mode) {
@@ -411,9 +560,14 @@ function setMode(mode) {
 
 function attachHuntTabActions() {
     const addHuntButton = document.getElementById("addHuntButton");
+    const allTabsButton = elements.huntTabStrip.querySelector("[data-all-tabs-select]");
 
     if (addHuntButton) {
         addHuntButton.addEventListener("click", addHuntTab);
+    }
+
+    if (allTabsButton) {
+        allTabsButton.addEventListener("click", selectAllTabs);
     }
 
     elements.huntTabStrip.querySelectorAll("[data-hunt-select]").forEach((button) => {
@@ -422,6 +576,23 @@ function attachHuntTabActions() {
 
     elements.huntTabStrip.querySelectorAll("[data-hunt-close]").forEach((button) => {
         button.addEventListener("click", () => closeHuntTab(button.dataset.huntClose));
+    });
+}
+
+function attachAllTabsActions() {
+    const updateButton = document.getElementById("allTabsUpdateButton");
+    const resetButton = document.getElementById("allTabsResetButton");
+
+    if (updateButton) {
+        updateButton.addEventListener("click", updateAllTabsEstimate);
+    }
+
+    if (resetButton) {
+        resetButton.addEventListener("click", resetAllTabsTotals);
+    }
+
+    elements.output.querySelectorAll("[data-all-tabs-entry]").forEach((button) => {
+        button.addEventListener("click", () => toggleAllTabsEntry(button.dataset.allTabsEntry));
     });
 }
 
@@ -502,6 +673,7 @@ function processLog() {
     }
 
     setBusyState(true);
+    dropAllTabsEntriesOfHunt(hunt.id);
 
     if (hunt.mode === "bestiary") {
         const { monsters, sessionDuration } = analyzeSession(logText, state.bestiaryData);
@@ -570,6 +742,7 @@ function restoreWorkspaceState() {
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
     state.view = workspace.view;
+    state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
     normalizeView();
 
     return state.hunts.some(huntHasContent);

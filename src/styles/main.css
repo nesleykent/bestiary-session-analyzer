@@ -116,6 +116,10 @@ h3.subsection-title {
     transition: all 0.2s ease-in-out;
 }
 
+.hunt-tab-all {
+    margin-right: 10px;
+}
+
 .hunt-tab.is-active {
     border-color: #d6249f;
     background: rgba(214, 36, 159, 0.08);
@@ -230,6 +234,19 @@ h3.subsection-title {
 
 .comparison-table table {
     min-width: 520px;
+}
+
+.entry-hunt-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #f2f2f2;
+    color: #777;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
 }
 
 .comparison-table tr.is-best {
