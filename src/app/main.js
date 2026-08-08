@@ -129,9 +129,13 @@ function clearLog() {
     elements.sessionLog.focus();
 }
 
+function isBestiaryEntryComplete(monster) {
+    return (monster.totalKills || 0) >= monster.killsToUnlock;
+}
+
 function summarizeBestiaryMonsters(monsters) {
     return monsters.reduce((summary, monster) => {
-        summary.totalCharms += monster.charms;
+        summary.totalCharms += isBestiaryEntryComplete(monster) ? 0 : monster.charms;
         summary.totalCharmsPerHour += monster.charmsPerHour;
         summary.maxTimeRemainingMinutes = Math.max(
             summary.maxTimeRemainingMinutes,
