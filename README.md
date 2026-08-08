@@ -75,8 +75,9 @@ Only the summary is aggregated across hunts:
   together, because the hunts are hunted one after another. Two hunts needing 3.0 h and 4.8 h give 7.8 h.
 - `Charm Rate` is `Total Charms / All Tabs Time`. With 175 charm points over 7.8 h it is 22.44 charms/h.
 
-Individual hunt tabs keep their own `Longest Time Remaining` and `Charm Rate` calculation unchanged, so a hunt tab's
-charm rate and the `All Tabs` charm rate are deliberately different metrics.
+`Charm Rate` means the same thing everywhere. A hunt tab divides its `Total Charms` by its `Longest Time Remaining`,
+and `All Tabs` divides its `Total Charms` by `All Tabs Time`, so with a single analyzed hunt both views show the same
+rate. The per-creature `Charm Rate` column stays a per-creature value and is not the sum of the hunt's rate.
 
 `Compare Hunts` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
 

@@ -31,9 +31,8 @@ function isBestiaryEntryComplete(monster) {
 }
 
 export function summarizeBestiaryMonsters(monsters) {
-    return monsters.reduce((summary, monster) => {
+    const totals = monsters.reduce((summary, monster) => {
         summary.totalCharms += isBestiaryEntryComplete(monster) ? 0 : monster.charms;
-        summary.totalCharmsPerHour += monster.charmsPerHour;
         summary.maxTimeRemainingMinutes = Math.max(
             summary.maxTimeRemainingMinutes,
             monster.timeRemainingMinutes
@@ -41,9 +40,15 @@ export function summarizeBestiaryMonsters(monsters) {
         return summary;
     }, {
         maxTimeRemainingMinutes: 0,
-        totalCharms: 0,
-        totalCharmsPerHour: 0
+        totalCharms: 0
     });
+
+    return {
+        ...totals,
+        totalCharmsPerHour: Number.isFinite(totals.maxTimeRemainingMinutes) && totals.maxTimeRemainingMinutes > 0
+            ? (totals.totalCharms / totals.maxTimeRemainingMinutes) * 60
+            : 0
+    };
 }
 
 export function analyzeSession(logText, bestiaryData) {
