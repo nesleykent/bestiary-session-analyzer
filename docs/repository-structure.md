@@ -23,7 +23,8 @@ bestiary-session-analyzer/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
-|   |   |   `-- session-store.js
+|   |   |   |-- session-store.js
+|   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
 |   |   |   |-- render-charm-plan.js
@@ -53,6 +54,7 @@ bestiary-session-analyzer/
 - `state/hunt-workspace.js` owns the session collection. Each session is the Bestiary analysis of one pasted Hunt Analyzer.
 - `features/hunt-comparison.js` only ranks and combines Bestiary results that the sessions already calculated.
 - The tab bar reads Charm Plan, All Sessions, then one tab per session; `Compare Sessions` renders the charm rate ranking separately.
+- `state/workspace-transfer.js` serializes the workspace to a file and validates one on the way back in.
 - `features/charm-plan.js` plans against available time only, and reads the per-creature times the session estimates produced.
 - All Sessions rows are each session's own estimate rows. Only its summary aggregates them, by adding each session's longest time.
 - The repository root is limited to metadata, documentation, license material, and the GitHub Pages redirect entry point.

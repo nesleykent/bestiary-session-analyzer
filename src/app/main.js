@@ -19,6 +19,7 @@ import {
     restoreWorkspace
 } from "./state/hunt-workspace.js";
 import { loadSessionState, saveSessionState } from "./state/session-store.js";
+import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
@@ -33,6 +34,9 @@ const elements = {
     compareHuntsButton: document.getElementById("compareHuntsButton"),
     comparisonOutput: document.getElementById("comparisonOutput"),
     comparisonSection: document.getElementById("comparisonSection"),
+    exportWorkspaceButton: document.getElementById("exportWorkspaceButton"),
+    importWorkspaceButton: document.getElementById("importWorkspaceButton"),
+    importWorkspaceInput: document.getElementById("importWorkspaceInput"),
     huntTabStrip: document.getElementById("huntTabStrip"),
     huntWorkspace: document.getElementById("huntWorkspace"),
     inputCopy: document.getElementById("inputCopy"),
@@ -125,12 +129,8 @@ function getComparableHunts() {
     return state.hunts.filter(hasBestiaryAnalysis);
 }
 
-function persistState() {
-    if (!state.hunts.length) {
-        return;
-    }
-
-    saveSessionState({
+function getWorkspaceSnapshot() {
+    return {
         mode: state.mode,
         activeHuntId: state.activeHuntId,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
@@ -138,7 +138,19 @@ function persistState() {
         playTimeInput: state.playTimeInput,
         taskSession: state.taskSession,
         view: state.view
-    });
+    };
+}
+
+function hasWorkspaceContent() {
+    return state.hunts.some(huntHasContent) || Boolean(state.taskSession?.sessionLog.trim());
+}
+
+function persistState() {
+    if (!state.hunts.length) {
+        return;
+    }
+
+    saveSessionState(getWorkspaceSnapshot());
 }
 
 function readTotalKillsInputs(hunt) {
@@ -907,9 +919,7 @@ function processLog() {
     setBusyState(false);
 }
 
-function restoreWorkspaceState() {
-    const workspace = restoreWorkspace(loadSessionState()) || createWorkspace();
-
+function applyWorkspace(workspace) {
     state.mode = workspace.mode;
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
@@ -918,8 +928,68 @@ function restoreWorkspaceState() {
     state.playTimeInput = workspace.playTimeInput;
     state.taskSession = workspace.taskSession;
     normalizeView();
+}
 
-    return state.hunts.some(huntHasContent) || Boolean(state.taskSession.sessionLog.trim());
+function restoreWorkspaceState() {
+    applyWorkspace(restoreWorkspace(loadSessionState()) || createWorkspace());
+
+    return hasWorkspaceContent();
+}
+
+function exportWorkspace() {
+    captureVisibleInputs();
+    persistState();
+
+    const exportedAt = new Date().toISOString();
+    const fileName = buildExportFileName(exportedAt);
+    const blob = new Blob([serializeWorkspace(getWorkspaceSnapshot(), exportedAt)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+
+    downloadLink.href = url;
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    URL.revokeObjectURL(url);
+
+    setStatus(
+        "Workspace exported",
+        false,
+        `${fileName} holds every Hunt Analyzer, creature selection, total kills, and play time you entered.`
+    );
+}
+
+function requestWorkspaceImport() {
+    if (hasWorkspaceContent()
+        && !window.confirm("Importing replaces the sessions you have now. Continue?")) {
+        return;
+    }
+
+    elements.importWorkspaceInput.value = "";
+    elements.importWorkspaceInput.click();
+}
+
+async function importWorkspaceFile(file) {
+    try {
+        const workspace = restoreWorkspace(parseWorkspaceFile(await file.text()));
+
+        if (!workspace) {
+            throw new Error("That file does not contain any exported sessions.");
+        }
+
+        applyWorkspace(workspace);
+        renderApp();
+        persistState();
+        setStatus(
+            "Workspace imported",
+            false,
+            `${state.hunts.length} session${state.hunts.length === 1 ? "" : "s"} restored with their creature selections, total kills, and play time.`
+        );
+    } catch (error) {
+        setStatus("Import failed", true, error.message);
+        window.alert(error.message);
+    }
 }
 
 async function initializeApp() {
@@ -970,5 +1040,14 @@ elements.compareHuntsButton.addEventListener("click", showComparison);
 elements.modeBestiaryButton.addEventListener("click", () => setMode("bestiary"));
 elements.modeTasksButton.addEventListener("click", () => setMode("tasks"));
 elements.processLogButton.addEventListener("click", processLog);
+elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
+elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
+elements.importWorkspaceInput.addEventListener("change", (event) => {
+    const [file] = event.target.files;
+
+    if (file) {
+        importWorkspaceFile(file);
+    }
+});
 
 initializeApp();

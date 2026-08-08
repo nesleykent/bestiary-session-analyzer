@@ -15,13 +15,28 @@
             becomes a session. Tasks is a separate estimate for a single task target.
         </p>
 
-        <div class="app-nav" role="tablist" aria-label="Analyzer">
-            <button class="app-nav-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output">
-                Bestiary
-            </button>
-            <button class="app-nav-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output">
-                Tasks
-            </button>
+        <div class="app-nav-row">
+            <div class="app-nav" role="tablist" aria-label="Analyzer">
+                <button class="app-nav-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output">
+                    Bestiary
+                </button>
+                <button class="app-nav-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output">
+                    Tasks
+                </button>
+            </div>
+
+            <div class="app-nav-actions" role="group" aria-label="Workspace file">
+                <button class="btn btn-secondary" id="exportWorkspaceButton" type="button">Export</button>
+                <button class="btn btn-secondary" id="importWorkspaceButton" type="button">Import</button>
+                <input
+                    class="sr-only"
+                    id="importWorkspaceInput"
+                    type="file"
+                    accept="application/json,.json"
+                    tabindex="-1"
+                    aria-hidden="true"
+                >
+            </div>
         </div>
 
         <div class="status-block" aria-live="polite" aria-atomic="true">

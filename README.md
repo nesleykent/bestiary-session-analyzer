@@ -2,7 +2,7 @@
 
 Bestiary Session Analyzer answers one question for Tibia charm-point farming: given the hunting sessions you actually
 played and the time you have tonight, which Bestiary entries can you finish and where should you hunt? It reads the kill
-data out of your session logs and turns it into a hunt route.
+data out of the Hunt Analyzer text you paste and turns it into a route.
 
 `Tasks` is a separate estimate for a single task target, kept apart from Bestiary because a task target is a number you
 choose rather than a fixed unlock threshold.
@@ -32,16 +32,17 @@ and return to `Charm Plan` to see the updated plan.
 
 ## What The Tool Does
 
-- Parses a Tibia hunting session log.
+- Parses the Hunt Analyzer text from Tibia.
 - Extracts the session duration and killed monsters.
 - In `Bestiary` mode, matches those monsters against the Bestiary dataset.
 - In `Bestiary` mode, calculates kill rate, remaining kills, and estimated time to unlock.
 - In `Bestiary` mode, lets you enter your current total kills to recalculate remaining time more accurately.
-- In `Tasks` mode, lets you choose one creature from the session and estimate how long a task may take based on that hunt.
+- In `Tasks`, lets you choose one creature from the session and estimate how long a task may take at that kill rate.
 - Keeps each processed Hunt Analyzer as its own session, with its own creature selection and total kills.
 - Compares the Bestiary result of the analyzed sessions and highlights the one with the highest charm rate.
 - Provides a fixed `All Sessions` tab that combines the creatures of every analyzed session, once per session, into one Bestiary estimate.
 - Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
+- Exports the whole workspace to a file and imports it back, including everything you configured.
 
 ## How To Use It
 
@@ -56,7 +57,7 @@ python3 -m http.server 4173
 - `http://127.0.0.1:4173/src/`
 
 3. Choose `Bestiary` or `Tasks` in the top-level navigation.
-4. Paste your hunting session log into the text area.
+4. Paste the Hunt Analyzer text into the text area.
 5. Click `Process Log`.
 6. In `Bestiary` mode, review the generated table for:
    - Creature name
@@ -68,7 +69,7 @@ python3 -m http.server 4173
    - Charms per hour
 7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
 8. In `Tasks`, paste a session, select the task creature, and enter the total kills that task requires.
-9. Use `Clear Log` or `Reset Totals` to reset the log or manual kill totals of the selected hunt.
+9. Use `Clear Log` or `Reset Totals` to reset the Hunt Analyzer text or manual kill totals of the selected session.
 
 ## Comparing Several Sessions
 
@@ -97,16 +98,16 @@ switched. It is the combined Bestiary workspace across every analyzed session:
   creature in another session keeps its own total.
 - `Reset Totals` here clears the total kills of every session.
 
-Only the summary is aggregated across hunts:
+Only the summary is aggregated across sessions:
 
-- `Total Charms` adds the remaining charm points of the selected entries, per hunt.
+- `Total Charms` adds the remaining charm points of the selected entries, per session.
 - `All Sessions Time` takes the longest time remaining among each session's selected entries and adds those times
   together, because the sessions are hunted one after another. Two sessions needing 3.0 h and 4.8 h give 7.8 h.
 - `Charm Rate` is `Total Charms / All Sessions Time`. With 175 charm points over 7.8 h it is 22.44 charms/h.
 
-`Charm Rate` means the same thing everywhere. A hunt tab divides its `Total Charms` by its `Longest Time Remaining`,
-and `All Sessions` divides its `Total Charms` by `All Sessions Time`, so with a single analyzed session both views show the same
-rate. The per-creature `Charm Rate` column stays a per-creature value and is not the sum of the hunt's rate.
+`Charm Rate` means the same thing everywhere. A session divides its `Total Charms` by its `Longest Time Remaining`, and
+`All Sessions` divides its `Total Charms` by `All Sessions Time`, so with a single analyzed session both views show the
+same rate. The per-creature `Charm Rate` column stays a per-creature value and is not the sum of the session's rate.
 
 `Compare Sessions` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
 
@@ -135,6 +136,28 @@ less time when two tie.
 The `Recommended Route` then lists the order, the time for each step, the Bestiaries completed there, the charm points
 earned, and the running total. Progress on a session is kept, so returning to it resumes where it left off and each
 session needs only one visit.
+
+## Export And Import
+
+`Export` and `Import` sit at the top level, next to `Bestiary` and `Tasks`, because the file covers both.
+
+`Export` downloads a single readable JSON file, `bestiary-sessions-YYYY-MM-DD.json`. It holds the whole workspace, not
+just the pasted text:
+
+- every session's Hunt Analyzer text and parsed session duration
+- which creatures are selected in each session
+- the total kills entered for each creature
+- the `All Sessions` entry selection, so a duplicate you deselected stays deselected
+- the `Play Time Available` value
+- the `Tasks` session, with its own Hunt Analyzer, chosen creature, and task target
+- the mode and view you were on
+
+`Import` reads that file back and restores all of it. It asks first if the current workspace has anything in it, since
+importing replaces it. A file that is not valid JSON, came from another application, or holds no sessions is rejected
+with a reason, and the current workspace is left untouched.
+
+The stored session in your browser is per browser tab and disappears when the tab closes. Export is how you keep a
+workspace, move it to another browser, or share it.
 
 ## Example Log Format
 
@@ -171,7 +194,8 @@ bestiary-session-analyzer/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
-|   |   |   `-- session-store.js
+|   |   |   |-- session-store.js
+|   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
 |   |   |   |-- render-charm-plan.js
@@ -198,11 +222,11 @@ bestiary-session-analyzer/
 
 - `src/index.html` is the application entry point.
 - `src/app/main.js` wires browser events, state restoration, and rendering.
-- `src/app/features` contains shared log parsing, the Bestiary and Tasks calculation flows, and the hunt comparison ranking.
+- `src/app/features` contains shared log parsing, the Bestiary and Tasks calculations, the comparison ranking, and the charm planner.
 - `src/app/services` contains data-loading concerns.
-- `src/app/ui` renders the hunt tabs, mode-specific result views, summary metrics, and the hunt comparison.
-- `src/app/state` owns the hunt tabs and persists the whole workspace in `sessionStorage`.
-- The hunt comparison consumes the same Bestiary summary each hunt tab displays, so both views always agree.
+- `src/app/ui` renders the session tabs, the per-view results, summary metrics, the charm plan, and the comparison.
+- `src/app/state` owns the sessions, persists the workspace in `sessionStorage`, and handles file export and import.
+- The comparison consumes the same Bestiary summary each session displays, so both views always agree.
 - `src/data` stores application-owned datasets.
 
 ## Data Source

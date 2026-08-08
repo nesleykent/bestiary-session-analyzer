@@ -138,12 +138,32 @@ h3.subsection-title {
     margin-top: 4px;
 }
 
+.app-nav-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
 .app-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 22px;
-    margin-bottom: 18px;
-    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.app-nav-actions {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 8px;
+}
+
+.app-nav-actions .btn {
+    margin: 0;
+    padding: 7px 14px;
+    font-size: 13px;
 }
 
 .app-nav-button {
@@ -1074,6 +1094,19 @@ a:hover {
     .hunt-workspace-actions .btn {
         width: 100%;
         margin-top: 12px;
+    }
+
+    .app-nav-row {
+        display: block;
+    }
+
+    .app-nav-actions {
+        padding: 12px 0;
+    }
+
+    .app-nav-actions .btn {
+        width: auto;
+        margin: 0;
     }
 
     .hunt-tab-fixed:last-of-type {
