@@ -4,6 +4,7 @@ import {
     formatNumber,
     formatTime
 } from "../utils/formatters.js";
+import { buildCharmPlanMarkup } from "./render-charm-plan.js";
 
 function buildMetric(label, value, emphasized = false) {
     return `
@@ -60,7 +61,7 @@ function buildRow(entry) {
     `;
 }
 
-export function renderAllTabs(container, analysis, summary) {
+export function renderAllTabs(container, analysis, summary, planView) {
     if (!analysis.rows.length) {
         container.className = "empty-state";
         container.innerHTML = `
@@ -80,6 +81,8 @@ export function renderAllTabs(container, analysis, summary) {
             ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
             ${buildMetric("Charm Rate", formatCharmsPerHour(summary.charmRate))}
         </div>
+
+        ${buildCharmPlanMarkup(planView)}
 
         <section class="results-section" aria-labelledby="allTabsSelectionTitle">
             <h3 class="subsection-title" id="allTabsSelectionTitle">Select Creatures</h3>

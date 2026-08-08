@@ -13,6 +13,7 @@ Bestiary Session Analyzer for Tibia extracts monster kill data from your hunting
 - Keeps each hunting session in its own hunt tab, with its own log, creature selection, total kills, and mode.
 - Compares the Bestiary result of the analyzed hunts and highlights the hunt with the highest charm rate.
 - Provides a fixed `All Tabs` tab that combines the creatures of every analyzed hunt, once per hunt, into one Bestiary estimate.
+- Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
 
 ## How To Use It
 
@@ -81,6 +82,27 @@ rate. The per-creature `Charm Rate` column stays a per-creature value and is not
 
 `Compare Hunts` stays a separate action on the right of the tab bar and still shows the charm rate ranking.
 
+## Charm Plan
+
+Both `Bestiary` mode and `All Tabs` include a `Play Time Available` input that answers a different question from the
+estimate: given the time you actually have, how many charm points can you finish?
+
+- Accepts `90 min`, `1.5 h`, `2h 30min`, or `2:30`. A plain number counts as hours.
+- Charm points are discrete completion rewards. An entry at 80% progress contributes nothing, so only entries whose
+  `Time Remaining` fits in the available time count.
+- Already-completed entries add no time and no obtainable charms.
+- Only selected creatures take part, so the `Select Creatures` state controls the plan.
+- The summary shows `Play Time Available`, `Charm Points Obtainable`, `Time Used`, `Unused Time`, and
+  `Bestiaries Completed`, followed by the entries that fit.
+
+Inside one hunt, the selected creatures progress at the same time, so the planner never adds their times together: an
+entry is finishable when its `Time Remaining` fits the time spent in that hunt.
+
+In `All Tabs`, time is spent in one hunt at a time, so the planner searches every combination of per-hunt time to
+maximize fully earned charm points, and shows the resulting `Recommended Hunt Route` with the order, the time for each
+step, the Bestiaries completed there, the charm points earned, and the running total. Progress inside a hunt is kept, so
+returning to a hunt resumes where it left off and each hunt needs only one visit.
+
 ## Example Log Format
 
 ```text
@@ -107,6 +129,7 @@ bestiary-session-analyzer/
 |-- src/
 |   |-- app/
 |   |   |-- features/
+|   |   |   |-- charm-plan.js
 |   |   |   |-- hunt-comparison.js
 |   |   |   |-- session-analysis.js
 |   |   |   |-- session-parser.js
@@ -118,6 +141,7 @@ bestiary-session-analyzer/
 |   |   |   `-- session-store.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
+|   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js

@@ -4,6 +4,7 @@ import {
     formatNumber,
     formatTime
 } from "../utils/formatters.js";
+import { buildCharmPlanMarkup } from "./render-charm-plan.js";
 
 function buildBestiaryMonsterButton(monster, selectedMonsterNames) {
     const isSelected = selectedMonsterNames.includes(monster.name);
@@ -57,7 +58,7 @@ function buildMetric(label, value, emphasized = false) {
     `;
 }
 
-export function renderResults(container, monsters, selectedMonsterNames, summary) {
+export function renderResults(container, monsters, selectedMonsterNames, summary, planView) {
     if (!monsters.length) {
         container.className = "empty-state";
         container.innerHTML = `
@@ -77,6 +78,8 @@ export function renderResults(container, monsters, selectedMonsterNames, summary
             ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
             ${buildMetric("Charm Rate", formatCharmsPerHour(summary.totalCharmsPerHour))}
         </div>
+
+        ${buildCharmPlanMarkup(planView)}
 
         <section class="results-section" aria-labelledby="bestiarySelectionTitle">
             <h3 class="subsection-title" id="bestiarySelectionTitle">Select Creatures</h3>

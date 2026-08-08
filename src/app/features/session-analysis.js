@@ -26,7 +26,7 @@ function buildMonsterProgress(entry, killsThisSession, sessionDuration, totalKil
     };
 }
 
-function isBestiaryEntryComplete(monster) {
+export function isBestiaryEntryComplete(monster) {
     return (monster.totalKills || 0) >= monster.killsToUnlock;
 }
 

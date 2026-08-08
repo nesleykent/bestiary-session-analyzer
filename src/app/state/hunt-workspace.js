@@ -27,7 +27,8 @@ export function createWorkspace() {
         hunts: [hunt],
         activeHuntId: hunt.id,
         view: "hunt",
-        excludedAllTabsEntries: []
+        excludedAllTabsEntries: [],
+        playTimeInput: ""
     };
 }
 
@@ -136,7 +137,8 @@ export function restoreWorkspace(savedState) {
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
         view: savedView === "comparison" || savedView === "allTabs" ? savedView : "hunt",
-        excludedAllTabsEntries: savedExcludedEntries
+        excludedAllTabsEntries: savedExcludedEntries,
+        playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : ""
     };
 }
 

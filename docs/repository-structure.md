@@ -14,6 +14,7 @@ bestiary-session-analyzer/
 |-- src/
 |   |-- app/
 |   |   |-- features/
+|   |   |   |-- charm-plan.js
 |   |   |   |-- hunt-comparison.js
 |   |   |   |-- session-analysis.js
 |   |   |   |-- session-parser.js
@@ -25,6 +26,7 @@ bestiary-session-analyzer/
 |   |   |   `-- session-store.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
+|   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
@@ -51,6 +53,7 @@ bestiary-session-analyzer/
 - `state/hunt-workspace.js` owns the hunt tab collection, and every hunt keeps its own log, analysis, and mode.
 - `features/hunt-comparison.js` only ranks and combines Bestiary results that the hunt tabs already calculated.
 - The tab bar holds a fixed All Tabs tab before the hunt tabs; `Compare Hunts` renders the charm rate ranking separately.
+- `features/charm-plan.js` plans against available time only, and reads the per-creature times the estimate produced.
 - All Tabs rows are the hunt tabs' own estimate rows. Only its summary aggregates them, by adding each hunt's longest time.
 - The repository root is limited to metadata, documentation, license material, and the GitHub Pages redirect entry point.
 - GitHub automation lives under `.github/` and is separated from application source.

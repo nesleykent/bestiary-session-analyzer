@@ -620,6 +620,209 @@ textarea:hover {
     margin-bottom: 8px;
 }
 
+.plan-input-block {
+    margin-bottom: 18px;
+}
+
+.plan-time-input {
+    width: 220px;
+    max-width: 100%;
+    padding: 9px 12px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.plan-time-input:hover {
+    border-color: #c4c4c4;
+}
+
+.plan-time-input:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring);
+}
+
+.plan-time-input + .helper-text {
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.plan-entry-list,
+.plan-allocation-list {
+    list-style: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.plan-entry,
+.plan-allocation-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.plan-entry:last-child,
+.plan-allocation-row:last-child {
+    border-bottom: none;
+}
+
+.plan-entry-head {
+    background: var(--color-surface-alt);
+    border-bottom: 2px solid var(--color-border);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--color-accent-strong);
+}
+
+.plan-entry-name,
+.plan-allocation-hunt {
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.plan-entry-time,
+.plan-allocation-time {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.plan-entry-charm,
+.plan-allocation-charm {
+    min-width: 74px;
+    font-weight: 700;
+    color: var(--color-brand-deep);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.plan-entry-head .plan-entry-time,
+.plan-entry-head .plan-entry-charm {
+    color: inherit;
+    font-weight: 700;
+}
+
+.plan-route-block {
+    margin-top: 18px;
+}
+
+.plan-route-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.plan-route {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+}
+
+.plan-route-step {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.plan-route-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--color-surface-alt);
+    border-bottom: 1px solid var(--color-border-soft);
+    font-size: 14px;
+}
+
+.plan-route-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-pill);
+    background: var(--color-brand-tint);
+    color: var(--color-brand-deep);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.plan-route-hunt {
+    font-weight: 700;
+}
+
+.plan-route-time,
+.plan-route-total {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.plan-route-charm {
+    font-weight: 700;
+    color: var(--color-brand-deep);
+    font-variant-numeric: tabular-nums;
+}
+
+.plan-route-entries {
+    list-style: none;
+    padding: 4px 14px 8px;
+}
+
+.plan-route-entries li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.plan-route-entry-name {
+    text-transform: capitalize;
+    color: var(--color-text);
+}
+
+.plan-route-entry-time,
+.plan-route-entry-charm {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.plan-route-entry-charm {
+    min-width: 52px;
+    font-weight: 700;
+    color: var(--color-brand-deep);
+}
+
+.plan-route-summary {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+
 .table-container {
     margin-top: 20px;
     border-radius: var(--radius-md);

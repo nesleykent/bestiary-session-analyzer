@@ -1,3 +1,4 @@
+import { parsePlayTimeMinutes, planCharmTime } from "./features/charm-plan.js";
 import {
     aggregateAllTabsSummary,
     buildAllTabsAnalysis,
@@ -19,6 +20,7 @@ import {
 } from "./state/hunt-workspace.js";
 import { loadSessionState, saveSessionState } from "./state/session-store.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
+import { buildCharmPlanResultMarkup } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
 import { renderResults } from "./ui/render-results.js";
@@ -72,6 +74,7 @@ const state = {
     bestiaryData: [],
     excludedAllTabsEntries: [],
     hunts: [],
+    playTimeInput: "",
     view: "hunt"
 };
 
@@ -143,6 +146,7 @@ function persistState() {
         activeHuntId: state.activeHuntId,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
+        playTimeInput: state.playTimeInput,
         view: state.view
     });
 }
@@ -236,6 +240,46 @@ function calculateBestiaryResult(hunt) {
     };
 }
 
+function buildCharmPlanView(huntGroups, showAllocations) {
+    const availableMinutes = parsePlayTimeMinutes(state.playTimeInput);
+
+    return {
+        playTimeValue: state.playTimeInput,
+        showAllocations,
+        plan: availableMinutes === null ? null : planCharmTime(huntGroups, availableMinutes)
+    };
+}
+
+function getActiveCharmPlanView() {
+    if (state.view === "allTabs") {
+        const { analysis } = calculateAllTabsResult();
+
+        return buildCharmPlanView(analysis.participatingHunts.map((participatingHunt) => ({
+            id: participatingHunt.id,
+            label: participatingHunt.label,
+            monsters: participatingHunt.selectedMonsters
+        })), true);
+    }
+
+    const hunt = getActiveHunt();
+
+    return buildCharmPlanView([{
+        id: hunt.id,
+        label: getHuntLabelById(hunt.id),
+        monsters: calculateBestiaryResult(hunt).selectedMonsters
+    }], false);
+}
+
+function updateCharmPlanResult() {
+    const planResult = document.getElementById("charmPlanResult");
+
+    if (!planResult) {
+        return;
+    }
+
+    planResult.innerHTML = buildCharmPlanResultMarkup(getActiveCharmPlanView());
+}
+
 function normalizeView() {
     if (state.view === "comparison" && getComparableHunts().length < 2) {
         state.view = "hunt";
@@ -248,7 +292,7 @@ function renderBestiaryMode(hunt) {
     hunt.matchedMonsters = monsters;
     hunt.selectedBestiaryMonsterNames = selectedMonsterNames;
 
-    renderResults(elements.output, monsters, selectedMonsterNames, summary);
+    renderResults(elements.output, monsters, selectedMonsterNames, summary, getActiveCharmPlanView());
     attachResultActions();
 }
 
@@ -346,7 +390,7 @@ function renderAllTabsView() {
     elements.resultsTitle.textContent = ALL_TABS_CONTENT.resultsTitle;
     elements.resultsCopy.textContent = ALL_TABS_CONTENT.resultsCopy;
 
-    renderAllTabs(elements.output, analysis, summary);
+    renderAllTabs(elements.output, analysis, summary, getActiveCharmPlanView());
     attachAllTabsActions();
 }
 
@@ -588,6 +632,20 @@ function attachHuntTabActions() {
     });
 }
 
+function attachCharmPlanActions() {
+    const playTimeInput = document.getElementById("playTimeInput");
+
+    if (!playTimeInput) {
+        return;
+    }
+
+    playTimeInput.addEventListener("input", () => {
+        state.playTimeInput = playTimeInput.value;
+        updateCharmPlanResult();
+        persistState();
+    });
+}
+
 function attachAllTabsActions() {
     const updateButton = document.getElementById("allTabsUpdateButton");
     const resetButton = document.getElementById("allTabsResetButton");
@@ -603,6 +661,8 @@ function attachAllTabsActions() {
     elements.output.querySelectorAll("[data-all-tabs-entry]").forEach((button) => {
         button.addEventListener("click", () => toggleAllTabsEntry(button.dataset.allTabsEntry));
     });
+
+    attachCharmPlanActions();
 }
 
 function attachResultActions() {
@@ -611,6 +671,8 @@ function attachResultActions() {
     const clearInputsButton = document.getElementById("clearInputsButton");
     const taskMonsterButtons = document.querySelectorAll("[data-task-monster]");
     const taskTotalInput = document.getElementById("taskTotalKills");
+
+    attachCharmPlanActions();
 
     if (updateButton) {
         updateButton.addEventListener("click", updateRemainingTime);
@@ -752,6 +814,7 @@ function restoreWorkspaceState() {
     state.activeHuntId = workspace.activeHuntId;
     state.view = workspace.view;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
+    state.playTimeInput = workspace.playTimeInput;
     normalizeView();
 
     return state.hunts.some(huntHasContent);
