@@ -136,6 +136,21 @@ h3.subsection-title {
     margin-top: 4px;
 }
 
+.app-nav {
+    display: inline-flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+}
+
+.app-nav .mode-switch-button {
+    padding: 9px 18px;
+    font-size: 15px;
+}
+
 .hunt-workspace {
     display: flex;
     flex-wrap: wrap;
@@ -295,6 +310,32 @@ h3.subsection-title {
 
 .comparison-table table {
     min-width: 520px;
+}
+
+.entry-hunt-link {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background var(--transition), color var(--transition);
+}
+
+.entry-hunt-link:hover {
+    background: var(--color-brand-tint);
+    color: var(--color-brand-deep);
+}
+
+.entry-hunt-link:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+.plan-route-hunt.entry-hunt-link {
+    justify-self: start;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text);
+    font-size: 14px;
 }
 
 .entry-hunt-tag {

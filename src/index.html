@@ -10,8 +10,8 @@
     <main>
         <h1>Bestiary Session Analyzer</h1>
         <p class="description">
-            Paste a Tibia hunting session log to estimate Bestiary progress or task completion time from the same hunt data.
-            Keep several hunts in separate tabs and compare which one is the better source of charm points.
+            Paste the hunting sessions you actually played, say how much time you have, and see which Bestiary entries you can
+            finish and where to hunt for the most charm points. Tasks is a separate estimate for a single task target.
         </p>
 
         <div class="status-block" aria-live="polite" aria-atomic="true">
@@ -19,7 +19,16 @@
             <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
         </div>
 
-        <nav class="hunt-workspace" aria-label="Hunt analyses">
+        <div class="app-nav" role="tablist" aria-label="Analyzer">
+            <button class="mode-switch-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output">
+                Bestiary
+            </button>
+            <button class="mode-switch-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output">
+                Tasks
+            </button>
+        </div>
+
+        <nav class="hunt-workspace" id="huntWorkspace" aria-label="Hunt analyses">
             <div class="hunt-tab-strip" id="huntTabStrip"></div>
             <div class="hunt-workspace-actions">
                 <button class="btn btn-secondary" id="compareHuntsButton" type="button" aria-pressed="false" disabled>
@@ -33,15 +42,6 @@
             <p class="section-copy" id="inputCopy">
                 Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.
             </p>
-
-            <div class="mode-switch" role="tablist" aria-label="Analyzer mode">
-                <button class="mode-switch-button is-selected" id="modeBestiaryButton" type="button" role="tab" aria-selected="true" aria-controls="output" data-mode="bestiary">
-                    Bestiary
-                </button>
-                <button class="mode-switch-button" id="modeTasksButton" type="button" role="tab" aria-selected="false" aria-controls="output" data-mode="tasks">
-                    Tasks
-                </button>
-            </div>
 
             <label class="input-label" for="sessionLog">Paste hunting session log</label>
             <textarea

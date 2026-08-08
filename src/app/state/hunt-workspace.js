@@ -1,22 +1,31 @@
 let huntSequence = 0;
 
+const VIEWS = ["hunt", "allTabs", "charmPlan", "comparison"];
+
 function nextHuntId() {
     huntSequence += 1;
     return `hunt-${huntSequence}`;
 }
 
-export function createHunt(mode = "bestiary") {
+export function createHunt() {
     return {
         id: nextHuntId(),
-        mode,
-        processedMode: "",
         sessionLog: "",
         sessionDuration: 0,
+        hasProcessedLog: false,
         matchedMonsters: [],
-        selectedBestiaryMonsterNames: [],
-        taskMonsters: [],
-        selectedTaskMonsterName: "",
-        taskTotalKills: ""
+        selectedBestiaryMonsterNames: []
+    };
+}
+
+export function createTaskSession() {
+    return {
+        sessionLog: "",
+        sessionDuration: 0,
+        hasProcessedLog: false,
+        monsters: [],
+        selectedMonsterName: "",
+        totalKills: ""
     };
 }
 
@@ -24,11 +33,13 @@ export function createWorkspace() {
     const hunt = createHunt();
 
     return {
+        mode: "bestiary",
         hunts: [hunt],
         activeHuntId: hunt.id,
         view: "hunt",
         excludedAllTabsEntries: [],
-        playTimeInput: ""
+        playTimeInput: "",
+        taskSession: createTaskSession()
     };
 }
 
@@ -47,7 +58,7 @@ export function addHunt(hunts) {
 
 export function resetHunt(hunt) {
     return {
-        ...createHunt(hunt.mode),
+        ...createHunt(),
         id: hunt.id
     };
 }
@@ -84,24 +95,32 @@ function adoptSavedHuntId(savedId, generatedId, adoptedIds) {
 
 function normalizeHunt(savedHunt, adoptedIds) {
     const matchedMonsters = Array.isArray(savedHunt?.matchedMonsters) ? savedHunt.matchedMonsters : [];
-    const isTasksMode = savedHunt?.mode === "tasks";
-    const hunt = createHunt(isTasksMode ? "tasks" : "bestiary");
+    const hunt = createHunt();
 
     return {
         ...hunt,
         id: adoptSavedHuntId(savedHunt?.id, hunt.id, adoptedIds),
-        processedMode: savedHunt?.processedMode === "bestiary" || savedHunt?.processedMode === "tasks"
-            ? savedHunt.processedMode
-            : "",
         sessionLog: typeof savedHunt?.sessionLog === "string" ? savedHunt.sessionLog : "",
         sessionDuration: Number(savedHunt?.sessionDuration) || 0,
+        hasProcessedLog: Boolean(savedHunt?.hasProcessedLog),
         matchedMonsters,
         selectedBestiaryMonsterNames: Array.isArray(savedHunt?.selectedBestiaryMonsterNames)
             ? savedHunt.selectedBestiaryMonsterNames
-            : matchedMonsters.map((monster) => monster.name),
-        taskMonsters: Array.isArray(savedHunt?.taskMonsters) ? savedHunt.taskMonsters : [],
-        selectedTaskMonsterName: savedHunt?.selectedTaskMonsterName || "",
-        taskTotalKills: savedHunt?.taskTotalKills ?? ""
+            : matchedMonsters.map((monster) => monster.name)
+    };
+}
+
+function normalizeTaskSession(savedTaskSession) {
+    const monsters = Array.isArray(savedTaskSession?.monsters) ? savedTaskSession.monsters : [];
+
+    return {
+        ...createTaskSession(),
+        sessionLog: typeof savedTaskSession?.sessionLog === "string" ? savedTaskSession.sessionLog : "",
+        sessionDuration: Number(savedTaskSession?.sessionDuration) || 0,
+        hasProcessedLog: Boolean(savedTaskSession?.hasProcessedLog),
+        monsters,
+        selectedMonsterName: savedTaskSession?.selectedMonsterName || "",
+        totalKills: savedTaskSession?.totalKills ?? ""
     };
 }
 
@@ -131,19 +150,19 @@ export function restoreWorkspace(savedState) {
         ? savedState.excludedAllTabsEntries.filter((entryKey) => typeof entryKey === "string")
         : [];
 
-    const savedView = savedState?.view;
-
     return {
+        mode: savedState?.mode === "tasks" ? "tasks" : "bestiary",
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
-        view: ["comparison", "allTabs", "charmPlan"].includes(savedView) ? savedView : "hunt",
+        view: VIEWS.includes(savedState?.view) ? savedState.view : "hunt",
         excludedAllTabsEntries: savedExcludedEntries,
-        playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : ""
+        playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : "",
+        taskSession: normalizeTaskSession(savedState?.taskSession)
     };
 }
 
 export function huntHasContent(hunt) {
-    return Boolean(hunt.sessionLog.trim() || hunt.matchedMonsters.length || hunt.taskMonsters.length);
+    return Boolean(hunt.sessionLog.trim() || hunt.matchedMonsters.length);
 }
 
 export function hasBestiaryAnalysis(hunt) {

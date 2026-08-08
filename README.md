@@ -1,6 +1,23 @@
 # Bestiary Session Analyzer
 
-Bestiary Session Analyzer for Tibia extracts monster kill data from your hunting log and can now estimate either Bestiary progress or task completion time from the same session data. Several hunts can be analyzed side by side in their own tabs and compared by charm rate.
+Bestiary Session Analyzer answers one question for Tibia charm-point farming: given the hunting sessions you actually
+played and the time you have tonight, which Bestiary entries can you finish and where should you hunt? It reads the kill
+data out of your session logs and turns it into a hunt route.
+
+`Tasks` is a separate estimate for a single task target, kept apart from Bestiary because a task target is a number you
+choose rather than a fixed unlock threshold.
+
+## Navigation
+
+Two levels:
+
+- `Bestiary` and `Tasks` are the top-level choice. They do not share a session log or a workspace.
+- Inside `Bestiary`, the tab bar holds the fixed `All Tabs` and `Charm Plan` views, then one tab per analyzed hunt, then
+  `+` to add a hunt. `Compare Hunts` stays a separate action on the right.
+
+Every view is one click from every other view, so re-checking a single creature never means restarting. From
+`Charm Plan`, selecting the hunt tag on an entry or a route step opens that hunt directly; adjust its total kills and
+return to `Charm Plan` to see the updated plan.
 
 ## What The Tool Does
 
@@ -27,7 +44,7 @@ python3 -m http.server 4173
 
 - `http://127.0.0.1:4173/src/`
 
-3. Choose `Bestiary` or `Tasks`.
+3. Choose `Bestiary` or `Tasks` in the top-level navigation.
 4. Paste your hunting session log into the text area.
 5. Click `Process Log`.
 6. In `Bestiary` mode, review the generated table for:
@@ -39,7 +56,7 @@ python3 -m http.server 4173
    - Estimated time remaining
    - Charms per hour
 7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
-8. In `Tasks` mode, select the task creature found in the session and enter the total kills required by that task.
+8. In `Tasks`, paste a session, select the task creature, and enter the total kills that task requires.
 9. Use `Clear Log` or `Reset Totals` to reset the log or manual kill totals of the selected hunt.
 
 ## Comparing Several Hunts

@@ -34,6 +34,7 @@ const elements = {
     comparisonOutput: document.getElementById("comparisonOutput"),
     comparisonSection: document.getElementById("comparisonSection"),
     huntTabStrip: document.getElementById("huntTabStrip"),
+    huntWorkspace: document.getElementById("huntWorkspace"),
     inputCopy: document.getElementById("inputCopy"),
     inputHint: document.getElementById("inputHint"),
     inputSection: document.getElementById("inputSection"),
@@ -54,33 +55,50 @@ const MODE_CONTENT = {
     bestiary: {
         inputCopy: "Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.",
         inputHint: "For the most accurate result, paste the full session block including duration and killed creatures.",
-        resultsCopy: "Process the session log, then select creatures and enter total kills to refine the Bestiary estimate.",
         readyHint: "Load a log to start a Bestiary estimate."
     },
     tasks: {
-        inputCopy: "Tasks mode uses the same hunting session log. After processing the log, select one creature and enter the task target.",
+        inputCopy: "Tasks uses the same hunting session log, on its own. Process the log, then select one creature and enter the task target.",
         inputHint: "Process the log first, then select the creature and enter the task target.",
-        resultsCopy: "Process the session log, then select the creature and enter the task target to project the time remaining.",
         readyHint: "Load a log to start a task estimate."
     }
 };
 
-const ALL_TABS_CONTENT = {
-    resultsCopy: "Every creature of every analyzed hunt, listed once per hunt. Select the entries you want and enter total kills to refine the combined Bestiary estimate.",
-    resultsTitle: "All Tabs Analysis"
+const VIEW_CONTENT = {
+    allTabs: {
+        resultsTitle: "All Tabs Analysis",
+        resultsCopy: "Every creature of every analyzed hunt, listed once per hunt. Select the entries you want and enter total kills to refine the combined Bestiary estimate."
+    },
+    charmPlan: {
+        resultsTitle: "Charm Plan",
+        resultsCopy: "Enter the hunting time you have available to see which selected Bestiary entries you can finish across the analyzed hunts, and how many charm points that earns."
+    },
+    tasks: {
+        inputTitle: "Task Session Log",
+        resultsTitle: "Task Estimate",
+        resultsCopy: "Process the session log, then select the creature and enter the task target to project the time remaining."
+    }
 };
 
-const CHARM_PLAN_CONTENT = {
-    resultsCopy: "Enter the hunting time you have available to see which selected Bestiary entries you can finish across the analyzed hunts, and how many charm points that earns.",
-    resultsTitle: "Charm Plan"
+const FIXED_VIEW_STATUS = {
+    allTabs: {
+        message: "All Tabs selected",
+        hint: "Every analyzed creature is listed once per hunt. Total kills entered here belong to the hunt that produced the entry."
+    },
+    charmPlan: {
+        message: "Charm Plan selected",
+        hint: "Enter the time you have available to see which Bestiary entries fit in it and the hunt route to follow."
+    }
 };
 
 const state = {
+    mode: "bestiary",
     activeHuntId: "",
     bestiaryData: [],
     excludedAllTabsEntries: [],
     hunts: [],
     playTimeInput: "",
+    taskSession: null,
     view: "hunt"
 };
 
@@ -108,51 +126,18 @@ function getComparableHunts() {
     return state.hunts.filter(hasBestiaryAnalysis);
 }
 
-function getEmptyStateMarkup(hunt) {
-    if (hunt.mode === "tasks") {
-        return `
-            <strong>No task estimate yet.</strong>
-            <span>Process a session log to select a creature and project the time remaining.</span>
-        `;
-    }
-
-    return `
-        <strong>No analysis yet.</strong>
-        <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
-    `;
-}
-
-function setEmptyOutput(hunt) {
-    elements.output.className = "empty-state";
-    elements.output.innerHTML = getEmptyStateMarkup(hunt);
-}
-
-function applyModeContent(hunt) {
-    const modeContent = MODE_CONTENT[hunt.mode];
-    const isBestiary = hunt.mode === "bestiary";
-    const huntLabel = getHuntLabelById(hunt.id);
-
-    elements.inputTitle.textContent = `${huntLabel} Session Log`;
-    elements.resultsTitle.textContent = `${huntLabel} Analysis`;
-    elements.inputCopy.textContent = modeContent.inputCopy;
-    elements.inputHint.textContent = modeContent.inputHint;
-    elements.resultsCopy.textContent = modeContent.resultsCopy;
-    elements.modeBestiaryButton.classList.toggle("is-selected", isBestiary);
-    elements.modeTasksButton.classList.toggle("is-selected", !isBestiary);
-    elements.modeBestiaryButton.setAttribute("aria-selected", String(isBestiary));
-    elements.modeTasksButton.setAttribute("aria-selected", String(!isBestiary));
-}
-
 function persistState() {
     if (!state.hunts.length) {
         return;
     }
 
     saveSessionState({
+        mode: state.mode,
         activeHuntId: state.activeHuntId,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
         playTimeInput: state.playTimeInput,
+        taskSession: state.taskSession,
         view: state.view
     });
 }
@@ -171,7 +156,7 @@ function readTotalKillsInputs(hunt) {
 function captureActiveHuntInputs() {
     const hunt = getActiveHunt();
 
-    if (!hunt || state.view !== "hunt") {
+    if (!hunt || state.mode !== "bestiary" || state.view !== "hunt") {
         return;
     }
 
@@ -182,15 +167,10 @@ function captureActiveHuntInputs() {
         ...monster,
         totalKills: totalKillsByName[monster.name] ?? monster.totalKills ?? 0
     }));
-
-    const taskTotalInput = document.getElementById("taskTotalKills");
-    if (taskTotalInput) {
-        hunt.taskTotalKills = taskTotalInput.value;
-    }
 }
 
 function captureAllTabsInputs() {
-    if (state.view !== "allTabs") {
+    if (state.mode !== "bestiary" || state.view !== "allTabs") {
         return;
     }
 
@@ -216,7 +196,25 @@ function captureAllTabsInputs() {
     });
 }
 
+function captureTaskInputs() {
+    if (state.mode !== "tasks") {
+        return;
+    }
+
+    state.taskSession.sessionLog = elements.sessionLog.value;
+
+    const taskTotalInput = document.getElementById("taskTotalKills");
+    if (taskTotalInput) {
+        state.taskSession.totalKills = taskTotalInput.value;
+    }
+}
+
 function captureVisibleInputs() {
+    if (state.mode === "tasks") {
+        captureTaskInputs();
+        return;
+    }
+
     if (state.view === "allTabs") {
         captureAllTabsInputs();
         return;
@@ -243,6 +241,26 @@ function calculateBestiaryResult(hunt) {
         selectedMonsterNames,
         selectedMonsters,
         summary: summarizeBestiaryMonsters(selectedMonsters)
+    };
+}
+
+function calculateAllTabsResult() {
+    const huntEntries = state.hunts
+        .map((hunt, index) => ({ hunt, label: getHuntLabel(index) }))
+        .filter((huntEntry) => hasBestiaryAnalysis(huntEntry.hunt))
+        .map((huntEntry) => ({
+            id: huntEntry.hunt.id,
+            label: huntEntry.label,
+            monsters: calculateBestiaryResult(huntEntry.hunt).selectedMonsters
+        }))
+        .filter((huntEntry) => huntEntry.monsters.length > 0);
+    const analysis = buildAllTabsAnalysis(huntEntries, state.excludedAllTabsEntries);
+    const huntSummaries = analysis.participatingHunts
+        .map((participatingHunt) => summarizeBestiaryMonsters(participatingHunt.selectedMonsters));
+
+    return {
+        analysis,
+        summary: aggregateAllTabsSummary(huntSummaries)
     };
 }
 
@@ -280,6 +298,7 @@ function updateCharmPlanResult() {
         .querySelector('[data-fixed-select="charmPlan"] .hunt-tab-meta');
 
     planResult.innerHTML = buildCharmPlanResultMarkup(planView);
+    attachPlanHuntLinks();
 
     if (planTabMeta) {
         planTabMeta.textContent = getCharmPlanTabMeta(planView);
@@ -292,6 +311,19 @@ function normalizeView() {
     }
 }
 
+function setEmptyOutput() {
+    elements.output.className = "empty-state";
+    elements.output.innerHTML = state.mode === "tasks"
+        ? `
+            <strong>No task estimate yet.</strong>
+            <span>Process a session log to select a creature and project the time remaining.</span>
+        `
+        : `
+            <strong>No analysis yet.</strong>
+            <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
+        `;
+}
+
 function renderBestiaryMode(hunt) {
     const { monsters, selectedMonsterNames, summary } = calculateBestiaryResult(hunt);
 
@@ -300,41 +332,6 @@ function renderBestiaryMode(hunt) {
 
     renderResults(elements.output, monsters, selectedMonsterNames, summary);
     attachResultActions();
-}
-
-function renderTaskMode(hunt) {
-    const estimate = calculateTaskEstimate(
-        hunt.taskMonsters,
-        hunt.selectedTaskMonsterName,
-        hunt.sessionDuration,
-        hunt.taskTotalKills
-    );
-
-    renderTaskResults(elements.output, hunt.taskMonsters, estimate, hunt.sessionDuration);
-    attachResultActions();
-}
-
-function getAnalyzedHuntEntries() {
-    return state.hunts
-        .map((hunt, index) => ({ hunt, label: getHuntLabel(index) }))
-        .filter((huntEntry) => hasBestiaryAnalysis(huntEntry.hunt))
-        .map((huntEntry) => ({
-            id: huntEntry.hunt.id,
-            label: huntEntry.label,
-            monsters: calculateBestiaryResult(huntEntry.hunt).selectedMonsters
-        }))
-        .filter((huntEntry) => huntEntry.monsters.length > 0);
-}
-
-function calculateAllTabsResult() {
-    const analysis = buildAllTabsAnalysis(getAnalyzedHuntEntries(), state.excludedAllTabsEntries);
-    const huntSummaries = analysis.participatingHunts
-        .map((participatingHunt) => summarizeBestiaryMonsters(participatingHunt.selectedMonsters));
-
-    return {
-        analysis,
-        summary: aggregateAllTabsSummary(huntSummaries)
-    };
 }
 
 function renderHuntTabStrip() {
@@ -374,29 +371,24 @@ function renderHuntTabStrip() {
 
 function renderHuntView() {
     const hunt = getActiveHunt();
+    const huntLabel = getHuntLabelById(hunt.id);
 
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
     elements.sessionLog.value = hunt.sessionLog;
-    applyModeContent(hunt);
+    elements.inputTitle.textContent = `${huntLabel} Session Log`;
+    elements.resultsTitle.textContent = `${huntLabel} Analysis`;
+    elements.inputCopy.textContent = MODE_CONTENT.bestiary.inputCopy;
+    elements.inputHint.textContent = MODE_CONTENT.bestiary.inputHint;
+    elements.resultsCopy.textContent = "Process the session log, then select creatures and enter total kills to refine the Bestiary estimate.";
 
-    if (hunt.mode === "tasks") {
-        if (hunt.taskMonsters.length || hunt.processedMode === "tasks") {
-            renderTaskMode(hunt);
-            return;
-        }
-
-        setEmptyOutput(hunt);
-        return;
-    }
-
-    if (hunt.matchedMonsters.length || hunt.processedMode === "bestiary") {
+    if (hunt.matchedMonsters.length || hunt.hasProcessedLog) {
         renderBestiaryMode(hunt);
         return;
     }
 
-    setEmptyOutput(hunt);
+    setEmptyOutput();
 }
 
 function renderAllTabsView() {
@@ -405,8 +397,8 @@ function renderAllTabsView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
-    elements.resultsTitle.textContent = ALL_TABS_CONTENT.resultsTitle;
-    elements.resultsCopy.textContent = ALL_TABS_CONTENT.resultsCopy;
+    elements.resultsTitle.textContent = VIEW_CONTENT.allTabs.resultsTitle;
+    elements.resultsCopy.textContent = VIEW_CONTENT.allTabs.resultsCopy;
 
     renderAllTabs(elements.output, analysis, summary);
     attachAllTabsActions();
@@ -416,11 +408,12 @@ function renderCharmPlanView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
-    elements.resultsTitle.textContent = CHARM_PLAN_CONTENT.resultsTitle;
-    elements.resultsCopy.textContent = CHARM_PLAN_CONTENT.resultsCopy;
+    elements.resultsTitle.textContent = VIEW_CONTENT.charmPlan.resultsTitle;
+    elements.resultsCopy.textContent = VIEW_CONTENT.charmPlan.resultsCopy;
 
     renderCharmPlan(elements.output, getCharmPlanView());
     attachCharmPlanActions();
+    attachPlanHuntLinks();
 }
 
 function renderComparisonView() {
@@ -437,7 +430,52 @@ function renderComparisonView() {
     renderComparison(elements.comparisonOutput, comparison);
 }
 
-function renderWorkspace() {
+function renderTasksView() {
+    const taskSession = state.taskSession;
+    const estimate = calculateTaskEstimate(
+        taskSession.monsters,
+        taskSession.selectedMonsterName,
+        taskSession.sessionDuration,
+        taskSession.totalKills
+    );
+
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = false;
+    elements.analysisSection.hidden = false;
+    elements.sessionLog.value = taskSession.sessionLog;
+    elements.inputTitle.textContent = VIEW_CONTENT.tasks.inputTitle;
+    elements.resultsTitle.textContent = VIEW_CONTENT.tasks.resultsTitle;
+    elements.inputCopy.textContent = MODE_CONTENT.tasks.inputCopy;
+    elements.inputHint.textContent = MODE_CONTENT.tasks.inputHint;
+    elements.resultsCopy.textContent = VIEW_CONTENT.tasks.resultsCopy;
+
+    if (!taskSession.monsters.length && !taskSession.hasProcessedLog) {
+        setEmptyOutput();
+        return;
+    }
+
+    renderTaskResults(elements.output, taskSession.monsters, estimate, taskSession.sessionDuration);
+    attachTaskActions();
+}
+
+function applyPrimaryMode() {
+    const isBestiary = state.mode === "bestiary";
+
+    elements.modeBestiaryButton.classList.toggle("is-selected", isBestiary);
+    elements.modeTasksButton.classList.toggle("is-selected", !isBestiary);
+    elements.modeBestiaryButton.setAttribute("aria-selected", String(isBestiary));
+    elements.modeTasksButton.setAttribute("aria-selected", String(!isBestiary));
+    elements.huntWorkspace.hidden = !isBestiary;
+}
+
+function renderApp() {
+    applyPrimaryMode();
+
+    if (state.mode === "tasks") {
+        renderTasksView();
+        return;
+    }
+
     renderHuntTabStrip();
 
     if (state.view === "comparison") {
@@ -458,11 +496,47 @@ function renderWorkspace() {
     renderHuntView();
 }
 
+function setMode(mode) {
+    if (state.mode === mode) {
+        return;
+    }
+
+    captureVisibleInputs();
+    state.mode = mode;
+    renderApp();
+    persistState();
+
+    if (mode === "tasks") {
+        setStatus(
+            "Tasks",
+            false,
+            state.taskSession.monsters.length
+                ? "Select the creature and enter the task target."
+                : MODE_CONTENT.tasks.readyHint
+        );
+        return;
+    }
+
+    setStatus(
+        "Bestiary",
+        false,
+        getComparableHunts().length
+            ? "Switch hunt tabs to review an analysis, or open Charm Plan to plan your available time."
+            : MODE_CONTENT.bestiary.readyHint
+    );
+}
+
 async function pasteLog() {
     try {
         const clipboardText = await navigator.clipboard.readText();
         elements.sessionLog.value = clipboardText;
-        getActiveHunt().sessionLog = clipboardText;
+
+        if (state.mode === "tasks") {
+            state.taskSession.sessionLog = clipboardText;
+        } else {
+            getActiveHunt().sessionLog = clipboardText;
+        }
+
         persistState();
         setStatus("Log pasted", false, "Review the text, then process the session.");
         elements.sessionLog.focus();
@@ -473,6 +547,20 @@ async function pasteLog() {
 }
 
 function clearLog() {
+    if (state.mode === "tasks") {
+        state.taskSession.sessionLog = "";
+        state.taskSession.sessionDuration = 0;
+        state.taskSession.monsters = [];
+        state.taskSession.selectedMonsterName = "";
+        state.taskSession.totalKills = "";
+        state.taskSession.hasProcessedLog = false;
+        renderApp();
+        persistState();
+        setStatus("Input cleared", false, MODE_CONTENT.tasks.readyHint);
+        elements.sessionLog.focus();
+        return;
+    }
+
     const hunt = getActiveHunt();
     const clearedHunt = resetHunt(hunt);
 
@@ -480,26 +568,22 @@ function clearLog() {
     state.activeHuntId = clearedHunt.id;
     dropAllTabsEntriesOfHunt(hunt.id);
     normalizeView();
-    renderWorkspace();
+    renderApp();
     persistState();
-    setStatus("Input cleared", false, MODE_CONTENT[clearedHunt.mode].readyHint);
+    setStatus("Input cleared", false, MODE_CONTENT.bestiary.readyHint);
     elements.sessionLog.focus();
 }
 
-function selectHunt(huntId) {
-    if (huntId === state.activeHuntId && state.view === "hunt") {
-        return;
-    }
-
+function selectHunt(huntId, statusHint) {
     captureVisibleInputs();
     state.activeHuntId = huntId;
     state.view = "hunt";
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus(
         `${getHuntLabelById(huntId)} selected`,
         false,
-        "This hunt keeps its own session log, creature selection, and total kills."
+        statusHint || "This hunt keeps its own session log, creature selection, and total kills."
     );
 }
 
@@ -511,7 +595,7 @@ function addHuntTab() {
     state.hunts = hunts;
     state.activeHuntId = hunt.id;
     state.view = "hunt";
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus(
         `${getHuntLabelById(hunt.id)} added`,
@@ -534,7 +618,7 @@ function closeHuntTab(huntId) {
     state.activeHuntId = activeHuntId;
     dropAllTabsEntriesOfHunt(huntId);
     normalizeView();
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus(`${closedLabel} closed`, false, "The remaining hunts keep their own analysis.");
 }
@@ -546,13 +630,13 @@ function showComparison() {
         setStatus(
             "Not enough analyzed hunts",
             true,
-            "Process at least two hunts in Bestiary mode before comparing them."
+            "Process at least two hunts before comparing them."
         );
         return;
     }
 
     state.view = "comparison";
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus(
         "Hunt comparison ready",
@@ -561,17 +645,6 @@ function showComparison() {
     );
 }
 
-const FIXED_VIEW_STATUS = {
-    allTabs: {
-        message: "All Tabs selected",
-        hint: "Every analyzed creature is listed once per hunt. Total kills entered here belong to the hunt that produced the entry."
-    },
-    charmPlan: {
-        message: "Charm Plan selected",
-        hint: "Enter the time you have available to see which Bestiary entries fit in it and the hunt route to follow."
-    }
-};
-
 function selectFixedView(view) {
     if (state.view === view || !FIXED_VIEW_STATUS[view]) {
         return;
@@ -579,14 +652,34 @@ function selectFixedView(view) {
 
     captureVisibleInputs();
     state.view = view;
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus(FIXED_VIEW_STATUS[view].message, false, FIXED_VIEW_STATUS[view].hint);
 }
 
+function updateRemainingTime() {
+    captureActiveHuntInputs();
+    renderApp();
+    persistState();
+    setStatus("Estimate updated", false, "The time remaining now reflects the total kills you entered.");
+}
+
+function clearInputs() {
+    const hunt = getActiveHunt();
+
+    hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
+        ...monster,
+        totalKills: 0
+    }));
+
+    renderApp();
+    persistState();
+    setStatus("Totals reset", false, "The estimate now uses session kills only.");
+}
+
 function updateAllTabsEstimate() {
     captureAllTabsInputs();
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus("Estimate updated", false, "The combined estimate now reflects the total kills you entered.");
 }
@@ -599,7 +692,7 @@ function resetAllTabsTotals() {
         }));
     });
 
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus("Totals reset", false, "Every hunt now estimates from session kills only.");
 }
@@ -613,7 +706,7 @@ function toggleAllTabsEntry(entryKey) {
         ? state.excludedAllTabsEntries.filter((key) => key !== entryKey)
         : [...state.excludedAllTabsEntries, entryKey];
 
-    renderWorkspace();
+    renderApp();
     persistState();
     setStatus(
         "All Tabs selection updated",
@@ -627,33 +720,9 @@ function dropAllTabsEntriesOfHunt(huntId) {
         .filter((entryKey) => !isEntryKeyForHunt(entryKey, huntId));
 }
 
-function setMode(mode) {
-    captureActiveHuntInputs();
-
-    const hunt = getActiveHunt();
-    hunt.mode = mode;
-    state.view = "hunt";
-    renderWorkspace();
-    persistState();
-
-    const hasModeResults = mode === "bestiary" ? hunt.matchedMonsters.length : hunt.taskMonsters.length;
-
-    if (!hasModeResults) {
-        setStatus("Ready", false, MODE_CONTENT[mode].readyHint);
-        return;
-    }
-
-    setStatus(
-        mode === "bestiary" ? "Bestiary mode" : "Tasks mode",
-        false,
-        mode === "bestiary"
-            ? "Select the creatures you want to keep, then update total kills if needed."
-            : "Select the creature and enter the task target."
-    );
-}
-
 function attachHuntTabActions() {
     const addHuntButton = document.getElementById("addHuntButton");
+
     if (addHuntButton) {
         addHuntButton.addEventListener("click", addHuntTab);
     }
@@ -668,6 +737,15 @@ function attachHuntTabActions() {
 
     elements.huntTabStrip.querySelectorAll("[data-hunt-close]").forEach((button) => {
         button.addEventListener("click", () => closeHuntTab(button.dataset.huntClose));
+    });
+}
+
+function attachPlanHuntLinks() {
+    elements.output.querySelectorAll("[data-plan-hunt]").forEach((button) => {
+        button.addEventListener("click", () => selectHunt(
+            button.dataset.planHunt,
+            "Adjust the total kills or creature selection here, then open Charm Plan again to see the updated plan."
+        ));
     });
 }
 
@@ -704,10 +782,7 @@ function attachAllTabsActions() {
 
 function attachResultActions() {
     const updateButton = document.getElementById("updateRemainingTimeButton");
-    const bestiaryMonsterButtons = document.querySelectorAll("[data-bestiary-monster]");
     const clearInputsButton = document.getElementById("clearInputsButton");
-    const taskMonsterButtons = document.querySelectorAll("[data-task-monster]");
-    const taskTotalInput = document.getElementById("taskTotalKills");
 
     if (updateButton) {
         updateButton.addEventListener("click", updateRemainingTime);
@@ -717,7 +792,7 @@ function attachResultActions() {
         clearInputsButton.addEventListener("click", clearInputs);
     }
 
-    bestiaryMonsterButtons.forEach((button) => {
+    elements.output.querySelectorAll("[data-bestiary-monster]").forEach((button) => {
         button.addEventListener("click", () => {
             captureActiveHuntInputs();
 
@@ -729,47 +804,91 @@ function attachResultActions() {
                 ? hunt.selectedBestiaryMonsterNames.filter((name) => name !== monsterName)
                 : [...hunt.selectedBestiaryMonsterNames, monsterName];
 
-            renderWorkspace();
+            renderApp();
             persistState();
             setStatus("Creature selection updated", false, "Only the selected creatures remain in the Bestiary estimate below.");
         });
     });
+}
 
-    taskMonsterButtons.forEach((button) => {
+function attachTaskActions() {
+    const taskTotalInput = document.getElementById("taskTotalKills");
+
+    elements.output.querySelectorAll("[data-task-monster]").forEach((button) => {
         button.addEventListener("click", () => {
-            getActiveHunt().selectedTaskMonsterName = button.dataset.taskMonster;
+            state.taskSession.selectedMonsterName = button.dataset.taskMonster;
+            renderApp();
             persistState();
-            renderWorkspace();
             setStatus("Creature selected", false, "Enter the task target to calculate the time remaining.");
         });
     });
 
-    if (taskTotalInput) {
-        taskTotalInput.addEventListener("input", (event) => {
-            getActiveHunt().taskTotalKills = event.target.value;
-            persistState();
-        });
-
-        taskTotalInput.addEventListener("change", () => {
-            renderWorkspace();
-        });
-
-        taskTotalInput.addEventListener("keydown", (event) => {
-            if (event.key !== "Enter") {
-                return;
-            }
-
-            event.preventDefault();
-            renderWorkspace();
-        });
+    if (!taskTotalInput) {
+        return;
     }
+
+    taskTotalInput.addEventListener("input", (event) => {
+        state.taskSession.totalKills = event.target.value;
+        persistState();
+    });
+
+    taskTotalInput.addEventListener("change", () => {
+        renderApp();
+    });
+
+    taskTotalInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        event.preventDefault();
+        renderApp();
+    });
+}
+
+function processTaskLog(logText) {
+    const { monsters, sessionDuration } = analyzeTaskSession(logText);
+
+    state.taskSession.monsters = monsters;
+    state.taskSession.sessionDuration = sessionDuration;
+    state.taskSession.selectedMonsterName = monsters[0]?.name ?? "";
+    state.taskSession.hasProcessedLog = true;
+    renderApp();
+    persistState();
+    setStatus(
+        monsters.length ? "Task analysis updated" : "No task candidates found",
+        false,
+        monsters.length
+            ? "Select the creature from this session, then enter the task target."
+            : "Check that the pasted session includes the killed-creatures block."
+    );
+}
+
+function processHuntLog(hunt, logText) {
+    const { monsters, sessionDuration } = analyzeSession(logText, state.bestiaryData);
+
+    dropAllTabsEntriesOfHunt(hunt.id);
+    hunt.matchedMonsters = monsters;
+    hunt.selectedBestiaryMonsterNames = monsters.map((monster) => monster.name);
+    hunt.sessionDuration = sessionDuration;
+    hunt.hasProcessedLog = true;
+    renderApp();
+    persistState();
+    setStatus(
+        monsters.length ? "Analysis updated" : "No matching creatures found",
+        false,
+        monsters.length
+            ? "Select the creatures you want to keep, then enter total kills to refine the estimate."
+            : "Check creature names in the log or confirm the session includes a killed-creatures section."
+    );
 }
 
 function processLog() {
-    captureActiveHuntInputs();
+    captureVisibleInputs();
 
-    const hunt = getActiveHunt();
-    const logText = hunt.sessionLog.trim();
+    const logText = state.mode === "tasks"
+        ? state.taskSession.sessionLog.trim()
+        : getActiveHunt().sessionLog.trim();
 
     if (!logText) {
         setStatus("Session log required", true, "Paste a hunting session log before running the analyzer.");
@@ -779,80 +898,29 @@ function processLog() {
     }
 
     setBusyState(true);
-    dropAllTabsEntriesOfHunt(hunt.id);
 
-    if (hunt.mode === "bestiary") {
-        const { monsters, sessionDuration } = analyzeSession(logText, state.bestiaryData);
-        hunt.matchedMonsters = monsters;
-        hunt.selectedBestiaryMonsterNames = monsters.map((monster) => monster.name);
-        hunt.sessionDuration = sessionDuration;
-        hunt.taskMonsters = [];
-        hunt.taskTotalKills = "";
-        hunt.selectedTaskMonsterName = "";
-        hunt.processedMode = "bestiary";
-        renderWorkspace();
-        persistState();
-        setStatus(
-            monsters.length ? "Analysis updated" : "No matching creatures found",
-            false,
-            monsters.length
-                ? "Select the creatures you want to keep, then enter total kills to refine the estimate."
-                : "Check creature names in the log or confirm the session includes a killed-creatures section."
-        );
+    if (state.mode === "tasks") {
+        processTaskLog(logText);
     } else {
-        const { monsters, sessionDuration } = analyzeTaskSession(logText);
-        hunt.matchedMonsters = [];
-        hunt.selectedBestiaryMonsterNames = [];
-        hunt.sessionDuration = sessionDuration;
-        hunt.taskMonsters = monsters;
-        hunt.selectedTaskMonsterName = monsters[0]?.name ?? "";
-        hunt.processedMode = "tasks";
-        normalizeView();
-        renderWorkspace();
-        persistState();
-        setStatus(
-            monsters.length ? "Task analysis updated" : "No task candidates found",
-            false,
-            monsters.length
-                ? "Select the creature from this session, then enter the task target."
-                : "Check that the pasted session includes the killed-creatures block."
-        );
+        processHuntLog(getActiveHunt(), logText);
     }
 
     setBusyState(false);
 }
 
-function updateRemainingTime() {
-    captureActiveHuntInputs();
-    renderWorkspace();
-    persistState();
-    setStatus("Estimate updated", false, "The time remaining now reflects the total kills you entered.");
-}
-
-function clearInputs() {
-    const hunt = getActiveHunt();
-
-    hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
-        ...monster,
-        totalKills: 0
-    }));
-
-    renderWorkspace();
-    persistState();
-    setStatus("Totals reset", false, "The estimate now uses session kills only.");
-}
-
 function restoreWorkspaceState() {
     const workspace = restoreWorkspace(loadSessionState()) || createWorkspace();
 
+    state.mode = workspace.mode;
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
     state.view = workspace.view;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
     state.playTimeInput = workspace.playTimeInput;
+    state.taskSession = workspace.taskSession;
     normalizeView();
 
-    return state.hunts.some(huntHasContent);
+    return state.hunts.some(huntHasContent) || Boolean(state.taskSession.sessionLog.trim());
 }
 
 async function initializeApp() {
@@ -861,18 +929,18 @@ async function initializeApp() {
         state.bestiaryData = await loadBestiaryData();
 
         const hasRestoredContent = restoreWorkspaceState();
-        renderWorkspace();
+        renderApp();
 
         if (hasRestoredContent) {
             setStatus(
                 "Previous session restored",
                 false,
-                "Switch hunt tabs to review each analysis, or compare them once two hunts have Bestiary results."
+                "Switch hunt tabs to review each analysis, or open Charm Plan to plan your available time."
             );
             return;
         }
 
-        setStatus("Ready", false, MODE_CONTENT[getActiveHunt().mode].readyHint);
+        setStatus("Ready", false, MODE_CONTENT[state.mode].readyHint);
     } catch (error) {
         setStatus("Failed to load data", true, "Refresh the page and try again. The dataset could not be loaded.");
         window.alert("Failed to load Bestiary data.");
@@ -882,6 +950,14 @@ async function initializeApp() {
 }
 
 elements.sessionLog.addEventListener("input", () => {
+    if (state.mode === "tasks") {
+        if (state.taskSession) {
+            state.taskSession.sessionLog = elements.sessionLog.value;
+        }
+
+        return;
+    }
+
     const hunt = getActiveHunt();
 
     if (hunt) {

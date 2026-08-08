@@ -22,7 +22,9 @@ function buildEntryRow(entry) {
         <li class="plan-entry">
             <span class="plan-entry-name">
                 ${entry.name}
-                <span class="entry-hunt-tag">${entry.huntLabel}</span>
+                <button class="entry-hunt-tag entry-hunt-link" type="button" data-plan-hunt="${entry.huntId}">
+                    ${entry.huntLabel}
+                </button>
             </span>
             <span class="plan-entry-time">${formatTime(entry.timeRemainingMinutes)}</span>
             <span class="plan-entry-charm">+${formatNumber(entry.charms)}</span>
@@ -57,7 +59,9 @@ function buildRouteStep(step) {
         <li class="plan-route-step">
             <div class="plan-route-head">
                 <span class="plan-route-order">${formatNumber(step.order)}</span>
-                <span class="plan-route-hunt">${step.huntLabel}</span>
+                <button class="plan-route-hunt entry-hunt-link" type="button" data-plan-hunt="${step.huntId}">
+                    ${step.huntLabel}
+                </button>
                 <span class="plan-route-time">${formatTime(step.minutes)}</span>
                 <span class="plan-route-charm">+${formatNumber(step.charms)}</span>
                 <span class="plan-route-total">${formatNumber(step.cumulativeCharms)} total</span>
@@ -132,7 +136,7 @@ export function buildCharmPlanResultMarkup(planView) {
             <h3 class="subsection-title" id="planEntriesTitle">Bestiaries You Can Finish</h3>
             <p class="section-copy">
                 Charm points are only awarded when an entry is complete, so an entry at partial progress contributes
-                nothing. Each entry is tagged with the hunt it belongs to.
+                nothing. Select a hunt tag to open that hunt and adjust its total kills or creature selection.
             </p>
             ${buildEntryList(plan)}
         </section>

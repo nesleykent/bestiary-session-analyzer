@@ -1,4 +1,4 @@
-const STORAGE_KEY = "bestiary-session-analyzer-v3";
+const STORAGE_KEY = "bestiary-session-analyzer-v4";
 
 export function saveSessionState(state) {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
