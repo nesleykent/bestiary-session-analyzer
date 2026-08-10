@@ -61,8 +61,8 @@ and return to `Charm Plan` to see the updated plan.
 3. Enter the task target.
 4. Read the session kills, kill rate, kills remaining, and estimated time to finish.
 
-The session is the evidence. Its recorded respawn mode travels with the estimate, shown as a metric and next to the kill
-count, because a rate measured under `Rapid Respawn` is not interchangeable with one measured under `Regular`. Tasks has
+The session is the evidence. Its recorded respawn mode travels with the estimate, stated alongside it, because a rate
+measured under `Rapid Respawn` is not interchangeable with one measured under `Regular`. Tasks has
 no respawn filter and no availability control: it estimates from the one session you selected rather than optimizing
 across sessions. `All Sessions` in Tasks lists one row per processed session with its own creature and target.
 
@@ -96,7 +96,8 @@ python3 -m http.server 4173
 
 3. Choose `Bestiary` or `Tasks` in the top-level navigation.
 4. Paste the Hunt Analyzer text into the text area.
-5. Click `Process Log`.
+5. Click `Process Log`. The paste area collapses to a one-line session summary; click that line to edit the text
+   or the recorded respawn mode again.
 6. In `Bestiary` mode, review the generated table for:
    - Creature name
    - Session kills
@@ -105,7 +106,8 @@ python3 -m http.server 4173
    - Kills left
    - Estimated time remaining
    - Charms per hour
-7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
+7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature. The estimate applies when you leave the
+   field, so pressing `Tab` or `Enter` or clicking elsewhere is enough.
 8. In `Tasks`, select the task creature for a session and enter the total kills that task requires.
 9. Use `Clear Log` or `Reset Totals` to reset the Hunt Analyzer text or manual kill totals of the selected session.
 
@@ -252,11 +254,13 @@ bestiary-session-analyzer/
 |   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
+|   |   |   |-- render-blocks.js
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
-|   |   |   `-- render-task-results.js
+|   |   |   |-- render-task-results.js
+|   |   |   `-- render-task-sessions.js
 |   |   |-- utils/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
@@ -278,7 +282,10 @@ bestiary-session-analyzer/
 - `src/app/main.js` wires browser events, state restoration, and rendering.
 - `src/app/features` contains shared log parsing, the Bestiary and Tasks calculations, the comparison ranking, and the charm planner.
 - `src/app/services` contains data-loading concerns.
-- `src/app/ui` renders the session tabs, the per-view results, summary metrics, the charm plan, and the comparison.
+- `src/app/ui` renders the session tabs, the per-view results, the charm plan, and the comparison.
+- `src/app/ui/render-blocks.js` holds the shared presentation primitives every view is built from, so the same
+  information reads the same way everywhere. The Bestiary estimate table in a session and in `All Sessions` comes from
+  one builder and cannot drift.
 - `src/app/state` owns the sessions, persists the workspace in `sessionStorage`, and handles file export and import.
 - The comparison consumes the same Bestiary summary each session displays, so both views always agree.
 - `src/data` stores application-owned datasets.

@@ -1,150 +1,46 @@
 import { formatNumber, formatTime } from "../utils/formatters.js";
+import {
+    buildAnswer,
+    buildLinkButton,
+    buildPill,
+    buildRow,
+    buildRowList,
+    buildStatLine,
+    escapeAttribute
+} from "./render-blocks.js";
 
-function escapeAttribute(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
+const ANSWER_LABEL = "Charm Points Obtainable";
 
-function buildPlanModeSwitch(planView) {
-    const modes = [
-        { key: "regular", label: "Regular" },
-        { key: "rapid", label: "Rapid Respawn" }
-    ];
+function buildEntryRows(plan) {
+    const head = buildRow([
+        '<span class="row-name">Creature</span>',
+        '<span class="row-num">Time to Complete</span>',
+        '<span class="row-charm">Charm</span>'
+    ], "is-head");
+    const rows = plan.entries.map((entry) => buildRow([
+        `<span class="row-name">${entry.name}${buildLinkButton(entry.huntLabel, "data-plan-hunt", entry.huntId, "is-pill")}</span>`,
+        `<span class="row-num">${formatTime(entry.timeRemainingMinutes)}</span>`,
+        `<span class="row-charm">+${formatNumber(entry.charms)}</span>`
+    ]));
 
-    return `
-        <div class="plan-mode-block">
-            <span class="input-label" id="planRespawnModeLabel">Plan For Respawn Mode</span>
-            <div class="segmented" role="group" aria-labelledby="planRespawnModeLabel">
-                ${modes.map((mode) => `
-                    <button
-                        class="segmented-button${planView.planRespawnMode === mode.key ? " is-selected" : ""}"
-                        type="button"
-                        data-plan-respawn-mode="${mode.key}"
-                        aria-pressed="${planView.planRespawnMode === mode.key ? "true" : "false"}"
-                    >${mode.label}</button>
-                `).join("")}
-            </div>
-            <p class="helper-text">
-                The environment you are planning for. Only sessions recorded in this respawn mode are used, and their
-                recorded numbers are never converted between modes.
-            </p>
-        </div>
-    `;
-}
-
-function buildConsideredSession(session) {
-    const isEligible = session.isAvailable && session.matchesPlanMode;
-    const status = !session.matchesPlanMode
-        ? "Wrong respawn mode"
-        : (session.isAvailable ? "Available" : "Spawn unavailable");
-
-    return `
-        <li class="plan-session${isEligible ? " is-eligible" : ""}">
-            <span class="plan-session-name">${session.label}</span>
-            <span class="plan-session-mode">${session.respawnModeLabel}</span>
-            <span class="plan-session-status">${status}</span>
-            <button
-                class="plan-session-toggle"
-                type="button"
-                data-plan-availability="${session.id}"
-                aria-pressed="${session.isAvailable ? "true" : "false"}"
-            >${session.isAvailable ? "Ignore" : "Enable"}</button>
-        </li>
-    `;
-}
-
-function buildConsideredSessions(planView) {
-    if (!planView.consideredSessions.length) {
-        return "";
-    }
-
-    return `
-        <div class="plan-sessions-block">
-            <span class="input-label" id="planSessionsLabel">Sessions Considered</span>
-            <ul class="plan-sessions" role="list" aria-labelledby="planSessionsLabel">
-                ${planView.consideredSessions.map(buildConsideredSession).join("")}
-            </ul>
-            <p class="helper-text">
-                A session is used only when it is available and recorded in the respawn mode above. Ignore one while its
-                spawn is taken; that affects Charm Plan alone, and the session keeps its own analysis, its rows in All
-                Sessions, and its ranking in Compare Sessions.
-            </p>
-        </div>
-    `;
-}
-
-function buildMetric(label, value, emphasized = false) {
-    return `
-        <article class="summary-card${emphasized ? " summary-card-primary" : ""}">
-            <span class="summary-label">${label}</span>
-            <strong>${value}</strong>
-        </article>
-    `;
-}
-
-function buildEntryRow(entry) {
-    return `
-        <li class="plan-entry">
-            <span class="plan-entry-name">
-                ${entry.name}
-                <button class="entry-hunt-tag entry-hunt-link" type="button" data-plan-hunt="${entry.huntId}">
-                    ${entry.huntLabel}
-                </button>
-            </span>
-            <span class="plan-entry-time">${formatTime(entry.timeRemainingMinutes)}</span>
-            <span class="plan-entry-charm">+${formatNumber(entry.charms)}</span>
-        </li>
-    `;
-}
-
-function buildEntryList(plan) {
-    if (!plan.entries.length) {
-        return `
-            <p class="helper-text">
-                None of the selected Bestiary entries can be finished in this time. Charm points are only earned once an
-                entry is complete, so a longer play time or a lower unlock target is needed.
-            </p>
-        `;
-    }
-
-    return `
-        <ul class="plan-entry-list" role="list">
-            <li class="plan-entry plan-entry-head">
-                <span class="plan-entry-name">Creature</span>
-                <span class="plan-entry-time">Time to Complete</span>
-                <span class="plan-entry-charm">Charm</span>
-            </li>
-            ${plan.entries.map(buildEntryRow).join("")}
-        </ul>
-    `;
+    return buildRowList([head, ...rows], 3);
 }
 
 function buildRouteStep(step) {
-    return `
-        <li class="plan-route-step">
-            <div class="plan-route-head">
-                <span class="plan-route-order">${formatNumber(step.order)}</span>
-                <button class="plan-route-hunt entry-hunt-link" type="button" data-plan-hunt="${step.huntId}">
-                    ${step.huntLabel}
-                </button>
-                <span class="plan-route-time">${formatTime(step.minutes)}</span>
-                <span class="plan-route-charm">+${formatNumber(step.charms)}</span>
-                <span class="plan-route-total">${formatNumber(step.cumulativeCharms)} total</span>
-            </div>
-            <ul class="plan-route-entries" role="list">
-                ${step.entries.map((entry) => `
-                    <li>
-                        <span class="plan-route-entry-name">${entry.name}</span>
-                        <span class="plan-route-entry-time">${formatTime(entry.timeRemainingMinutes)}</span>
-                        <span class="plan-route-entry-charm">+${formatNumber(entry.charms)}</span>
-                    </li>
-                `).join("")}
-            </ul>
-        </li>
-    `;
+    const head = buildRow([
+        `<span class="row-order">${formatNumber(step.order)}</span>`,
+        `<span class="row-name">${buildLinkButton(step.huntLabel, "data-plan-hunt", step.huntId)}</span>`,
+        `<span class="row-num">${formatTime(step.minutes)}</span>`,
+        `<span class="row-charm">+${formatNumber(step.charms)}</span>`,
+        `<span class="row-num">${formatNumber(step.cumulativeCharms)} total</span>`
+    ], "is-head");
+    const entries = step.entries.map((entry) => buildRow([
+        `<span class="row-name">${entry.name}</span>`,
+        `<span class="row-num">${formatTime(entry.timeRemainingMinutes)}</span>`,
+        `<span class="row-charm">+${formatNumber(entry.charms)}</span>`
+    ], "is-sub"));
+
+    return `<li class="route-step">${buildRowList([head], 5)}${buildRowList(entries, 3)}</li>`;
 }
 
 function buildRoute(plan) {
@@ -156,103 +52,125 @@ function buildRoute(plan) {
         <section class="results-section" aria-labelledby="planRouteTitle">
             <h3 class="subsection-title" id="planRouteTitle">Recommended Route</h3>
             <p class="section-copy">
-                Time you spend on a session progresses all of its selected entries at once, and that progress is kept, so each
-                session needs only one visit. Steps are ordered to bank charm points as early as possible.
+                Time on a session advances all of its selected entries at once and that progress is kept, so each
+                session needs one visit. Steps are ordered to bank charm points as early as possible.
             </p>
-            <ol class="plan-route" role="list">
-                ${plan.route.map(buildRouteStep).join("")}
-            </ol>
-            <p class="plan-route-summary">
-                Total ${formatTime(plan.timeUsedMinutes)} for ${formatNumber(plan.charms)} charm points,
-                ${formatTime(plan.unusedMinutes)} unused.
-            </p>
+            <ol class="route" role="list">${plan.route.map(buildRouteStep).join("")}</ol>
         </section>
     `;
 }
 
 export function buildCharmPlanResultMarkup(planView) {
     if (!planView.hasAnalyzedHunts) {
-        return `
-            <div class="empty-state">
-                <strong>No analyzed sessions.</strong>
-                <span>Process at least one Hunt Analyzer, then come back to plan your available time.</span>
-            </div>
-        `;
+        return buildAnswer(ANSWER_LABEL, "&mdash;", "Process a Hunt Analyzer first.");
     }
 
     if (!planView.hasModeMatchedHunts) {
-        return `
-            <div class="empty-state">
-                <strong>No ${planView.planRespawnModeLabel} sessions.</strong>
-                <span>Switch the plan above to the mode you are hunting in, or set a session's recorded respawn mode in its own tab.</span>
-            </div>
-        `;
+        return buildAnswer(ANSWER_LABEL, "&mdash;",
+            `No ${planView.planRespawnModeLabel} sessions. Switch the plan mode below, or set a session's recorded mode in its own tab.`);
     }
 
     if (!planView.hasEligibleHunts) {
-        return `
-            <div class="empty-state">
-                <strong>Every ${planView.planRespawnModeLabel} session is ignored.</strong>
-                <span>Enable at least one session above to plan with it. Ignoring only affects Charm Plan.</span>
-            </div>
-        `;
+        return buildAnswer(ANSWER_LABEL, "&mdash;",
+            `Every ${planView.planRespawnModeLabel} session is ignored. Enable one below.`);
     }
 
     if (!planView.plan) {
-        return `
-            <div class="empty-state">
-                <strong>No play time entered.</strong>
-                <span>Enter the hunting time you have available to see which Bestiary entries fit in it.</span>
-            </div>
-        `;
+        return buildAnswer(ANSWER_LABEL, "&mdash;", "Enter the time you have available below.");
     }
 
     const plan = planView.plan;
 
     return `
-        <div class="summary-grid">
-            ${buildMetric("Play Time Available", formatTime(plan.availableMinutes))}
-            ${buildMetric("Charm Points Obtainable", formatNumber(plan.charms), true)}
-            ${buildMetric("Time Used", formatTime(plan.timeUsedMinutes), true)}
-            ${buildMetric("Unused Time", formatTime(plan.unusedMinutes))}
-            ${buildMetric("Bestiaries Completed", formatNumber(plan.completedCount))}
-        </div>
+        ${buildAnswer(ANSWER_LABEL, formatNumber(plan.charms), plan.entries.length
+            ? ""
+            : "No entry can be completed in this time. Charm points are only earned once an entry is complete.")}
+        ${buildStatLine([
+            `of ${formatTime(plan.availableMinutes)} available`,
+            `${formatTime(plan.timeUsedMinutes)} used`,
+            `${formatTime(plan.unusedMinutes)} unused`,
+            `${formatNumber(plan.completedCount)} bestiaries completed`
+        ])}
 
-        <section class="results-section" aria-labelledby="planEntriesTitle">
-            <h3 class="subsection-title" id="planEntriesTitle">Bestiaries You Can Finish</h3>
-            <p class="section-copy">
-                Charm points are only awarded when an entry is complete, so an entry at partial progress contributes
-                nothing. Select a session tag to open that session and adjust its total kills or creature selection.
-            </p>
-            ${buildEntryList(plan)}
-        </section>
+        ${plan.entries.length ? `
+            <section class="results-section" aria-label="Bestiaries you can finish">
+                ${buildEntryRows(plan)}
+            </section>
+        ` : ""}
 
         ${buildRoute(plan)}
     `;
 }
 
+function buildConsideredSessions(planView) {
+    if (!planView.consideredSessions.length) {
+        return "";
+    }
+
+    const rows = planView.consideredSessions.map((session) => {
+        const isEligible = session.isAvailable && session.matchesPlanMode;
+        const status = !session.matchesPlanMode
+            ? "Wrong respawn mode"
+            : (session.isAvailable ? "Available" : "Spawn unavailable");
+
+        return buildRow([
+            `<span class="row-name">${session.label}</span>`,
+            buildPill(session.respawnModeLabel),
+            `<span class="row-num">${status}</span>`,
+            `<button class="row-action" type="button" data-plan-availability="${escapeAttribute(session.id)}" aria-pressed="${session.isAvailable ? "true" : "false"}">${session.isAvailable ? "Ignore" : "Enable"}</button>`
+        ], isEligible ? "is-on" : "");
+    });
+
+    return `
+        <div class="plan-sessions-block">
+            <span class="input-label" id="planSessionsLabel">Sessions Considered</span>
+            ${buildRowList(rows, 4)}
+            <p class="helper-text">Ignoring a session affects Charm Plan only.</p>
+        </div>
+    `;
+}
+
 export function renderCharmPlan(container, planView) {
+    const modes = [
+        { key: "regular", label: "Regular" },
+        { key: "rapid", label: "Rapid Respawn" }
+    ];
+
     container.className = "results-shell";
     container.innerHTML = `
-        <div class="plan-input-block">
-            <label class="input-label" for="playTimeInput">Play Time Available</label>
-            <input
-                id="playTimeInput"
-                class="plan-time-input"
-                type="text"
-                inputmode="text"
-                autocomplete="off"
-                spellcheck="false"
-                value="${escapeAttribute(planView.playTimeValue)}"
-                placeholder="Example: 2h 30min"
-            >
-            <p class="helper-text">Accepts 90 min, 1.5 h, 2h 30min, or 2:30. A plain number counts as hours.</p>
+        <div id="charmPlanResult">${buildCharmPlanResultMarkup(planView)}</div>
+
+        <div class="plan-controls">
+            <div>
+                <label class="input-label" for="playTimeInput">Play Time Available</label>
+                <input
+                    id="playTimeInput"
+                    class="plan-time-input"
+                    type="text"
+                    inputmode="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="${escapeAttribute(planView.playTimeValue)}"
+                    placeholder="Example: 2h 30min"
+                >
+                <p class="helper-text">Accepts 90 min, 1.5 h, 2h 30min, or 2:30. A plain number counts as hours.</p>
+            </div>
+
+            <div>
+                <span class="input-label" id="planRespawnModeLabel">Plan For Respawn Mode</span>
+                <div class="segmented" role="group" aria-labelledby="planRespawnModeLabel">
+                    ${modes.map((mode) => `
+                        <button
+                            class="segmented-button${planView.planRespawnMode === mode.key ? " is-selected" : ""}"
+                            type="button"
+                            data-plan-respawn-mode="${mode.key}"
+                            aria-pressed="${planView.planRespawnMode === mode.key ? "true" : "false"}"
+                        >${mode.label}</button>
+                    `).join("")}
+                </div>
+            </div>
         </div>
 
-        ${buildPlanModeSwitch(planView)}
-
         ${buildConsideredSessions(planView)}
-
-        <div id="charmPlanResult">${buildCharmPlanResultMarkup(planView)}</div>
     `;
 }

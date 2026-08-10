@@ -1,54 +1,14 @@
 import { formatCharmsPerHour, formatNumber, formatTime } from "../utils/formatters.js";
-
-function buildWinnerCard(bestRow) {
-    if (!bestRow) {
-        return `
-            <div class="empty-state">
-                <strong>No charm rate to rank.</strong>
-                <span>The analyzed hunts currently project no charm points per hour. Update the total kills or the creature selection in each hunt.</span>
-            </div>
-        `;
-    }
-
-    return `
-        <article class="comparison-winner">
-            <span class="summary-label">Best Session</span>
-            <strong class="comparison-winner-hunt">${bestRow.label}</strong>
-            <span class="comparison-winner-rate">${formatCharmsPerHour(bestRow.totalCharmsPerHour)}</span>
-            <p class="comparison-winner-copy">
-                Highest charm rate of your analyzed sessions, with ${formatNumber(bestRow.totalCharms)} charm points still available
-                over ${formatTime(bestRow.maxTimeRemainingMinutes)} of projected hunting time.
-            </p>
-        </article>
-    `;
-}
+import { buildAnswer, buildPill, buildStatLine } from "./render-blocks.js";
 
 function buildRow(row) {
     return `
         <tr class="${row.isBest ? "is-best" : ""}">
-            <td>
-                ${row.label}
-                ${row.isBest ? '<span class="comparison-badge">Best</span>' : ""}
-            </td>
+            <td>${row.label} ${row.isBest ? buildPill("Best", true) : ""}</td>
             <td>${formatNumber(row.totalCharms)}</td>
             <td>${formatTime(row.maxTimeRemainingMinutes)}</td>
             <td>${formatCharmsPerHour(row.totalCharmsPerHour)}</td>
         </tr>
-    `;
-}
-
-function buildPendingNote(pendingLabels) {
-    if (!pendingLabels.length) {
-        return "";
-    }
-
-    const isSingle = pendingLabels.length === 1;
-
-    return `
-        <p class="helper-text">
-            ${pendingLabels.join(", ")} ${isSingle ? "has" : "have"} no Bestiary analysis yet and
-            ${isSingle ? "is" : "are"} not part of this comparison.
-        </p>
     `;
 }
 
@@ -62,16 +22,22 @@ export function renderComparison(container, comparison) {
         return;
     }
 
+    const best = comparison.bestRow;
+    const pending = comparison.pendingLabels.length
+        ? `not analyzed: ${comparison.pendingLabels.join(", ")}`
+        : "";
+
     container.className = "results-shell";
     container.innerHTML = `
-        ${buildWinnerCard(comparison.bestRow)}
+        ${best
+            ? buildAnswer("Best Session", best.label,
+                `${formatCharmsPerHour(best.totalCharmsPerHour)} &mdash; ${formatNumber(best.totalCharms)} charm points over ${formatTime(best.maxTimeRemainingMinutes)}.`)
+            : buildAnswer("Best Session", "&mdash;",
+                "No session projects any charm points per hour yet. Update the total kills or the creature selection.")}
+        ${buildStatLine([`${formatNumber(comparison.rows.length)} sessions ranked`, pending])}
 
         <section class="results-section" aria-labelledby="comparisonTableTitle">
             <h3 class="subsection-title" id="comparisonTableTitle">Charm Rate Ranking</h3>
-            <p class="results-intro">
-                Every row is the Bestiary result already calculated inside that session: its matched creatures, your creature
-                selection, and the total kills you entered there.
-            </p>
 
             <div class="table-container comparison-table">
                 <table>
@@ -88,8 +54,6 @@ export function renderComparison(container, comparison) {
                     </tbody>
                 </table>
             </div>
-
-            ${buildPendingNote(comparison.pendingLabels)}
         </section>
     `;
 }

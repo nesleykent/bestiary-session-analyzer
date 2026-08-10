@@ -27,11 +27,13 @@ bestiary-session-analyzer/
 |   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
+|   |   |   |-- render-blocks.js
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
-|   |   |   `-- render-task-results.js
+|   |   |   |-- render-task-results.js
+|   |   |   `-- render-task-sessions.js
 |   |   |-- utils/
 |   |   |   `-- formatters.js
 |   |   `-- main.js

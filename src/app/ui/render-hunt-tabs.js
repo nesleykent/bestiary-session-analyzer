@@ -8,7 +8,6 @@ function buildTabButton(selectAttribute, tab) {
         >
             <span class="hunt-tab-label">${tab.label}</span>
             <span class="hunt-tab-meta">${tab.meta}</span>
-            ${tab.note ? `<span class="hunt-tab-note">${tab.note}</span>` : ""}
         </button>
     `;
 }

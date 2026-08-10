@@ -1,64 +1,11 @@
+import { formatCharmsPerHour, formatNumber, formatTime } from "../utils/formatters.js";
 import {
-    formatCharmsPerHour,
-    formatKillRate,
-    formatNumber,
-    formatTime
-} from "../utils/formatters.js";
-
-function buildMetric(label, value, emphasized = false) {
-    return `
-        <article class="summary-card${emphasized ? " summary-card-primary" : ""}">
-            <span class="summary-label">${label}</span>
-            <strong>${value}</strong>
-        </article>
-    `;
-}
-
-function buildEntryButton(entry) {
-    return `
-        <button
-            class="task-monster-button${entry.isSelected ? " is-selected" : ""}"
-            type="button"
-            data-all-tabs-entry="${entry.key}"
-            aria-pressed="${entry.isSelected ? "true" : "false"}"
-        >
-            ${entry.isSelected ? '<span class="selection-badge">Selected</span>' : ""}
-            <span class="task-monster-name">${entry.monster.name}</span>
-            <span class="task-monster-count">${entry.huntLabel} &middot; ${formatNumber(entry.monster.killsThisSession)}x</span>
-        </button>
-    `;
-}
-
-function buildRow(entry) {
-    const monster = entry.monster;
-
-    return `
-        <tr>
-            <td>
-                <a href="${monster.wikiLink}" target="_blank" rel="noreferrer">${monster.name}</a>
-                <span class="entry-hunt-tag">${entry.huntLabel}</span>
-            </td>
-            <td>${formatNumber(monster.charms)}</td>
-            <td>${formatNumber(monster.killsThisSession)}</td>
-            <td class="editable-cell">
-                <input
-                    type="number"
-                    class="kills-input"
-                    data-monster-name="${monster.name}"
-                    data-hunt-id="${entry.huntId}"
-                    min="0"
-                    value="${monster.totalKills || ""}"
-                    placeholder="Enter kills"
-                >
-            </td>
-            <td>${formatNumber(monster.killsToUnlock)}</td>
-            <td>${formatKillRate(monster.killRate)}</td>
-            <td>${formatNumber(monster.remainingKills)}</td>
-            <td>${formatTime(monster.timeRemainingMinutes)}</td>
-            <td>${formatCharmsPerHour(monster.charmsPerHour)}</td>
-        </tr>
-    `;
-}
+    buildAnswer,
+    buildCreatureChip,
+    buildEmptyState,
+    buildEstimateTable,
+    buildStatLine
+} from "./render-blocks.js";
 
 export function renderAllTabs(container, analysis, summary) {
     if (!analysis.rows.length) {
@@ -74,63 +21,38 @@ export function renderAllTabs(container, analysis, summary) {
 
     container.className = "results-shell";
     container.innerHTML = `
-        <div class="summary-grid">
-            ${buildMetric("Selected Creatures", formatNumber(selectedEntries.length))}
-            ${buildMetric("All Sessions Time", formatTime(summary.totalTimeMinutes), true)}
-            ${buildMetric("Total Charms", formatNumber(summary.totalCharms), true)}
-            ${buildMetric("Charm Rate", formatCharmsPerHour(summary.charmRate))}
-        </div>
+        ${buildAnswer("Charm Rate", formatCharmsPerHour(summary.charmRate))}
+        ${buildStatLine([
+            `${formatNumber(selectedEntries.length)} of ${formatNumber(analysis.rows.length)} entries selected`,
+            `${formatNumber(summary.totalCharms)} charm points`,
+            `${formatTime(summary.totalTimeMinutes)} combined time`
+        ])}
 
         <section class="results-section" aria-labelledby="allTabsSelectionTitle">
             <h3 class="subsection-title" id="allTabsSelectionTitle">Select Creatures</h3>
-            <p class="section-copy">
-                A creature analyzed in several sessions appears once per session. Keep the session you plan to use for it, so
-                its charm points are counted once. All Sessions Time adds the longest time remaining of each session that still
-                has a selected entry, and Charm Rate divides Total Charms by that time.
-            </p>
-            <div class="creature-chip-grid" role="list">
-                ${analysis.rows.map(buildEntryButton).join("")}
+            <div class="chip-grid" role="list">
+                ${analysis.rows.map((entry) => buildCreatureChip({
+                    attribute: "data-all-tabs-entry",
+                    value: entry.key,
+                    isSelected: entry.isSelected,
+                    name: entry.monster.name,
+                    meta: `${entry.huntLabel} &middot; ${formatNumber(entry.monster.killsThisSession)}x`
+                })).join("")}
             </div>
         </section>
 
         ${selectedEntries.length ? `
             <section class="results-section" aria-labelledby="allTabsTableTitle">
                 <h3 class="subsection-title" id="allTabsTableTitle">Bestiary Estimate</h3>
-                <p class="results-intro">
-                    Every row is the row of its source session. The tag next to a creature is the session that produced the
-                    entry, and the total kills you enter there belong to that session.
-                </p>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Creature</th>
-                                <th>Charm Points</th>
-                                <th>Session Kills</th>
-                                <th>Total Kills</th>
-                                <th>Unlock Target</th>
-                                <th>Kill Rate</th>
-                                <th>Kills Remaining</th>
-                                <th>Time Remaining</th>
-                                <th>Charm Rate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${selectedEntries.map(buildRow).join("")}
-                        </tbody>
-                    </table>
-                </div>
+                ${buildEstimateTable(selectedEntries.map((entry) => ({
+                    monster: entry.monster,
+                    huntLabel: entry.huntLabel,
+                    huntId: entry.huntId
+                })))}
             </section>
-        ` : `
-            <div class="empty-state">
-                <strong>No entries selected.</strong>
-                <span>Select at least one creature to show the combined Bestiary estimate.</span>
-            </div>
-        `}
+        ` : buildEmptyState("No entries selected.")}
 
         <div class="action-row">
-            <button class="btn" id="allTabsUpdateButton" type="button">Update Estimate</button>
             <button class="btn btn-tertiary" id="allTabsResetButton" type="button">Reset Totals</button>
         </div>
     `;

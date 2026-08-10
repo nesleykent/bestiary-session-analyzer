@@ -10,9 +10,8 @@
     <main>
         <h1>Bestiary Session Analyzer</h1>
         <p class="description">
-            Paste a Hunt Analyzer from Tibia for each hunt you are weighing up, say how much time you have, and see which
-            Bestiary entries you can finish and where to hunt for the most charm points. Each Hunt Analyzer you process
-            becomes a session. Tasks is a separate estimate for a single task target.
+            Paste a Hunt Analyzer for each hunt you are weighing up, say how much time you have, and see which Bestiary
+            entries you can finish and where to hunt. Tasks estimates a single task target from the same sessions.
         </p>
 
         <div class="app-nav-row">
@@ -39,10 +38,8 @@
             </div>
         </div>
 
-        <div class="status-block" aria-live="polite" aria-atomic="true">
-            <p class="status-message" id="statusMessage">Ready</p>
-            <p class="status-hint" id="statusHint">Load a log to start a Bestiary estimate.</p>
-        </div>
+        <p class="alert" id="appAlert" role="alert"></p>
+        <p class="sr-only" id="srStatus" aria-live="polite"></p>
 
         <nav class="hunt-workspace" id="huntWorkspace" aria-label="Sessions">
             <div class="hunt-tab-strip" id="huntTabStrip"></div>
@@ -53,12 +50,10 @@
             </div>
         </nav>
 
-        <section class="content-section" id="inputSection" aria-labelledby="inputTitle">
-            <h2 id="inputTitle">Hunt Analyzer</h2>
-            <p class="section-copy" id="inputCopy">
-                Paste the exported hunting session text from Tibia. The analyzer reads the session time and killed creatures from the log.
-            </p>
+        <section class="content-section" id="inputSection" aria-label="Hunt Analyzer">
+            <button class="session-summary" id="sessionToggle" type="button" aria-expanded="true" aria-controls="sessionEditor" hidden></button>
 
+            <div id="sessionEditor">
             <label class="input-label" for="sessionLog">Paste Hunt Analyzer text</label>
             <textarea
                 id="sessionLog"
@@ -69,8 +64,6 @@ Killed Monsters:
 Looted Items:"
                 spellcheck="false"
             ></textarea>
-
-            <p class="helper-text" id="inputHint">For the most accurate result, paste the full Hunt Analyzer block including duration and killed creatures.</p>
 
             <div class="respawn-mode-block" id="respawnModeBlock">
                 <span class="input-label" id="respawnModeLabel">Recorded Respawn Mode</span>
@@ -92,6 +85,7 @@ Looted Items:"
                 <button class="btn" id="processLogButton" type="button">Process Log</button>
                 <button class="btn btn-tertiary" id="clearLogButton" type="button">Clear Log</button>
             </div>
+            </div>
         </section>
 
         <section class="content-section" id="analysisSection" aria-labelledby="resultsTitle">
@@ -100,22 +94,20 @@ Looted Items:"
                 Process the session log, then refine the estimate with creature selection and target values.
             </p>
 
-            <div id="output" class="empty-state" role="status">
+            <div id="output" class="empty-state">
                 <strong>No analysis yet.</strong>
-                <span>Process a session log to view matched creatures, time remaining, and charm rate.</span>
             </div>
         </section>
 
         <section class="content-section" id="comparisonSection" aria-labelledby="comparisonTitle" hidden>
             <h2 id="comparisonTitle">Session Comparison</h2>
             <p class="section-copy">
-                Compares the Bestiary result already calculated in each session. Charm Rate ranks which session turns
-                hunting time into charm points most efficiently for your current Bestiary progress.
+                Charm Rate ranks which session turns hunting time into charm points most efficiently for your current
+                Bestiary progress.
             </p>
 
-            <div id="comparisonOutput" class="empty-state" role="status">
+            <div id="comparisonOutput" class="empty-state">
                 <strong>Not enough analyzed sessions.</strong>
-                <span>Process at least two sessions in Bestiary to compare their charm rate.</span>
             </div>
         </section>
     </main>

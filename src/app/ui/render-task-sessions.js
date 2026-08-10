@@ -1,4 +1,5 @@
 import { formatNumber, formatTaskRate, formatTimeDetailed } from "../utils/formatters.js";
+import { buildLinkButton, buildPill } from "./render-blocks.js";
 
 function buildRow(session) {
     const estimate = session.estimate;
@@ -7,12 +8,10 @@ function buildRow(session) {
         return `
             <tr>
                 <td>
-                    <button class="entry-hunt-link session-link" type="button" data-task-session="${session.id}">
-                        ${session.label}
-                    </button>
-                    <span class="entry-hunt-tag">${session.respawnModeLabel}</span>
+                    ${buildLinkButton(session.label, "data-task-session", session.id)}
+                    ${buildPill(session.respawnModeLabel)}
                 </td>
-                <td colspan="5">No creature selected yet.</td>
+                <td colspan="6">No creature selected yet.</td>
             </tr>
         `;
     }
@@ -22,10 +21,8 @@ function buildRow(session) {
     return `
         <tr>
             <td>
-                <button class="entry-hunt-link session-link" type="button" data-task-session="${session.id}">
-                    ${session.label}
-                </button>
-                <span class="entry-hunt-tag">${session.respawnModeLabel}</span>
+                ${buildLinkButton(session.label, "data-task-session", session.id)}
+                ${buildPill(session.respawnModeLabel)}
             </td>
             <td class="task-session-creature">${estimate.selectedMonster.displayName}</td>
             <td>${formatNumber(estimate.alreadyKilled)}</td>
