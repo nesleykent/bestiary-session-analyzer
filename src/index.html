@@ -72,6 +72,23 @@ Looted Items:"
 
             <p class="helper-text" id="inputHint">For the most accurate result, paste the full Hunt Analyzer block including duration and killed creatures.</p>
 
+            <div class="respawn-mode-block" id="respawnModeBlock">
+                <span class="input-label" id="respawnModeLabel">Recorded Respawn Mode</span>
+                <div class="segmented" role="group" aria-labelledby="respawnModeLabel">
+                    <button class="segmented-button is-selected" id="sessionRegularButton" type="button" aria-pressed="true">
+                        Regular
+                    </button>
+                    <button class="segmented-button" id="sessionRapidButton" type="button" aria-pressed="false">
+                        Rapid Respawn
+                    </button>
+                </div>
+                <p class="helper-text">
+                    The spawn conditions this Hunt Analyzer was recorded under. It changes no calculation: the kill rates and
+                    estimates stay exactly as recorded. Charm Plan uses it to match sessions to the environment you are
+                    planning for.
+                </p>
+            </div>
+
             <div class="toolbar" role="group" aria-label="Session actions">
                 <button class="btn btn-secondary" id="pasteLogButton" type="button">Paste Log</button>
                 <button class="btn" id="processLogButton" type="button">Process Log</button>

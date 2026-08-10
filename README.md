@@ -18,6 +18,13 @@ choose rather than a fixed unlock threshold.
 - **Charm Plan** optimizes across the sessions for the play time you have.
 - **Bestiary** is what the player is completing, and **charm points** are the reward being optimized.
 
+Three separate ideas control what `Charm Plan` uses:
+
+- **Respawn mode** is session metadata: the spawn conditions that Hunt Analyzer was recorded under, `Regular` or
+  `Rapid Respawn`. Set it in the session's own tab.
+- **Availability** is a temporary planning constraint you flip as spawns get taken.
+- **Plan respawn mode** is the environment you are planning for right now.
+
 ## Navigation
 
 Two levels:
@@ -42,6 +49,7 @@ and return to `Charm Plan` to see the updated plan.
 - Compares the Bestiary result of the analyzed sessions and highlights the one with the highest charm rate.
 - Provides a fixed `All Sessions` tab that combines the creatures of every analyzed session, once per session, into one Bestiary estimate.
 - Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
+- Records each session's respawn mode and lets `Charm Plan` plan for one mode at a time.
 - Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
 - Exports the whole workspace to a file and imports it back, including everything you configured.
 
@@ -76,7 +84,8 @@ python3 -m http.server 4173
 
 1. Analyze the first session as described above.
 2. Click `+` to add another session, then paste and process the next Hunt Analyzer.
-3. Switch between sessions at any time. Each keeps its own Hunt Analyzer, creature selection, and total kills.
+3. Switch between sessions at any time. Each keeps its own Hunt Analyzer, recorded respawn mode, creature selection, and
+   total kills.
 4. Once two sessions have a Bestiary analysis, click `Compare Sessions`.
 5. The comparison lists the `Total Charms`, `Longest Time Remaining`, and `Charm Rate` already calculated in each session, and marks the session with the highest charm rate as the best session.
 6. Change the creature selection or total kills inside any session and compare again to see the updated ranking.
@@ -118,8 +127,11 @@ same rate. The per-creature `Charm Rate` column stays a per-creature value and i
 time you actually have, how many charm points can you finish?
 
 - Accepts `90 min`, `1.5 h`, `2h 30min`, or `2:30`. A plain number counts as hours.
-- `Available Sessions` lists every processed session so you can ignore the ones whose spawn is taken right now. The plan
-  skips an ignored session and recalculates immediately.
+- `Plan For Respawn Mode` picks the environment you are planning for. Only sessions recorded in that mode are used.
+- `Sessions Considered` lists every processed session with its recorded mode and why it is or is not being used:
+  `Available`, `Wrong respawn mode`, or `Spawn unavailable`. `Ignore` and `Enable` flip availability from there, and the
+  plan recalculates immediately.
+- A session is used only when both hold: it is available, and its recorded respawn mode matches the plan mode.
 - Charm points are discrete completion rewards. An entry at 80% progress contributes nothing, so only entries whose
   `Time Remaining` fits in the available time count.
 - Already-completed entries add no time and no obtainable charms.
@@ -130,10 +142,13 @@ time you actually have, how many charm points can you finish?
 It plans across every available session and uses the same entries as `All Sessions`, so the session you picked there for
 a Bestiary that appears in several sessions is the one the plan uses.
 
-Ignoring is not deleting. It applies to `Charm Plan` only and is meant to be flipped as often as spawns change. An
-ignored session keeps everything it had: its own tab and Bestiary estimate, its rows in `All Sessions`, its ranking in
-`Compare Sessions`, and its place in the saved and exported workspace. Only the planner leaves it out. Processed
-sessions are the opportunities you know about; available sessions are the ones you can use right now.
+Recorded respawn modes are never converted. A `Rapid Respawn` session keeps the kill rates it was recorded with, and it
+is simply not considered while you plan for `Regular`. The same holds in reverse.
+
+Excluding is not deleting, for either reason. It applies to `Charm Plan` only and is meant to be flipped as often as spawns change. An
+excluded session keeps everything it had: its own tab and Bestiary estimate, its rows in `All Sessions`, its ranking in
+`Compare Sessions`, `Tasks`, and its place in the saved and exported workspace. Only the planner leaves it out. Processed
+sessions are the opportunities you know about; eligible sessions are the ones you can use right now.
 
 Inside one session, the selected creatures progress at the same time, so the planner never adds their times together: an
 entry is finishable when its `Time Remaining` fits the time spent on that session. Across sessions, time is sequential,
@@ -158,6 +173,7 @@ just the pasted text:
 - the `All Sessions` entry selection, so a duplicate you deselected stays deselected
 - the `Play Time Available` value
 - which sessions are ignored in `Charm Plan`
+- each session's recorded respawn mode, and the mode `Charm Plan` is planning for
 - the `Tasks` session, with its own Hunt Analyzer, chosen creature, and task target
 - the mode and view you were on
 

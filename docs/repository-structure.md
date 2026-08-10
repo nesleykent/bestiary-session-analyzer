@@ -55,7 +55,8 @@ bestiary-session-analyzer/
 - `features/hunt-comparison.js` only ranks and combines Bestiary results that the sessions already calculated.
 - The tab bar reads Charm Plan, All Sessions, then one tab per session; `Compare Sessions` renders the charm rate ranking separately.
 - `state/workspace-transfer.js` serializes the workspace to a file and validates one on the way back in.
-- Charm Plan availability is a workspace-level ignore list. It filters only the planner's input, never a session's own data.
+- Respawn mode is session metadata, availability is a workspace-level ignore list, and the plan's own respawn mode is a
+  separate workspace value. All three filter only the planner's input, never a session's own data.
 - `features/charm-plan.js` plans against available time only, and reads the per-creature times the session estimates produced.
 - All Sessions rows are each session's own estimate rows. Only its summary aggregates them, by adding each session's longest time.
 - The repository root is limited to metadata, documentation, license material, and the GitHub Pages redirect entry point.

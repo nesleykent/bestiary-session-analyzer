@@ -8,34 +8,69 @@ function escapeAttribute(value) {
         .replace(/"/g, "&quot;");
 }
 
-function buildAvailabilityToggle(session) {
+function buildPlanModeSwitch(planView) {
+    const modes = [
+        { key: "regular", label: "Regular" },
+        { key: "rapid", label: "Rapid Respawn" }
+    ];
+
     return `
-        <button
-            class="plan-availability-toggle${session.isAvailable ? " is-available" : ""}"
-            type="button"
-            data-plan-availability="${session.id}"
-            aria-pressed="${session.isAvailable ? "true" : "false"}"
-        >
-            <span class="plan-availability-name">${session.label}</span>
-            <span class="plan-availability-state">${session.isAvailable ? "Available" : "Ignored"}</span>
-        </button>
+        <div class="plan-mode-block">
+            <span class="input-label" id="planRespawnModeLabel">Plan For Respawn Mode</span>
+            <div class="segmented" role="group" aria-labelledby="planRespawnModeLabel">
+                ${modes.map((mode) => `
+                    <button
+                        class="segmented-button${planView.planRespawnMode === mode.key ? " is-selected" : ""}"
+                        type="button"
+                        data-plan-respawn-mode="${mode.key}"
+                        aria-pressed="${planView.planRespawnMode === mode.key ? "true" : "false"}"
+                    >${mode.label}</button>
+                `).join("")}
+            </div>
+            <p class="helper-text">
+                The environment you are planning for. Only sessions recorded in this respawn mode are used, and their
+                recorded numbers are never converted between modes.
+            </p>
+        </div>
     `;
 }
 
-function buildAvailabilityControl(planView) {
-    if (!planView.sessionAvailability.length) {
+function buildConsideredSession(session) {
+    const isEligible = session.isAvailable && session.matchesPlanMode;
+    const status = !session.matchesPlanMode
+        ? "Wrong respawn mode"
+        : (session.isAvailable ? "Available" : "Spawn unavailable");
+
+    return `
+        <li class="plan-session${isEligible ? " is-eligible" : ""}">
+            <span class="plan-session-name">${session.label}</span>
+            <span class="plan-session-mode">${session.respawnModeLabel}</span>
+            <span class="plan-session-status">${status}</span>
+            <button
+                class="plan-session-toggle"
+                type="button"
+                data-plan-availability="${session.id}"
+                aria-pressed="${session.isAvailable ? "true" : "false"}"
+            >${session.isAvailable ? "Ignore" : "Enable"}</button>
+        </li>
+    `;
+}
+
+function buildConsideredSessions(planView) {
+    if (!planView.consideredSessions.length) {
         return "";
     }
 
     return `
-        <div class="plan-availability">
-            <span class="input-label" id="planAvailabilityLabel">Available Sessions</span>
-            <div class="plan-availability-list" role="group" aria-labelledby="planAvailabilityLabel">
-                ${planView.sessionAvailability.map(buildAvailabilityToggle).join("")}
-            </div>
+        <div class="plan-sessions-block">
+            <span class="input-label" id="planSessionsLabel">Sessions Considered</span>
+            <ul class="plan-sessions" role="list" aria-labelledby="planSessionsLabel">
+                ${planView.consideredSessions.map(buildConsideredSession).join("")}
+            </ul>
             <p class="helper-text">
-                Ignore a session while its spawn is taken and the plan will skip it. This only affects Charm Plan: the
-                session, All Sessions, and Compare Sessions keep everything. Select it again at any time.
+                A session is used only when it is available and recorded in the respawn mode above. Ignore one while its
+                spawn is taken; that affects Charm Plan alone, and the session keeps its own analysis, its rows in All
+                Sessions, and its ranking in Compare Sessions.
             </p>
         </div>
     `;
@@ -145,11 +180,20 @@ export function buildCharmPlanResultMarkup(planView) {
         `;
     }
 
-    if (!planView.hasAvailableHunts) {
+    if (!planView.hasModeMatchedHunts) {
         return `
             <div class="empty-state">
-                <strong>Every session is ignored.</strong>
-                <span>Mark at least one session available above to plan with it. Ignoring only affects Charm Plan.</span>
+                <strong>No ${planView.planRespawnModeLabel} sessions.</strong>
+                <span>Switch the plan above to the mode you are hunting in, or set a session's recorded respawn mode in its own tab.</span>
+            </div>
+        `;
+    }
+
+    if (!planView.hasEligibleHunts) {
+        return `
+            <div class="empty-state">
+                <strong>Every ${planView.planRespawnModeLabel} session is ignored.</strong>
+                <span>Enable at least one session above to plan with it. Ignoring only affects Charm Plan.</span>
             </div>
         `;
     }
@@ -205,7 +249,9 @@ export function renderCharmPlan(container, planView) {
             <p class="helper-text">Accepts 90 min, 1.5 h, 2h 30min, or 2:30. A plain number counts as hours.</p>
         </div>
 
-        ${buildAvailabilityControl(planView)}
+        ${buildPlanModeSwitch(planView)}
+
+        ${buildConsideredSessions(planView)}
 
         <div id="charmPlanResult">${buildCharmPlanResultMarkup(planView)}</div>
     `;

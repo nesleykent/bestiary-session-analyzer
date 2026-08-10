@@ -704,64 +704,144 @@ textarea:hover {
     margin-bottom: 0;
 }
 
-.plan-availability {
+.segmented {
+    display: inline-flex;
+    gap: 4px;
+    margin: 8px 0 10px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+}
+
+.segmented-button {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-text-subtle);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.segmented-button:hover {
+    color: var(--color-text);
+}
+
+.segmented-button.is-selected {
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.segmented-button:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+.respawn-mode-block {
+    margin-bottom: 4px;
+}
+
+.hunt-tab-note {
+    display: block;
+    margin-top: 1px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #949494;
+}
+
+.plan-mode-block {
+    margin-bottom: 18px;
+}
+
+.plan-sessions-block {
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
-.plan-availability-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+.plan-sessions {
+    list-style: none;
     margin: 8px 0 10px;
-}
-
-.plan-availability-toggle {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     background: var(--color-surface);
-    color: var(--color-text-subtle);
-    padding: 6px 14px;
-    cursor: pointer;
-    transition: border-color var(--transition), background var(--transition), color var(--transition);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
-.plan-availability-toggle:hover {
-    border-color: #c4c4c4;
-    color: var(--color-text);
-}
-
-.plan-availability-toggle.is-available {
-    border-style: solid;
-    border-color: var(--color-brand);
-    background: var(--color-brand-tint);
-    color: var(--color-text);
-}
-
-.plan-availability-toggle:focus-visible {
-    outline: 2px solid var(--color-brand);
-    outline-offset: 2px;
-}
-
-.plan-availability-name {
+.plan-session {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    border-bottom: 1px solid #eee;
     font-size: 14px;
+    color: var(--color-text-subtle);
+}
+
+.plan-session:last-child {
+    border-bottom: none;
+}
+
+.plan-session.is-eligible {
+    background: var(--color-brand-wash);
+    color: var(--color-text);
+}
+
+.plan-session-name {
     font-weight: 600;
 }
 
-.plan-availability-state {
+.plan-session-mode {
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    padding: 1px 8px;
+    border-radius: var(--radius-pill);
+    background: #f0f0f0;
     color: var(--color-text-subtle);
 }
 
-.plan-availability-toggle.is-available .plan-availability-state {
+.plan-session-status {
+    font-size: 13px;
+    text-align: right;
+}
+
+.plan-session.is-eligible .plan-session-status {
+    font-weight: 700;
     color: var(--color-brand-deep);
+}
+
+.plan-session-toggle {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-subtle);
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 66px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.plan-session-toggle:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand-deep);
+    background: var(--color-brand-tint);
+}
+
+.plan-session-toggle:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
 }
 
 .plan-entry-list,

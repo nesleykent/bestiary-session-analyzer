@@ -1,6 +1,11 @@
 let huntSequence = 0;
 
 const VIEWS = ["hunt", "allTabs", "charmPlan", "comparison"];
+const RESPAWN_MODES = ["regular", "rapid"];
+
+function normalizeRespawnMode(value) {
+    return RESPAWN_MODES.includes(value) ? value : "regular";
+}
 
 function nextHuntId() {
     huntSequence += 1;
@@ -10,6 +15,7 @@ function nextHuntId() {
 export function createHunt() {
     return {
         id: nextHuntId(),
+        respawnMode: "regular",
         sessionLog: "",
         sessionDuration: 0,
         hasProcessedLog: false,
@@ -39,6 +45,7 @@ export function createWorkspace() {
         view: "hunt",
         excludedAllTabsEntries: [],
         ignoredPlanHuntIds: [],
+        planRespawnMode: "regular",
         playTimeInput: "",
         taskSession: createTaskSession()
     };
@@ -101,6 +108,7 @@ function normalizeHunt(savedHunt, adoptedIds) {
     return {
         ...hunt,
         id: adoptSavedHuntId(savedHunt?.id, hunt.id, adoptedIds),
+        respawnMode: normalizeRespawnMode(savedHunt?.respawnMode),
         sessionLog: typeof savedHunt?.sessionLog === "string" ? savedHunt.sessionLog : "",
         sessionDuration: Number(savedHunt?.sessionDuration) || 0,
         hasProcessedLog: Boolean(savedHunt?.hasProcessedLog),
@@ -161,6 +169,7 @@ export function restoreWorkspace(savedState) {
         view: VIEWS.includes(savedState?.view) ? savedState.view : "hunt",
         excludedAllTabsEntries: savedExcludedEntries,
         ignoredPlanHuntIds: savedIgnoredPlanHuntIds,
+        planRespawnMode: normalizeRespawnMode(savedState?.planRespawnMode),
         playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : "",
         taskSession: normalizeTaskSession(savedState?.taskSession)
     };

@@ -44,6 +44,9 @@ const elements = {
     inputSection: document.getElementById("inputSection"),
     inputTitle: document.getElementById("inputTitle"),
     modeBestiaryButton: document.getElementById("modeBestiaryButton"),
+    respawnModeBlock: document.getElementById("respawnModeBlock"),
+    sessionRapidButton: document.getElementById("sessionRapidButton"),
+    sessionRegularButton: document.getElementById("sessionRegularButton"),
     modeTasksButton: document.getElementById("modeTasksButton"),
     output: document.getElementById("output"),
     pasteLogButton: document.getElementById("pasteLogButton"),
@@ -94,6 +97,16 @@ const FIXED_VIEW_STATUS = {
     }
 };
 
+const RESPAWN_MODE_LABELS = {
+    regular: "Regular",
+    rapid: "Rapid Respawn"
+};
+
+const RESPAWN_MODE_SHORT_LABELS = {
+    regular: "Regular",
+    rapid: "Rapid"
+};
+
 const state = {
     mode: "bestiary",
     activeHuntId: "",
@@ -101,6 +114,7 @@ const state = {
     excludedAllTabsEntries: [],
     hunts: [],
     ignoredPlanHuntIds: [],
+    planRespawnMode: "regular",
     playTimeInput: "",
     taskSession: null,
     view: "hunt"
@@ -137,6 +151,7 @@ function getWorkspaceSnapshot() {
         excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
         ignoredPlanHuntIds: state.ignoredPlanHuntIds,
+        planRespawnMode: state.planRespawnMode,
         playTimeInput: state.playTimeInput,
         taskSession: state.taskSession,
         view: state.view
@@ -287,15 +302,26 @@ function getProcessedSessions() {
         .filter((session) => hasBestiaryAnalysis(session.hunt));
 }
 
+function matchesPlanRespawnMode(hunt) {
+    return hunt.respawnMode === state.planRespawnMode;
+}
+
+function isHuntEligibleForPlan(hunt) {
+    return isHuntAvailableForPlan(hunt.id) && matchesPlanRespawnMode(hunt);
+}
+
 function getCharmPlanView() {
     const { analysis } = calculateAllTabsResult();
-    const sessionAvailability = getProcessedSessions().map((session) => ({
+    const consideredSessions = getProcessedSessions().map((session) => ({
         id: session.id,
         label: session.label,
-        isAvailable: isHuntAvailableForPlan(session.id)
+        respawnModeLabel: RESPAWN_MODE_SHORT_LABELS[session.hunt.respawnMode],
+        isAvailable: isHuntAvailableForPlan(session.id),
+        matchesPlanMode: matchesPlanRespawnMode(session.hunt)
     }));
+    const eligibleHuntIds = new Set(state.hunts.filter(isHuntEligibleForPlan).map((hunt) => hunt.id));
     const huntGroups = analysis.participatingHunts
-        .filter((participatingHunt) => isHuntAvailableForPlan(participatingHunt.id))
+        .filter((participatingHunt) => eligibleHuntIds.has(participatingHunt.id))
         .map((participatingHunt) => ({
             id: participatingHunt.id,
             label: participatingHunt.label,
@@ -305,9 +331,12 @@ function getCharmPlanView() {
 
     return {
         playTimeValue: state.playTimeInput,
-        sessionAvailability,
-        hasAnalyzedHunts: sessionAvailability.length > 0,
-        hasAvailableHunts: huntGroups.length > 0,
+        planRespawnMode: state.planRespawnMode,
+        planRespawnModeLabel: RESPAWN_MODE_LABELS[state.planRespawnMode],
+        consideredSessions,
+        hasAnalyzedHunts: consideredSessions.length > 0,
+        hasModeMatchedHunts: consideredSessions.some((session) => session.matchesPlanMode),
+        hasEligibleHunts: huntGroups.length > 0,
         plan: availableMinutes === null || !huntGroups.length
             ? null
             : planCharmTime(huntGroups, availableMinutes)
@@ -315,8 +344,8 @@ function getCharmPlanView() {
 }
 
 function getCharmPlanTabMeta(planView) {
-    if (planView.hasAnalyzedHunts && !planView.hasAvailableHunts) {
-        return "All ignored";
+    if (planView.hasAnalyzedHunts && !planView.hasEligibleHunts) {
+        return "None eligible";
     }
 
     return planView.plan ? `+${formatNumber(planView.plan.charms)} charms` : "No play time";
@@ -393,6 +422,7 @@ function renderHuntTabStrip() {
         meta: hasBestiaryAnalysis(hunt)
             ? formatCharmsPerHour(calculateBestiaryResult(hunt).summary.totalCharmsPerHour)
             : "No analysis",
+        note: hasBestiaryAnalysis(hunt) ? RESPAWN_MODE_SHORT_LABELS[hunt.respawnMode] : "",
         isActive: state.view === "hunt" && hunt.id === state.activeHuntId
     }));
     const isComparing = state.view === "comparison";
@@ -412,6 +442,11 @@ function renderHuntView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = false;
+    elements.sessionRegularButton.classList.toggle("is-selected", hunt.respawnMode === "regular");
+    elements.sessionRapidButton.classList.toggle("is-selected", hunt.respawnMode === "rapid");
+    elements.sessionRegularButton.setAttribute("aria-pressed", String(hunt.respawnMode === "regular"));
+    elements.sessionRapidButton.setAttribute("aria-pressed", String(hunt.respawnMode === "rapid"));
     elements.sessionLog.value = hunt.sessionLog;
     elements.inputTitle.textContent = "Hunt Analyzer";
     elements.resultsTitle.textContent = `${huntLabel} Analysis`;
@@ -478,6 +513,7 @@ function renderTasksView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
     elements.sessionLog.value = taskSession.sessionLog;
     elements.inputTitle.textContent = VIEW_CONTENT.tasks.inputTitle;
     elements.resultsTitle.textContent = VIEW_CONTENT.tasks.resultsTitle;
@@ -773,6 +809,40 @@ function toggleHuntPlanAvailability(huntId) {
     );
 }
 
+function setPlanRespawnMode(respawnMode) {
+    if (state.planRespawnMode === respawnMode) {
+        return;
+    }
+
+    captureVisibleInputs();
+    state.planRespawnMode = respawnMode;
+    renderApp();
+    persistState();
+    setStatus(
+        `Planning for ${RESPAWN_MODE_LABELS[respawnMode]}`,
+        false,
+        "Charm Plan uses only sessions recorded in this respawn mode. Every session keeps its own analysis."
+    );
+}
+
+function setSessionRespawnMode(respawnMode) {
+    const hunt = getActiveHunt();
+
+    if (!hunt || hunt.respawnMode === respawnMode) {
+        return;
+    }
+
+    captureVisibleInputs();
+    hunt.respawnMode = respawnMode;
+    renderApp();
+    persistState();
+    setStatus(
+        `${getHuntLabelById(hunt.id)} recorded as ${RESPAWN_MODE_LABELS[respawnMode]}`,
+        false,
+        "This only records the spawn conditions. The kill rates and estimates are unchanged."
+    );
+}
+
 function dropIgnoredPlanHunt(huntId) {
     state.ignoredPlanHuntIds = state.ignoredPlanHuntIds.filter((ignoredId) => ignoredId !== huntId);
 }
@@ -816,6 +886,10 @@ function attachCharmPlanActions() {
 
     elements.output.querySelectorAll("[data-plan-availability]").forEach((button) => {
         button.addEventListener("click", () => toggleHuntPlanAvailability(button.dataset.planAvailability));
+    });
+
+    elements.output.querySelectorAll("[data-plan-respawn-mode]").forEach((button) => {
+        button.addEventListener("click", () => setPlanRespawnMode(button.dataset.planRespawnMode));
     });
 
     if (!playTimeInput) {
@@ -981,6 +1055,7 @@ function applyWorkspace(workspace) {
     state.view = workspace.view;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
     state.ignoredPlanHuntIds = workspace.ignoredPlanHuntIds;
+    state.planRespawnMode = workspace.planRespawnMode;
     state.playTimeInput = workspace.playTimeInput;
     state.taskSession = workspace.taskSession;
     normalizeView();
@@ -1095,6 +1170,8 @@ elements.clearLogButton.addEventListener("click", clearLog);
 elements.compareHuntsButton.addEventListener("click", showComparison);
 elements.modeBestiaryButton.addEventListener("click", () => setMode("bestiary"));
 elements.modeTasksButton.addEventListener("click", () => setMode("tasks"));
+elements.sessionRegularButton.addEventListener("click", () => setSessionRespawnMode("regular"));
+elements.sessionRapidButton.addEventListener("click", () => setSessionRespawnMode("rapid"));
 elements.processLogButton.addEventListener("click", processLog);
 elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
 elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
