@@ -354,6 +354,24 @@ h3.subsection-title {
     min-width: 520px;
 }
 
+.task-sessions-table table {
+    min-width: 720px;
+}
+
+.task-session-creature {
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.session-link {
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-link);
+    font-size: 14px;
+    font-weight: 600;
+}
+
 .entry-hunt-link {
     border: none;
     cursor: pointer;

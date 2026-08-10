@@ -50,7 +50,8 @@ bestiary-session-analyzer/
 ## Notes
 
 - All application runtime code lives under `src/`.
-- Bestiary and Tasks are separate top-level modes with their own Hunt Analyzer paste; sessions and the tab bar belong to Bestiary only.
+- Bestiary and Tasks are the two top-level modes over one session collection. A session holds shared evidence plus each
+  mode's own state, and each mode keeps its own current view.
 - `state/hunt-workspace.js` owns the session collection. Each session is the Bestiary analysis of one pasted Hunt Analyzer.
 - `features/hunt-comparison.js` only ranks and combines Bestiary results that the sessions already calculated.
 - The tab bar reads Charm Plan, All Sessions, then one tab per session; `Compare Sessions` renders the charm rate ranking separately.

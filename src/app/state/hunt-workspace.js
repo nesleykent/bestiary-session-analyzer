@@ -1,6 +1,7 @@
 let huntSequence = 0;
 
-const VIEWS = ["hunt", "allTabs", "charmPlan", "comparison"];
+const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison"];
+const TASKS_VIEWS = ["session", "allSessions"];
 const RESPAWN_MODES = ["regular", "rapid"];
 
 function normalizeRespawnMode(value) {
@@ -20,18 +21,10 @@ export function createHunt() {
         sessionDuration: 0,
         hasProcessedLog: false,
         matchedMonsters: [],
-        selectedBestiaryMonsterNames: []
-    };
-}
-
-export function createTaskSession() {
-    return {
-        sessionLog: "",
-        sessionDuration: 0,
-        hasProcessedLog: false,
-        monsters: [],
-        selectedMonsterName: "",
-        totalKills: ""
+        selectedBestiaryMonsterNames: [],
+        taskMonsters: [],
+        selectedTaskMonsterName: "",
+        taskTargetKills: ""
     };
 }
 
@@ -42,12 +35,12 @@ export function createWorkspace() {
         mode: "bestiary",
         hunts: [hunt],
         activeHuntId: hunt.id,
-        view: "hunt",
+        bestiaryView: "session",
+        tasksView: "session",
         excludedAllTabsEntries: [],
         ignoredPlanHuntIds: [],
         planRespawnMode: "regular",
-        playTimeInput: "",
-        taskSession: createTaskSession()
+        playTimeInput: ""
     };
 }
 
@@ -67,7 +60,8 @@ export function addHunt(hunts) {
 export function resetHunt(hunt) {
     return {
         ...createHunt(),
-        id: hunt.id
+        id: hunt.id,
+        respawnMode: hunt.respawnMode
     };
 }
 
@@ -115,21 +109,10 @@ function normalizeHunt(savedHunt, adoptedIds) {
         matchedMonsters,
         selectedBestiaryMonsterNames: Array.isArray(savedHunt?.selectedBestiaryMonsterNames)
             ? savedHunt.selectedBestiaryMonsterNames
-            : matchedMonsters.map((monster) => monster.name)
-    };
-}
-
-function normalizeTaskSession(savedTaskSession) {
-    const monsters = Array.isArray(savedTaskSession?.monsters) ? savedTaskSession.monsters : [];
-
-    return {
-        ...createTaskSession(),
-        sessionLog: typeof savedTaskSession?.sessionLog === "string" ? savedTaskSession.sessionLog : "",
-        sessionDuration: Number(savedTaskSession?.sessionDuration) || 0,
-        hasProcessedLog: Boolean(savedTaskSession?.hasProcessedLog),
-        monsters,
-        selectedMonsterName: savedTaskSession?.selectedMonsterName || "",
-        totalKills: savedTaskSession?.totalKills ?? ""
+            : matchedMonsters.map((monster) => monster.name),
+        taskMonsters: Array.isArray(savedHunt?.taskMonsters) ? savedHunt.taskMonsters : [],
+        selectedTaskMonsterName: savedHunt?.selectedTaskMonsterName || "",
+        taskTargetKills: savedHunt?.taskTargetKills ?? ""
     };
 }
 
@@ -141,6 +124,10 @@ function reserveSavedHuntIds(savedHunts) {
             huntSequence = savedSequence;
         }
     });
+}
+
+function normalizeView(savedView, allowedViews) {
+    return allowedViews.includes(savedView) ? savedView : "session";
 }
 
 export function restoreWorkspace(savedState) {
@@ -166,19 +153,23 @@ export function restoreWorkspace(savedState) {
         mode: savedState?.mode === "tasks" ? "tasks" : "bestiary",
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
-        view: VIEWS.includes(savedState?.view) ? savedState.view : "hunt",
+        bestiaryView: normalizeView(savedState?.bestiaryView, BESTIARY_VIEWS),
+        tasksView: normalizeView(savedState?.tasksView, TASKS_VIEWS),
         excludedAllTabsEntries: savedExcludedEntries,
         ignoredPlanHuntIds: savedIgnoredPlanHuntIds,
         planRespawnMode: normalizeRespawnMode(savedState?.planRespawnMode),
-        playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : "",
-        taskSession: normalizeTaskSession(savedState?.taskSession)
+        playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : ""
     };
 }
 
 export function huntHasContent(hunt) {
-    return Boolean(hunt.sessionLog.trim() || hunt.matchedMonsters.length);
+    return Boolean(hunt.sessionLog.trim() || hunt.matchedMonsters.length || hunt.taskMonsters.length);
 }
 
 export function hasBestiaryAnalysis(hunt) {
     return hunt.matchedMonsters.length > 0;
+}
+
+export function hasTaskAnalysis(hunt) {
+    return hunt.taskMonsters.length > 0;
 }

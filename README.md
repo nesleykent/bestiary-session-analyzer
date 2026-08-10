@@ -4,8 +4,9 @@ Bestiary Session Analyzer answers one question for Tibia charm-point farming: gi
 played and the time you have tonight, which Bestiary entries can you finish and where should you hunt? It reads the kill
 data out of the Hunt Analyzer text you paste and turns it into a route.
 
-`Tasks` is a separate estimate for a single task target, kept apart from Bestiary because a task target is a number you
-choose rather than a fixed unlock threshold.
+`Tasks` is the second mode, not a Bestiary feature. It answers a different question from the same sessions: how long will
+this task target take at the performance this session recorded? A task target is a number you choose rather than a fixed
+unlock threshold, so it never enters the charm-point maths.
 
 ## Terminology
 
@@ -25,17 +26,45 @@ Three separate ideas control what `Charm Plan` uses:
 - **Availability** is a temporary planning constraint you flip as spawns get taken.
 - **Plan respawn mode** is the environment you are planning for right now.
 
+## The Two Modes
+
+Both modes are built from the same sessions. Processing a Hunt Analyzer once serves both.
+
+| | Bestiary | Tasks |
+|---|---|---|
+| Question | What should I complete for charm points? | How long will this task target take? |
+| Focus | Charm points | Kill target |
+| Per session | Selected Bestiary creatures, total kills | Selected task creature, task target |
+| Extra views | `Charm Plan`, `All Sessions`, `Compare Sessions` | `All Sessions` task estimates |
+
+Switching modes never asks you to paste again, and each mode remembers its own state for every session as well as the
+view you were last on. Charm points, charm rate, `Charm Plan`, `Compare Sessions`, and Bestiary completion never appear
+in the Tasks flow.
+
 ## Navigation
 
 Two levels:
 
-- `Bestiary` and `Tasks` are the top-level choice. They do not share a Hunt Analyzer paste or a workspace.
-- Inside `Bestiary`, the tab bar reads `Charm Plan`, `All Sessions`, one tab per session, then `+` to add a session.
-  `Compare Sessions` stays a separate action on the right.
+- `Bestiary` and `Tasks` are the top-level choice. They share the sessions.
+- Inside `Bestiary`: `Charm Plan`, `All Sessions`, one tab per session, `+` to add a session, and `Compare Sessions` as a
+  separate action on the right.
+- Inside `Tasks`: `All Sessions`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
 
 Every view is one click from every other view, so re-checking a single creature never means restarting. From
 `Charm Plan`, selecting the session tag on an entry or a route step opens that session directly; adjust its total kills
 and return to `Charm Plan` to see the updated plan.
+
+## Tasks
+
+1. Open `Tasks`, then pick a session or process a Hunt Analyzer into one.
+2. Select the creature your task asks for.
+3. Enter the task target.
+4. Read the session kills, kill rate, kills remaining, and estimated time to finish.
+
+The session is the evidence. Its recorded respawn mode travels with the estimate, shown as a metric and next to the kill
+count, because a rate measured under `Rapid Respawn` is not interchangeable with one measured under `Regular`. Tasks has
+no respawn filter and no availability control: it estimates from the one session you selected rather than optimizing
+across sessions. `All Sessions` in Tasks lists one row per processed session with its own creature and target.
 
 ## What The Tool Does
 
@@ -44,7 +73,7 @@ and return to `Charm Plan` to see the updated plan.
 - In `Bestiary` mode, matches those monsters against the Bestiary dataset.
 - In `Bestiary` mode, calculates kill rate, remaining kills, and estimated time to unlock.
 - In `Bestiary` mode, lets you enter your current total kills to recalculate remaining time more accurately.
-- In `Tasks`, lets you choose one creature from the session and estimate how long a task may take at that kill rate.
+- In `Tasks`, lets you choose one creature per session and estimate how long a task target takes at that session's kill rate.
 - Keeps each processed Hunt Analyzer as its own session, with its own creature selection and total kills.
 - Compares the Bestiary result of the analyzed sessions and highlights the one with the highest charm rate.
 - Provides a fixed `All Sessions` tab that combines the creatures of every analyzed session, once per session, into one Bestiary estimate.
@@ -77,15 +106,15 @@ python3 -m http.server 4173
    - Estimated time remaining
    - Charms per hour
 7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature and click `Update Remaining Time`.
-8. In `Tasks`, paste a session, select the task creature, and enter the total kills that task requires.
+8. In `Tasks`, select the task creature for a session and enter the total kills that task requires.
 9. Use `Clear Log` or `Reset Totals` to reset the Hunt Analyzer text or manual kill totals of the selected session.
 
 ## Comparing Several Sessions
 
 1. Analyze the first session as described above.
 2. Click `+` to add another session, then paste and process the next Hunt Analyzer.
-3. Switch between sessions at any time. Each keeps its own Hunt Analyzer, recorded respawn mode, creature selection, and
-   total kills.
+3. Switch between sessions at any time. Each keeps its own Hunt Analyzer, recorded respawn mode, Bestiary creature
+   selection and total kills, and task creature and target.
 4. Once two sessions have a Bestiary analysis, click `Compare Sessions`.
 5. The comparison lists the `Total Charms`, `Longest Time Remaining`, and `Charm Rate` already calculated in each session, and marks the session with the highest charm rate as the best session.
 6. Change the creature selection or total kills inside any session and compare again to see the updated ranking.
@@ -174,7 +203,7 @@ just the pasted text:
 - the `Play Time Available` value
 - which sessions are ignored in `Charm Plan`
 - each session's recorded respawn mode, and the mode `Charm Plan` is planning for
-- the `Tasks` session, with its own Hunt Analyzer, chosen creature, and task target
+- each session's task creature and task target
 - the mode and view you were on
 
 `Import` reads that file back and restores all of it. It asks first if the current workspace has anything in it, since

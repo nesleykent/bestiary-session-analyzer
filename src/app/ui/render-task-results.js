@@ -26,7 +26,7 @@ function buildMetric(label, value, emphasized = false) {
     `;
 }
 
-function buildEstimateMarkup(estimate) {
+function buildEstimateMarkup(estimate, respawnModeLabel) {
     if (!estimate.selectedMonster) {
         return `
             <div class="empty-state">
@@ -44,7 +44,10 @@ function buildEstimateMarkup(estimate) {
                 <p class="task-selection-label">Selected Creature</p>
                 <strong class="task-selection-value">${estimate.selectedMonster.displayName}</strong>
             </div>
-            <p class="task-selection-copy">${formatNumber(estimate.selectedMonster.killsThisSession)} killed in this session</p>
+            <p class="task-selection-copy">
+                ${formatNumber(estimate.selectedMonster.killsThisSession)} killed in this session, recorded under
+                ${respawnModeLabel}
+            </p>
         </div>
 
         <div class="task-target-block">
@@ -59,7 +62,10 @@ function buildEstimateMarkup(estimate) {
                 value="${hasTaskTotal ? estimate.taskTotalKills : ""}"
                 placeholder="Example: 500"
             >
-            <p class="helper-text">Enter the total kills required for this task.</p>
+            <p class="helper-text">
+                Enter the total kills this task requires. The estimate uses the kill rate this session recorded under
+                ${respawnModeLabel}, so it is not comparable to a session recorded under different spawn conditions.
+            </p>
         </div>
 
         ${hasTaskTotal ? `
@@ -79,7 +85,7 @@ function buildEstimateMarkup(estimate) {
     `;
 }
 
-export function renderTaskResults(container, monsters, estimate, sessionDuration) {
+export function renderTaskResults(container, monsters, estimate, sessionDuration, respawnModeLabel) {
     if (!monsters.length) {
         container.className = "empty-state";
         container.innerHTML = `
@@ -94,6 +100,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
         <div class="summary-grid">
             ${buildMetric("Session Time", formatTimeDetailed(sessionDuration), true)}
             ${buildMetric("Creature Types", formatNumber(estimate.totalMonsterTypes))}
+            ${buildMetric("Respawn Mode", respawnModeLabel)}
         </div>
 
         <section class="results-section" aria-labelledby="taskSelectionTitle">
@@ -106,7 +113,7 @@ export function renderTaskResults(container, monsters, estimate, sessionDuration
 
         <section class="results-section" aria-labelledby="taskEstimateTitle">
             <h3 class="subsection-title" id="taskEstimateTitle">Task Estimate</h3>
-            ${buildEstimateMarkup(estimate)}
+            ${buildEstimateMarkup(estimate, respawnModeLabel)}
         </section>
     `;
 }

@@ -46,7 +46,7 @@
 
         <nav class="hunt-workspace" id="huntWorkspace" aria-label="Sessions">
             <div class="hunt-tab-strip" id="huntTabStrip"></div>
-            <div class="hunt-workspace-actions">
+            <div class="hunt-workspace-actions" id="huntWorkspaceActions">
                 <button class="btn btn-secondary" id="compareHuntsButton" type="button" aria-pressed="false" disabled>
                     Compare Sessions
                 </button>
@@ -82,10 +82,8 @@ Looted Items:"
                         Rapid Respawn
                     </button>
                 </div>
-                <p class="helper-text">
-                    The spawn conditions this Hunt Analyzer was recorded under. It changes no calculation: the kill rates and
-                    estimates stay exactly as recorded. Charm Plan uses it to match sessions to the environment you are
-                    planning for.
+                <p class="helper-text" id="respawnModeHint">
+                    The spawn conditions this Hunt Analyzer was recorded under.
                 </p>
             </div>
 
