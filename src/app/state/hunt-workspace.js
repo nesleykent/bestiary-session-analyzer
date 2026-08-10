@@ -38,6 +38,7 @@ export function createWorkspace() {
         activeHuntId: hunt.id,
         view: "hunt",
         excludedAllTabsEntries: [],
+        ignoredPlanHuntIds: [],
         playTimeInput: "",
         taskSession: createTaskSession()
     };
@@ -149,6 +150,9 @@ export function restoreWorkspace(savedState) {
     const savedExcludedEntries = Array.isArray(savedState?.excludedAllTabsEntries)
         ? savedState.excludedAllTabsEntries.filter((entryKey) => typeof entryKey === "string")
         : [];
+    const savedIgnoredPlanHuntIds = Array.isArray(savedState?.ignoredPlanHuntIds)
+        ? savedState.ignoredPlanHuntIds.filter((huntId) => typeof huntId === "string")
+        : [];
 
     return {
         mode: savedState?.mode === "tasks" ? "tasks" : "bestiary",
@@ -156,6 +160,7 @@ export function restoreWorkspace(savedState) {
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
         view: VIEWS.includes(savedState?.view) ? savedState.view : "hunt",
         excludedAllTabsEntries: savedExcludedEntries,
+        ignoredPlanHuntIds: savedIgnoredPlanHuntIds,
         playTimeInput: typeof savedState?.playTimeInput === "string" ? savedState.playTimeInput : "",
         taskSession: normalizeTaskSession(savedState?.taskSession)
     };

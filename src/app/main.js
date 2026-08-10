@@ -100,6 +100,7 @@ const state = {
     bestiaryData: [],
     excludedAllTabsEntries: [],
     hunts: [],
+    ignoredPlanHuntIds: [],
     playTimeInput: "",
     taskSession: null,
     view: "hunt"
@@ -135,6 +136,7 @@ function getWorkspaceSnapshot() {
         activeHuntId: state.activeHuntId,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
+        ignoredPlanHuntIds: state.ignoredPlanHuntIds,
         playTimeInput: state.playTimeInput,
         taskSession: state.taskSession,
         view: state.view
@@ -275,18 +277,37 @@ function calculateAllTabsResult() {
     };
 }
 
+function isHuntAvailableForPlan(huntId) {
+    return !state.ignoredPlanHuntIds.includes(huntId);
+}
+
+function getProcessedSessions() {
+    return state.hunts
+        .map((hunt, index) => ({ hunt, id: hunt.id, label: getHuntLabel(index) }))
+        .filter((session) => hasBestiaryAnalysis(session.hunt));
+}
+
 function getCharmPlanView() {
     const { analysis } = calculateAllTabsResult();
-    const huntGroups = analysis.participatingHunts.map((participatingHunt) => ({
-        id: participatingHunt.id,
-        label: participatingHunt.label,
-        monsters: participatingHunt.selectedMonsters
+    const sessionAvailability = getProcessedSessions().map((session) => ({
+        id: session.id,
+        label: session.label,
+        isAvailable: isHuntAvailableForPlan(session.id)
     }));
+    const huntGroups = analysis.participatingHunts
+        .filter((participatingHunt) => isHuntAvailableForPlan(participatingHunt.id))
+        .map((participatingHunt) => ({
+            id: participatingHunt.id,
+            label: participatingHunt.label,
+            monsters: participatingHunt.selectedMonsters
+        }));
     const availableMinutes = parsePlayTimeMinutes(state.playTimeInput);
 
     return {
         playTimeValue: state.playTimeInput,
-        hasAnalyzedHunts: huntGroups.length > 0,
+        sessionAvailability,
+        hasAnalyzedHunts: sessionAvailability.length > 0,
+        hasAvailableHunts: huntGroups.length > 0,
         plan: availableMinutes === null || !huntGroups.length
             ? null
             : planCharmTime(huntGroups, availableMinutes)
@@ -294,6 +315,10 @@ function getCharmPlanView() {
 }
 
 function getCharmPlanTabMeta(planView) {
+    if (planView.hasAnalyzedHunts && !planView.hasAvailableHunts) {
+        return "All ignored";
+    }
+
     return planView.plan ? `+${formatNumber(planView.plan.charms)} charms` : "No play time";
 }
 
@@ -578,6 +603,7 @@ function clearLog() {
     state.hunts = state.hunts.map((current) => (current.id === hunt.id ? clearedHunt : current));
     state.activeHuntId = clearedHunt.id;
     dropAllTabsEntriesOfHunt(hunt.id);
+    dropIgnoredPlanHunt(hunt.id);
     normalizeView();
     renderApp();
     persistState();
@@ -628,6 +654,7 @@ function closeHuntTab(huntId) {
     state.hunts = hunts;
     state.activeHuntId = activeHuntId;
     dropAllTabsEntriesOfHunt(huntId);
+    dropIgnoredPlanHunt(huntId);
     normalizeView();
     renderApp();
     persistState();
@@ -726,6 +753,30 @@ function toggleAllTabsEntry(entryKey) {
     );
 }
 
+function toggleHuntPlanAvailability(huntId) {
+    captureVisibleInputs();
+
+    const isIgnored = state.ignoredPlanHuntIds.includes(huntId);
+
+    state.ignoredPlanHuntIds = isIgnored
+        ? state.ignoredPlanHuntIds.filter((ignoredId) => ignoredId !== huntId)
+        : [...state.ignoredPlanHuntIds, huntId];
+
+    renderApp();
+    persistState();
+    setStatus(
+        `${getHuntLabelById(huntId)} ${isIgnored ? "available" : "ignored"} for Charm Plan`,
+        false,
+        isIgnored
+            ? "The plan can use this session again."
+            : "The plan skips this session. Its own analysis, All Sessions, and Compare Sessions are unchanged."
+    );
+}
+
+function dropIgnoredPlanHunt(huntId) {
+    state.ignoredPlanHuntIds = state.ignoredPlanHuntIds.filter((ignoredId) => ignoredId !== huntId);
+}
+
 function dropAllTabsEntriesOfHunt(huntId) {
     state.excludedAllTabsEntries = state.excludedAllTabsEntries
         .filter((entryKey) => !isEntryKeyForHunt(entryKey, huntId));
@@ -762,6 +813,10 @@ function attachPlanHuntLinks() {
 
 function attachCharmPlanActions() {
     const playTimeInput = document.getElementById("playTimeInput");
+
+    elements.output.querySelectorAll("[data-plan-availability]").forEach((button) => {
+        button.addEventListener("click", () => toggleHuntPlanAvailability(button.dataset.planAvailability));
+    });
 
     if (!playTimeInput) {
         return;
@@ -925,6 +980,7 @@ function applyWorkspace(workspace) {
     state.activeHuntId = workspace.activeHuntId;
     state.view = workspace.view;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
+    state.ignoredPlanHuntIds = workspace.ignoredPlanHuntIds;
     state.playTimeInput = workspace.playTimeInput;
     state.taskSession = workspace.taskSession;
     normalizeView();

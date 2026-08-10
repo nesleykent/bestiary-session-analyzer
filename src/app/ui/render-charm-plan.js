@@ -8,6 +8,39 @@ function escapeAttribute(value) {
         .replace(/"/g, "&quot;");
 }
 
+function buildAvailabilityToggle(session) {
+    return `
+        <button
+            class="plan-availability-toggle${session.isAvailable ? " is-available" : ""}"
+            type="button"
+            data-plan-availability="${session.id}"
+            aria-pressed="${session.isAvailable ? "true" : "false"}"
+        >
+            <span class="plan-availability-name">${session.label}</span>
+            <span class="plan-availability-state">${session.isAvailable ? "Available" : "Ignored"}</span>
+        </button>
+    `;
+}
+
+function buildAvailabilityControl(planView) {
+    if (!planView.sessionAvailability.length) {
+        return "";
+    }
+
+    return `
+        <div class="plan-availability">
+            <span class="input-label" id="planAvailabilityLabel">Available Sessions</span>
+            <div class="plan-availability-list" role="group" aria-labelledby="planAvailabilityLabel">
+                ${planView.sessionAvailability.map(buildAvailabilityToggle).join("")}
+            </div>
+            <p class="helper-text">
+                Ignore a session while its spawn is taken and the plan will skip it. This only affects Charm Plan: the
+                session, All Sessions, and Compare Sessions keep everything. Select it again at any time.
+            </p>
+        </div>
+    `;
+}
+
 function buildMetric(label, value, emphasized = false) {
     return `
         <article class="summary-card${emphasized ? " summary-card-primary" : ""}">
@@ -112,6 +145,15 @@ export function buildCharmPlanResultMarkup(planView) {
         `;
     }
 
+    if (!planView.hasAvailableHunts) {
+        return `
+            <div class="empty-state">
+                <strong>Every session is ignored.</strong>
+                <span>Mark at least one session available above to plan with it. Ignoring only affects Charm Plan.</span>
+            </div>
+        `;
+    }
+
     if (!planView.plan) {
         return `
             <div class="empty-state">
@@ -162,6 +204,8 @@ export function renderCharmPlan(container, planView) {
             >
             <p class="helper-text">Accepts 90 min, 1.5 h, 2h 30min, or 2:30. A plain number counts as hours.</p>
         </div>
+
+        ${buildAvailabilityControl(planView)}
 
         <div id="charmPlanResult">${buildCharmPlanResultMarkup(planView)}</div>
     `;

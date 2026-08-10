@@ -42,6 +42,7 @@ and return to `Charm Plan` to see the updated plan.
 - Compares the Bestiary result of the analyzed sessions and highlights the one with the highest charm rate.
 - Provides a fixed `All Sessions` tab that combines the creatures of every analyzed session, once per session, into one Bestiary estimate.
 - Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
+- Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
 - Exports the whole workspace to a file and imports it back, including everything you configured.
 
 ## How To Use It
@@ -117,6 +118,8 @@ same rate. The per-creature `Charm Rate` column stays a per-creature value and i
 time you actually have, how many charm points can you finish?
 
 - Accepts `90 min`, `1.5 h`, `2h 30min`, or `2:30`. A plain number counts as hours.
+- `Available Sessions` lists every processed session so you can ignore the ones whose spawn is taken right now. The plan
+  skips an ignored session and recalculates immediately.
 - Charm points are discrete completion rewards. An entry at 80% progress contributes nothing, so only entries whose
   `Time Remaining` fits in the available time count.
 - Already-completed entries add no time and no obtainable charms.
@@ -124,8 +127,13 @@ time you actually have, how many charm points can you finish?
 - The summary shows `Play Time Available`, `Charm Points Obtainable`, `Time Used`, `Unused Time`, and
   `Bestiaries Completed`, followed by the entries that fit.
 
-It plans across every analyzed session and uses the same entries as `All Sessions`, so the session you picked there for
+It plans across every available session and uses the same entries as `All Sessions`, so the session you picked there for
 a Bestiary that appears in several sessions is the one the plan uses.
+
+Ignoring is not deleting. It applies to `Charm Plan` only and is meant to be flipped as often as spawns change. An
+ignored session keeps everything it had: its own tab and Bestiary estimate, its rows in `All Sessions`, its ranking in
+`Compare Sessions`, and its place in the saved and exported workspace. Only the planner leaves it out. Processed
+sessions are the opportunities you know about; available sessions are the ones you can use right now.
 
 Inside one session, the selected creatures progress at the same time, so the planner never adds their times together: an
 entry is finishable when its `Time Remaining` fits the time spent on that session. Across sessions, time is sequential,
@@ -149,6 +157,7 @@ just the pasted text:
 - the total kills entered for each creature
 - the `All Sessions` entry selection, so a duplicate you deselected stays deselected
 - the `Play Time Available` value
+- which sessions are ignored in `Charm Plan`
 - the `Tasks` session, with its own Hunt Analyzer, chosen creature, and task target
 - the mode and view you were on
 

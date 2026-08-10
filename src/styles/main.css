@@ -704,6 +704,66 @@ textarea:hover {
     margin-bottom: 0;
 }
 
+.plan-availability {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.plan-availability-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 10px;
+}
+
+.plan-availability-toggle {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-text-subtle);
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition), color var(--transition);
+}
+
+.plan-availability-toggle:hover {
+    border-color: #c4c4c4;
+    color: var(--color-text);
+}
+
+.plan-availability-toggle.is-available {
+    border-style: solid;
+    border-color: var(--color-brand);
+    background: var(--color-brand-tint);
+    color: var(--color-text);
+}
+
+.plan-availability-toggle:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+.plan-availability-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.plan-availability-state {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-subtle);
+}
+
+.plan-availability-toggle.is-available .plan-availability-state {
+    color: var(--color-brand-deep);
+}
+
 .plan-entry-list,
 .plan-allocation-list {
     list-style: none;
