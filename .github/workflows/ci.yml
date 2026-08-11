@@ -28,6 +28,6 @@ jobs:
 
       - name: Validate datasets
         run: |
-          for f in src/data/bestiary.json src/data/achievements.json src/data/measuring-tibia.json; do
+          for f in src/data/*.json; do
             python3 -m json.tool "$f" > /dev/null
           done

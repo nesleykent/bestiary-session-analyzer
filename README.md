@@ -58,7 +58,8 @@ Two levels:
   tracker progress.
 - Inside `Sessions`: `Charm Plan`, `All Sessions`, `Library`, one tab per session, `+` to add a session, and
   `Compare Sessions` as a separate action on the right.
-- Inside `Trackers`: one tab per tracker, each showing its own progress. `Bestiary`, `Achievements` and `Measuring Tibia` today; more are configurations on the same engine.
+- Inside `Trackers`: one tab per tracker, each showing its own progress — `Bestiary`, `Bosstiary`, `Charms`,
+  `Achievements`, `Quests`, `Titles` and `Measuring Tibia`. Adding another is a definition plus a dataset.
 - Inside `Tasks`: `All Sessions`, `Library`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
 
 Every view is one click from every other view, so re-checking a single creature never means restarting. From
@@ -270,7 +271,11 @@ bestiary-session-analyzer/
 |   |   |-- services/
 |   |   |   |-- achievements-repository.js
 |   |   |   |-- bestiary-repository.js
-|   |   |   `-- measuring-tibia-repository.js
+|   |   |   |-- bosstiary-repository.js
+|   |   |   |-- charms-repository.js
+|   |   |   |-- measuring-tibia-repository.js
+|   |   |   |-- quests-repository.js
+|   |   |   `-- titles-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
@@ -280,8 +285,12 @@ bestiary-session-analyzer/
 |   |   |-- trackers/
 |   |   |   |-- achievements.js
 |   |   |   |-- bestiary.js
+|   |   |   |-- bosstiary.js
+|   |   |   |-- charms.js
 |   |   |   |-- measuring-tibia.js
-|   |   |   `-- registry.js
+|   |   |   |-- quests.js
+|   |   |   |-- registry.js
+|   |   |   `-- titles.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
 |   |   |   |-- render-blocks.js
@@ -299,7 +308,11 @@ bestiary-session-analyzer/
 |   |-- data/
 |   |   |-- achievements.json
 |   |   |-- bestiary.json
-|   |   `-- measuring-tibia.json
+|   |   |-- bosstiary.json
+|   |   |-- charms.json
+|   |   |-- measuring-tibia.json
+|   |   |-- quests.json
+|   |   `-- titles.json
 |   |-- styles/
 |   |   `-- main.css
 |   `-- index.html
@@ -334,9 +347,17 @@ value carried in an imported file, because an export goes stale as soon as CipSo
 
 | File | Contents | Source |
 |---|---|---|
-| `src/data/bestiary.json` | 833 creatures — charm points, stage thresholds, class, difficulty, occurrence, locations, Echo Warden eligibility | [TibiaDraptor](https://tibiadraptor.com/) Bestiary API |
-| `src/data/achievements.json` | 570 achievements and 18 categories — points, grade, secret flag, spoiler, community rarity | [TibiaDraptor](https://tibiadraptor.com/) Achievements API |
+| `src/data/bestiary.json` | 833 creatures — charm points, stage thresholds, class, difficulty, occurrence, locations, Echo Warden eligibility | [TibiaDraptor](https://tibiadraptor.com/) |
+| `src/data/bosstiary.json` | 316 bosses — three stage thresholds and the points each awards, category | [TibiaDraptor](https://tibiadraptor.com/) |
+| `src/data/charms.json` | 25 charms — three stages each, with cost and effect value | [TibiaDraptor](https://tibiadraptor.com/) |
+| `src/data/achievements.json` | 570 achievements and 18 categories — points, grade, secret flag, spoiler, community rarity | [TibiaDraptor](https://tibiadraptor.com/) |
+| `src/data/quests.json` | 237 quests across 94 questlogs, with rewards | [TibiaDraptor](https://tibiadraptor.com/) |
+| `src/data/titles.json` | 113 titles — how to earn each, and whether it is permanent | [TibiaDraptor](https://tibiadraptor.com/) |
 | `src/data/measuring-tibia.json` | 20 Cyclopedia Map areas, 171 subareas, and the achievement each area awards | [Tibiopedia.pl](https://tibiopedia.pl/quests/Measuring_Tibia_Quest) |
+
+Upstream names are not tidy — 47 quest names and one achievement name carry a trailing space — so names are trimmed
+when the data is read and keys are matched whitespace-insensitively. Without both, importing a progress CSV silently
+skipped every affected row.
 
 Two things worth knowing about the achievements data:
 

@@ -22,7 +22,11 @@ bestiary-session-analyzer/
 |   |   |-- services/
 |   |   |   |-- achievements-repository.js
 |   |   |   |-- bestiary-repository.js
-|   |   |   `-- measuring-tibia-repository.js
+|   |   |   |-- bosstiary-repository.js
+|   |   |   |-- charms-repository.js
+|   |   |   |-- measuring-tibia-repository.js
+|   |   |   |-- quests-repository.js
+|   |   |   `-- titles-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
@@ -32,8 +36,12 @@ bestiary-session-analyzer/
 |   |   |-- trackers/
 |   |   |   |-- achievements.js
 |   |   |   |-- bestiary.js
+|   |   |   |-- bosstiary.js
+|   |   |   |-- charms.js
 |   |   |   |-- measuring-tibia.js
-|   |   |   `-- registry.js
+|   |   |   |-- quests.js
+|   |   |   |-- registry.js
+|   |   |   `-- titles.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
 |   |   |   |-- render-blocks.js
@@ -51,7 +59,11 @@ bestiary-session-analyzer/
 |   |-- data/
 |   |   |-- achievements.json
 |   |   |-- bestiary.json
-|   |   `-- measuring-tibia.json
+|   |   |-- bosstiary.json
+|   |   |-- charms.json
+|   |   |-- measuring-tibia.json
+|   |   |-- quests.json
+|   |   `-- titles.json
 |   |-- styles/
 |   |   `-- main.css
 |   `-- index.html

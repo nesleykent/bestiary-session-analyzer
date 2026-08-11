@@ -742,7 +742,7 @@ async function loadTrackerItems(bestiaryData) {
 function getExternalDoneKeys(trackerId) {
     return TRACKERS.reduce((keys, tracker) => {
         if (tracker.derivesFor === trackerId && tracker.deriveExternalDone) {
-            tracker.deriveExternalDone(buildTrackerRows(tracker)).forEach((key) => keys.add(key));
+            tracker.deriveExternalDone(buildTrackerRows(tracker, {})).forEach((key) => keys.add(key));
         }
 
         return keys;
@@ -778,12 +778,32 @@ function entryFor(tracker, item) {
     return getEntry(state.trackerProgress, tracker.id, tracker.itemKey(item), tracker.entryDefaults);
 }
 
-function buildTrackerRows(tracker, externalDone) {
-    const context = {
-        externalDone: externalDone ?? (tracker.consumesDerived ? getExternalDoneKeys(tracker.id) : null)
+/**
+ * What one tracker needs to know about the others. Two kinds so far, both
+ * one-directional and one level deep:
+ *
+ *   externalDone — keys another tracker has already satisfied (a completed
+ *                  Cyclopedia Map area earns its achievement)
+ *   budget       — a scalar another tracker produces and this one spends
+ *                  (charms are bought with Bestiary charm points)
+ */
+function getTrackerContext(tracker) {
+    return {
+        externalDone: tracker.consumesDerived ? getExternalDoneKeys(tracker.id) : null,
+        budget: tracker.consumesBudgetFrom ? getTrackerBudget(tracker.consumesBudgetFrom) : null
     };
+}
 
-    return getTrackerItems(tracker).map((item) => tracker.derive(item, entryFor(tracker, item), context));
+function getTrackerBudget(providerId) {
+    const provider = getTracker(providerId);
+
+    return provider?.providesBudget ? provider.providesBudget(buildTrackerRows(provider, {})) : null;
+}
+
+function buildTrackerRows(tracker, context) {
+    const resolved = context ?? getTrackerContext(tracker);
+
+    return getTrackerItems(tracker).map((item) => tracker.derive(item, entryFor(tracker, item), resolved));
 }
 
 function filterTrackerRows(tracker, rows) {
@@ -849,7 +869,8 @@ function paginateTrackerRows(rows) {
 }
 
 function getTrackerView(tracker) {
-    const allRows = buildTrackerRows(tracker);
+    const context = getTrackerContext(tracker);
+    const allRows = buildTrackerRows(tracker, context);
     const visible = sortTrackerRows(tracker, filterTrackerRows(tracker, allRows));
     const { rows, page } = paginateTrackerRows(visible);
 
@@ -861,7 +882,7 @@ function getTrackerView(tracker) {
         sort: getTrackerSort(tracker),
         filters: getTrackerFilters(tracker),
         items: getTrackerItems(tracker),
-        totals: tracker.totals(allRows)
+        totals: tracker.totals(allRows, context)
     };
 }
 

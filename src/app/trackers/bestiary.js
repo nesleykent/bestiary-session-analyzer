@@ -116,6 +116,16 @@ export const bestiaryTracker = {
         { key: "echoWardenOnly", kind: "check", label: "Echo Warden eligible", matches: (row) => row.echoWardenEligible }
     ],
 
+    /**
+     * Charm points earned here are what the Charms tracker spends, so the total is
+     * published rather than recomputed there. Echo Warden is a separate pool that
+     * also buys charms, so both are included.
+     */
+    providesBudget: (rows) => ({
+        earned: rows.reduce((sum, row) => sum + row.charmsEarned + (row.echoWarden ? row.echoWardenPoints : 0), 0),
+        total: rows.reduce((sum, row) => sum + row.charms + row.echoWardenPoints, 0)
+    }),
+
     /** Shown under the tracker's name in the tab strip. */
     tabMeta(rows) {
         const earned = rows.reduce((sum, row) => sum + row.charmsEarned, 0);

@@ -47,7 +47,7 @@ function normalizeAchievement(achievement) {
 
     return {
         id: achievement.id,
-        Name: achievement.name,
+        Name: String(achievement.name ?? "").trim(),
         // Points and rarity are genuinely absent on some entries, so they stay
         // nullable rather than being coerced to a misleading zero.
         points: Number.isFinite(Number(achievement.points)) ? Number(achievement.points) : 0,

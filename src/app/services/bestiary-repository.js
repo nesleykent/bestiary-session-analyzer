@@ -17,7 +17,7 @@ function normalizeCreature(creature) {
 
     return {
         ID: creature.id,
-        Name: creature.name,
+        Name: String(creature.name ?? "").trim(),
         Class: creature.class?.name ?? "",
         Difficulty: creature.difficulty ?? "",
         Occurrence: creature.occurrence ?? "",

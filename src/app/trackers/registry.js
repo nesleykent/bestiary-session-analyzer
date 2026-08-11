@@ -1,6 +1,10 @@
 import { achievementsTracker } from "./achievements.js";
 import { bestiaryTracker } from "./bestiary.js";
+import { bosstiaryTracker } from "./bosstiary.js";
+import { charmsTracker } from "./charms.js";
 import { measuringTibiaTracker } from "./measuring-tibia.js";
+import { questsTracker } from "./quests.js";
+import { titlesTracker } from "./titles.js";
 
 /**
  * Every tracker, in navigation order. Adding one means adding a definition and a
@@ -8,7 +12,11 @@ import { measuringTibiaTracker } from "./measuring-tibia.js";
  */
 export const TRACKERS = [
     bestiaryTracker,
+    bosstiaryTracker,
+    charmsTracker,
     achievementsTracker,
+    questsTracker,
+    titlesTracker,
     measuringTibiaTracker
 ];
 

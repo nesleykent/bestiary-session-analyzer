@@ -80,8 +80,17 @@ export function parseCount(value) {
     return Number.isFinite(count) && count > 0 ? count : 0;
 }
 
+/**
+ * Keys are matched case- and whitespace-insensitively. Upstream data is not tidy:
+ * 47 quest names and one achievement name carry a trailing space, and trimming
+ * only the incoming value silently dropped every one of them on import.
+ */
 function buildKeyIndex(items, tracker) {
-    return new Map(items.map((item) => [tracker.itemKey(item).toLowerCase(), tracker.itemKey(item)]));
+    return new Map(items.map((item) => {
+        const key = tracker.itemKey(item);
+
+        return [key.trim().toLowerCase(), key];
+    }));
 }
 
 function collect(tracker, pairs) {
