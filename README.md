@@ -398,6 +398,7 @@ TibiaDraptor writes `Mummy's Dearest` and `King Of The Jungle`.
 
 ## Documentation
 
+- [Product journey and navigation map](docs/product-journey.md)
 - [Repository structure](docs/repository-structure.md)
 
 ## License
