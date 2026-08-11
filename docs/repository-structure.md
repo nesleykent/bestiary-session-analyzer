@@ -42,7 +42,9 @@ bestiary-session-analyzer/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
 |   |-- data/
-|   |   `-- bestiary.json
+|   |   |-- achievements.json
+|   |   |-- bestiary.json
+|   |   `-- measuring-tibia.json
 |   |-- styles/
 |   |   `-- main.css
 |   `-- index.html

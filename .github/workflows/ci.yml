@@ -26,5 +26,8 @@ jobs:
           test -f src/styles/main.css
           test -f src/data/bestiary.json
 
-      - name: Validate bestiary dataset
-        run: python3 -m json.tool src/data/bestiary.json > /dev/null
+      - name: Validate datasets
+        run: |
+          for f in src/data/bestiary.json src/data/achievements.json src/data/measuring-tibia.json; do
+            python3 -m json.tool "$f" > /dev/null
+          done

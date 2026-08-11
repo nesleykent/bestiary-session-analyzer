@@ -287,7 +287,9 @@ bestiary-session-analyzer/
 |   |   |   `-- formatters.js
 |   |   `-- main.js
 |   |-- data/
-|   |   `-- bestiary.json
+|   |   |-- achievements.json
+|   |   |-- bestiary.json
+|   |   `-- measuring-tibia.json
 |   |-- styles/
 |   |   `-- main.css
 |   `-- index.html
@@ -313,13 +315,28 @@ bestiary-session-analyzer/
 - The comparison consumes the same Bestiary summary each session displays, so both views always agree.
 - `src/data` stores application-owned datasets.
 
-## Data Source
+## Data Sources
 
-The application loads creature metadata from:
+Game data is stored as dated snapshots. It is read-only: the app never writes to it, and it always wins over a
+value carried in an imported file, because an export goes stale as soon as CipSoft rebalances something.
 
-- `src/data/bestiary.json`
+| File | Contents | Source |
+|---|---|---|
+| `src/data/bestiary.json` | 833 creatures — charm points, stage thresholds, class, difficulty, occurrence, locations, Echo Warden eligibility | [TibiaDraptor](https://tibiadraptor.com/) Bestiary API |
+| `src/data/achievements.json` | 570 achievements and 18 categories — points, grade, secret flag, spoiler, community rarity | [TibiaDraptor](https://tibiadraptor.com/) Achievements API |
+| `src/data/measuring-tibia.json` | 20 Cyclopedia Map areas, 171 subareas, and the achievement each area awards | [Tibiopedia.pl](https://tibiopedia.pl/quests/Measuring_Tibia_Quest) |
 
-This dataset is sourced from the TibiaDraptor Bestiary API and normalized into the internal fields the app already uses, including creature name, charm points, and kills required to unlock.
+Two things worth knowing about the achievements data:
+
+- **569 of the 570 are obtainable.** One (`The More the Merrier`) sits in the `Removed` category and is excluded
+  from the totals, which is why the count reads 569.
+- **The obtainable total is 1,499 points, not the 1,490 TibiaDraptor's own header shows.** Their aggregate predates
+  five achievements added in August 2026 that are present in the data. The app totals what the dataset actually
+  contains rather than repeating a stale figure.
+
+Achievement names are canonicalised across the two sources at capture time, so the Measuring Tibia areas join the
+achievements list on exact string equality — Tibiopedia writes `Mummys Dearest` and `King of the Jungle` where
+TibiaDraptor writes `Mummy's Dearest` and `King Of The Jungle`.
 
 ## Automation
 
