@@ -42,11 +42,11 @@ These scenarios validate the journey model without prescribing layout or visual 
 
 ### S04 — Record unknown Bestiary progress
 
-- **Given:** Dragon progress is unknown and a recommendation needs it.
-- **When:** the player records 642 total kills.
-- **Then:** Dragon becomes recorded in-progress truth and dependent estimates refresh.
-- **Return:** the player returns to the same recommendation with a change explanation.
-- **Recovery:** cancellation leaves Dragon unknown, not zero.
+- **Given:** the player is copying exact values from one Tibia Bestiary class and Dragon is the current row.
+- **When:** the player records 642 total kills and presses Enter.
+- **Then:** Dragon saves, dependent estimates refresh, and focus advances to the next visible creature without moving or rerendering the list.
+- **Return:** leaving and reopening Bestiary restores the same class, filters, page, row, and scroll position; contextual entry instead returns to its recommendation after saving.
+- **Recovery:** invalid input preserves the previous valid value and current position; undo restores the prior value without ending the sequence.
 
 ### S05 — Confirm a recorded zero
 

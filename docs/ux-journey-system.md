@@ -452,6 +452,54 @@ Tracker-specific completion:
 | Titles | Current ownership confirmed | Completion reflects permanent or losable meaning |
 | Measuring Tibia | Subarea discovery confirmed | Area completion and derived achievement refresh |
 
+### Bestiary exact-data entry
+
+This flow improves entry of the existing exact kill value. It does not introduce another Bestiary mode, progress type, wizard, or storage model.
+
+#### Entry choice
+
+- If the player already has a supported CSV or JSON file, continue through the existing import action and return to Bestiary after preview and confirmation.
+- Otherwise, remain in the Bestiary tracker and enter exact kills directly.
+- A contextual correction from a session or plan opens the exact creature and returns to the origin after the value is saved.
+
+#### Continuous manual-entry flow
+
+1. Choose the same creature class currently being reviewed in Tibia.
+2. Keep creatures in Tibia's class order so the player compares two lists without repeatedly searching.
+3. Focus the first visible kills field.
+4. Type the exact current kill count.
+5. Press Enter to commit and move focus to the next visible creature.
+6. Use Tab and Shift+Tab to move forward and backward without leaving the data-entry sequence.
+7. Leave a field unchanged to skip a creature.
+8. Continue through the visible class or page.
+9. On return, restore the same class, status filter, page, active row, and scroll position.
+
+The player should not need to click a field, save button, or search control again after every value.
+
+#### Save behavior
+
+- Each accepted value saves immediately.
+- Saving does not rerender the table, move the row, reset filters, close detail, or steal focus.
+- The updated stage, remaining kills, and Charm Points consequence refresh without changing row position.
+- A short confirmation identifies the creature and saved value.
+- Invalid input remains in the field with a specific correction; the previous valid value continues to power calculations.
+- Undo restores the previous value and returns focus to the same creature.
+
+#### Import behavior
+
+- Choosing a file happens before any replacement warning.
+- Preview identifies matched, changed, unchanged, and unmatched names using the current supported formats.
+- Confirmation states that Bestiary progress will be replaced.
+- Cancellation and validation failure leave current progress unchanged.
+- Completion returns to Bestiary with the previous filter context and an import summary.
+
+#### Completion behavior
+
+- Finishing one class offers the next Bestiary class, not a different product capability.
+- The player can stop after any saved row and resume from that position later.
+- Progress feedback describes values entered in the current pass and the current class; it does not create a second completion system.
+- Entering Bestiary data is complete when the player chooses to stop or finishes the intended class/file, not only after touching all 833 rows.
+
 Bookmarks create decision candidates. If they do not appear in the decision journey, they have no valid UX purpose.
 
 ## Core Journey 9: Completion Goal Loop
