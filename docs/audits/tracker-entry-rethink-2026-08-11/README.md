@@ -15,6 +15,22 @@ The replacement must organize work into **source-screen passes**, not rows. An i
 - **Why will they use it?** To know what is complete, what remains, and what to do next without reconstructing progress every visit.
 - **One key action:** Synchronize one trustworthy, bounded part of the character's Tibia progress.
 
+## Product-wide responsibility map
+
+The workflow becomes understandable only when each existing feature has one responsibility:
+
+| Product area | Responsibility | Relationship to progress |
+| --- | --- | --- |
+| Trackers | Preserve the character's canonical Bestiary, Bosstiary, Charm, Achievement, Quest, Title, and Measuring Tibia state | The only canonical ledger |
+| Full check | Build or refresh a trustworthy baseline from one bounded Tibia source screen | Writes only after scoped review |
+| Quick update | Record a small known change without reopening a full check | Writes one explicit before → after change |
+| Bestiary Sessions | Parse what happened during a hunt | Creates evidence proposals; never silently owns the total |
+| Tasks Session | Record task-session activity | Creates session evidence and task progress; any tracker effect is reviewed |
+| Charm Plan | Help choose and sequence a charm objective | Reads tracker state; does not become another progress store |
+| Opportunities | Rank useful next creatures or bosses | Reads the canonical ledger plus planning rules |
+
+The product loop is therefore **synchronize → plan → play → review evidence → synchronize**. There is one progress truth, and the planning/session features consume or propose changes to it instead of maintaining competing copies.
+
 ## Audited task
 
 Goal: manually synchronize Bestiary and achievement data from Tibia into the site.
