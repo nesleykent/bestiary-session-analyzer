@@ -1,5 +1,7 @@
 # Product Foundation and Journey — Rebuilt from Scratch
 
+Detailed screen behavior, states, transitions, responsive rules, and accessibility are defined in [Complete UX Architecture](ux-architecture.md).
+
 ## Status
 
 This document replaces the previous product and navigation assumptions. It is based on a fresh inventory of the repository, all seven shipped datasets, the current application behavior, and current official Tibia documentation as of August 11, 2026.
