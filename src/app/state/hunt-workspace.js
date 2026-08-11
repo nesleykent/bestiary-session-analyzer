@@ -3,7 +3,7 @@ import { getTrackerEntryDefaults } from "../trackers/registry.js";
 
 let huntSequence = 0;
 
-const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison", "library"];
+const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison", "library", "opportunities"];
 const TASKS_VIEWS = ["session", "allSessions", "library"];
 const RESPAWN_MODES = ["regular", "rapid"];
 const MODES = ["bestiary", "trackers", "tasks"];

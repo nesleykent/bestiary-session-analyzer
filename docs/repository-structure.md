@@ -16,6 +16,7 @@ bestiary-session-analyzer/
 |   |   |-- features/
 |   |   |   |-- charm-plan.js
 |   |   |   |-- hunt-comparison.js
+|   |   |   |-- opportunity-analysis.js
 |   |   |   |-- session-analysis.js
 |   |   |   |-- session-parser.js
 |   |   |   `-- task-analysis.js
@@ -48,6 +49,7 @@ bestiary-session-analyzer/
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
+|   |   |   |-- render-opportunities.js
 |   |   |   |-- render-results.js
 |   |   |   |-- render-session-library.js
 |   |   |   |-- render-tracker.js

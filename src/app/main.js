@@ -5,6 +5,7 @@ import {
     buildHuntComparison,
     isEntryKeyForHunt
 } from "./features/hunt-comparison.js";
+import { buildOpportunityAnalysis } from "./features/opportunity-analysis.js";
 import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js";
 import { analyzeTaskSession, calculateTaskEstimate } from "./features/task-analysis.js";
 import { loadBestiaryData } from "./services/bestiary-repository.js";
@@ -48,6 +49,7 @@ import { renderTracker } from "./ui/render-tracker.js";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
+import { renderOpportunities } from "./ui/render-opportunities.js";
 import { renderResults } from "./ui/render-results.js";
 import { LIBRARY_COLUMNS, renderSessionLibrary } from "./ui/render-session-library.js";
 import { renderTaskResults } from "./ui/render-task-results.js";
@@ -103,6 +105,10 @@ const VIEW_CONTENT = {
     session: {
         resultsCopy: "Total kills apply when you leave the field."
     },
+    opportunities: {
+        resultsTitle: "Opportunities",
+        resultsCopy: "What your Bestiary is missing, not just what your sessions can see. Most of the charm points available are in creatures no log has ever covered."
+    },
     library: {
         resultsTitle: "Session Library",
         resultsCopy: "Every Hunt Analyzer you have stored. Name them, date them, and note the conditions so a rate you recorded months ago still means something."
@@ -110,7 +116,7 @@ const VIEW_CONTENT = {
 };
 
 const FIXED_VIEWS = {
-    bestiary: ["charmPlan", "allSessions", "library"],
+    bestiary: ["charmPlan", "opportunities", "allSessions", "library"],
     // In Trackers mode the fixed tabs ARE the trackers.
     trackers: getTrackerIds(),
     tasks: ["allSessions", "library"]
@@ -512,6 +518,12 @@ function getTaskTabMeta(hunt) {
         : `${formatNumber(hunt.taskMonsters.length)} creatures`;
 }
 
+function getOpportunityTabMeta() {
+    const { totals } = getOpportunityAnalysis();
+
+    return `${formatNumber(totals.charmsUnclaimed)} unclaimed`;
+}
+
 function buildLibraryTab(view) {
     return {
         key: "library",
@@ -556,6 +568,12 @@ function buildFixedTabs(view) {
             label: "Charm Plan",
             meta: getCharmPlanTabMeta(planView),
             isActive: view === "charmPlan"
+        },
+        {
+            key: "opportunities",
+            label: "Opportunities",
+            meta: getOpportunityTabMeta(),
+            isActive: view === "opportunities"
         },
         {
             key: "allSessions",
@@ -928,6 +946,44 @@ function renderTrackerView() {
 
 
 
+/**
+ * The opportunity view crosses the Bestiary tracker's progress with every stored
+ * session's measured kill rates, so it belongs with the sessions rather than with
+ * the trackers — a tracker knows its own progress but not how fast you kill.
+ */
+function getOpportunityAnalysis() {
+    const sessions = state.hunts
+        .map((hunt, index) => ({
+            id: hunt.id,
+            label: getHuntLabel(index, hunt),
+            monsters: hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).monsters : []
+        }))
+        .filter((session) => session.monsters.length);
+    const killsByName = Object.fromEntries(
+        state.bestiaryData.map((creature) => [creature.Name, getBestiaryKills(creature.Name)])
+    );
+
+    return buildOpportunityAnalysis(state.bestiaryData, killsByName, sessions);
+}
+
+function renderOpportunitiesView() {
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
+    elements.resultsTitle.textContent = VIEW_CONTENT.opportunities.resultsTitle;
+    elements.resultsCopy.textContent = VIEW_CONTENT.opportunities.resultsCopy;
+
+    renderOpportunities(elements.output, getOpportunityAnalysis());
+    attachOpportunityActions();
+}
+
+function attachOpportunityActions() {
+    elements.output.querySelectorAll("[data-opportunity-session]").forEach((button) => {
+        button.addEventListener("click", () => selectHunt(button.dataset.opportunitySession));
+    });
+}
+
 function buildLibraryRows() {
     return state.hunts.map((hunt, index) => {
         const summary = hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).summary : null;
@@ -1063,6 +1119,11 @@ function renderApp() {
     // in either one.
     if (view === "library") {
         renderSessionLibraryView();
+        return;
+    }
+
+    if (view === "opportunities") {
+        renderOpportunitiesView();
         return;
     }
 

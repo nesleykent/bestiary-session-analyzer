@@ -56,8 +56,8 @@ Two levels:
 
 - `Sessions`, `Trackers` and `Tasks` are the top-level choice. All three share the same stored logs and the same
   tracker progress.
-- Inside `Sessions`: `Charm Plan`, `All Sessions`, `Library`, one tab per session, `+` to add a session, and
-  `Compare Sessions` as a separate action on the right.
+- Inside `Sessions`: `Charm Plan`, `Opportunities`, `All Sessions`, `Library`, one tab per session, `+` to add a
+  session, and `Compare Sessions` as a separate action on the right.
 - Inside `Trackers`: one tab per tracker, each showing its own progress — `Bestiary`, `Bosstiary`, `Charms`,
   `Achievements`, `Quests`, `Titles` and `Measuring Tibia`. Adding another is a definition plus a dataset.
 - Inside `Tasks`: `All Sessions`, `Library`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
@@ -90,6 +90,10 @@ across sessions. `All Sessions` in Tasks lists one row per processed session wit
 - Compares the Bestiary result of the analyzed sessions and highlights the one with the highest charm rate.
 - Provides a fixed `All Sessions` tab that combines the creatures of every analyzed session, once per session, into one Bestiary estimate.
 - Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
+- Answers what you are *missing* under `Opportunities`, not only what your sessions can see: the charm points still
+  unclaimed, the entries closest to unlocking, locations ranked by the points left in them, and entries you started
+  but no stored session covers any more. Most of the points available are in creatures no log has ever mentioned,
+  so this is the part a session-only analysis cannot reach.
 - Records each session's respawn mode and lets `Charm Plan` plan for one mode at a time.
 - Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
 - Keeps a `Library` of every stored session with a name, a hunt date and free-text notes, sortable by any column and filterable by respawn mode or a search across names, notes and creatures.
@@ -265,6 +269,7 @@ bestiary-session-analyzer/
 |   |   |-- features/
 |   |   |   |-- charm-plan.js
 |   |   |   |-- hunt-comparison.js
+|   |   |   |-- opportunity-analysis.js
 |   |   |   |-- session-analysis.js
 |   |   |   |-- session-parser.js
 |   |   |   `-- task-analysis.js
@@ -297,6 +302,7 @@ bestiary-session-analyzer/
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
+|   |   |   |-- render-opportunities.js
 |   |   |   |-- render-results.js
 |   |   |   |-- render-session-library.js
 |   |   |   |-- render-tracker.js

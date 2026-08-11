@@ -875,6 +875,13 @@ a:hover {
     text-transform: capitalize;
 }
 
+/* Capitalize exists because task creature names arrive lowercase from the log.
+   Game-data names are already cased correctly, and capitalizing them turns
+   "Pits of Inferno" into "Pits Of Inferno". */
+.row-name.is-verbatim {
+    text-transform: none;
+}
+
 .row.is-head .row-name {
     text-transform: none;
 }
