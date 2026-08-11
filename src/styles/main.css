@@ -1204,6 +1204,58 @@ tr.is-inProgress .status-mark {
 }
 
 /* --------------------------------------------------------------------------
+   Achievements tracker
+   -------------------------------------------------------------------------- */
+
+.achievement-cell {
+    min-width: 180px;
+}
+
+.achievement-name {
+    font-weight: 600;
+}
+
+/* The spoiler is the actionable text, so it gets room to wrap while the numeric
+   columns stay on one line. */
+.spoiler-cell {
+    min-width: 200px;
+    /* Capped so the whole row — including Earned — fits the content column
+       without horizontal scrolling; the text wraps instead. */
+    max-width: 320px;
+    white-space: normal;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--color-text-muted);
+}
+
+.grade-mark {
+    color: #e8a13a;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.rarity-cell {
+    white-space: nowrap;
+}
+
+/* Rarity reads as a scale, so rarer tiers get more weight rather than each one a
+   different hue competing with the brand colour. */
+.rarity-mark {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+}
+
+.rarity-mark.is-rare {
+    color: var(--color-accent-strong);
+}
+
+.rarity-mark.is-very_rare {
+    color: var(--color-brand-deep);
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
    Session library
    -------------------------------------------------------------------------- */
 

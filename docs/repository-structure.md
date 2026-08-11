@@ -20,6 +20,7 @@ bestiary-session-analyzer/
 |   |   |   |-- session-parser.js
 |   |   |   `-- task-analysis.js
 |   |   |-- services/
+|   |   |   |-- achievements-repository.js
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
@@ -28,6 +29,7 @@ bestiary-session-analyzer/
 |   |   |   |-- tracker-transfer.js
 |   |   |   `-- workspace-transfer.js
 |   |   |-- trackers/
+|   |   |   |-- achievements.js
 |   |   |   |-- bestiary.js
 |   |   |   `-- registry.js
 |   |   |-- ui/

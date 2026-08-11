@@ -21,6 +21,36 @@ export function escapeText(value) {
     return escapeAttribute(value);
 }
 
+const HTML_ENTITIES = {
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#39;": "'",
+    "&apos;": "'",
+    "&nbsp;": " "
+};
+
+/**
+ * Renders third-party prose that contains markup as readable text.
+ *
+ * Escaping alone is safe but shows the tags, and ten achievement spoilers carry
+ * anchors — the reader wants "Defeat Scarlett Etzel in the Grave Danger Quest",
+ * not the raw element. So tags are dropped, the link text kept, and the result is
+ * still escaped, which is what makes this safe regardless of what the tag
+ * stripping missed.
+ */
+export function plainText(value) {
+    const stripped = String(value ?? "")
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&[a-z#0-9]+;/gi, (entity) => HTML_ENTITIES[entity.toLowerCase()] ?? entity)
+        .replace(/\s+/g, " ")
+        .trim();
+
+    return escapeText(stripped);
+}
+
 export function trackerCountCell(row, field, suffix) {
     return `
         <td class="count-cell">

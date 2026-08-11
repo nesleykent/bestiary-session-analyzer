@@ -1,3 +1,4 @@
+import { achievementsTracker } from "./achievements.js";
 import { bestiaryTracker } from "./bestiary.js";
 
 /**
@@ -5,7 +6,8 @@ import { bestiaryTracker } from "./bestiary.js";
  * dataset — not a new view, a new store or new navigation.
  */
 export const TRACKERS = [
-    bestiaryTracker
+    bestiaryTracker,
+    achievementsTracker
 ];
 
 export function getTracker(trackerId) {

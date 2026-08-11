@@ -58,7 +58,7 @@ Two levels:
   tracker progress.
 - Inside `Sessions`: `Charm Plan`, `All Sessions`, `Library`, one tab per session, `+` to add a session, and
   `Compare Sessions` as a separate action on the right.
-- Inside `Trackers`: one tab per tracker, each showing its own progress. `Bestiary` is the first; more are configurations on the same engine.
+- Inside `Trackers`: one tab per tracker, each showing its own progress. `Bestiary` and `Achievements` today; more are configurations on the same engine.
 - Inside `Tasks`: `All Sessions`, `Library`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
 
 Every view is one click from every other view, so re-checking a single creature never means restarting. From
@@ -92,6 +92,7 @@ across sessions. `All Sessions` in Tasks lists one row per processed session wit
 - Records each session's respawn mode and lets `Charm Plan` plan for one mode at a time.
 - Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
 - Keeps a `Library` of every stored session with a name, a hunt date and free-text notes, sortable by any column and filterable by respawn mode or a search across names, notes and creatures.
+- Tracks all 570 achievements under `Trackers`, with what it takes to earn each one, its grade, category and community rarity, filterable by any of those. Points and the unlocked count are reported separately, and the one `Removed` achievement is excluded from both because it can no longer be earned.
 - Tracks your whole Bestiary under `Trackers`: all 833 creatures with your kills, `Echo Warden` and `Animus Mastery` flags, and a bookmark, filterable by class, status, bookmark and Echo Warden eligibility. Sorting, filtering, paging, totals and import/export are shared by every tracker.
 - Reports charm points, the separate `Echo Warden` pool, and completion as three independent totals.
 - Imports tracker progress from a CSV or a TibiaDraptor JSON export, and exports it back to CSV losslessly. Only your own progress is read; points and thresholds always come from the game data.
@@ -266,6 +267,7 @@ bestiary-session-analyzer/
 |   |   |   |-- session-parser.js
 |   |   |   `-- task-analysis.js
 |   |   |-- services/
+|   |   |   |-- achievements-repository.js
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
@@ -274,6 +276,7 @@ bestiary-session-analyzer/
 |   |   |   |-- tracker-transfer.js
 |   |   |   `-- workspace-transfer.js
 |   |   |-- trackers/
+|   |   |   |-- achievements.js
 |   |   |   |-- bestiary.js
 |   |   |   `-- registry.js
 |   |   |-- ui/

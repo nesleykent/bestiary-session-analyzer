@@ -595,7 +595,10 @@ function applySessionInput(hunt, creatureCount) {
 function renderHuntTabStrip() {
     const view = getModeView();
     const isBestiary = state.mode === "bestiary";
-    const huntTabs = state.hunts.map((hunt, index) => ({
+    // Trackers are not session-scoped, so the strip carries only tracker tabs —
+    // no session tabs and no "add session" control.
+    const isTrackers = state.mode === "trackers";
+    const huntTabs = isTrackers ? [] : state.hunts.map((hunt, index) => ({
         id: hunt.id,
         label: getHuntLabel(index, hunt),
         meta: [
@@ -606,7 +609,7 @@ function renderHuntTabStrip() {
     }));
     const isComparing = view === "comparison";
 
-    renderHuntTabs(elements.huntTabStrip, buildFixedTabs(view), huntTabs);
+    renderHuntTabs(elements.huntTabStrip, buildFixedTabs(view), huntTabs, { canAdd: !isTrackers });
     attachHuntTabActions();
 
     elements.huntWorkspaceActions.hidden = !isBestiary;
@@ -834,6 +837,21 @@ function getTrackerView(tracker) {
     };
 }
 
+/**
+ * A tracker's tab shows its own progress, so a change has to reach the strip.
+ * Re-rendering the whole strip would destroy the field being typed into, so the
+ * one affected tab's meta is updated in place — the same approach
+ * updateCharmPlanResult and syncHuntTabLabel already use.
+ */
+function syncTrackerTabMeta(tracker) {
+    const meta = elements.huntTabStrip
+        .querySelector(`[data-fixed-select="${tracker.id}"] .hunt-tab-meta`);
+
+    if (meta) {
+        meta.textContent = tracker.tabMeta(buildTrackerRows(tracker));
+    }
+}
+
 function renderTrackerView() {
     const tracker = getActiveTracker();
 
@@ -846,6 +864,7 @@ function renderTrackerView() {
 
     renderTracker(elements.output, getTrackerView(tracker));
     attachTrackerActions();
+    syncTrackerTabMeta(tracker);
 }
 
 

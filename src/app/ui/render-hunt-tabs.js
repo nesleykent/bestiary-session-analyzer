@@ -36,12 +36,13 @@ function buildHuntTab(tab, canClose) {
     `;
 }
 
-export function renderHuntTabs(container, fixedTabs, huntTabs) {
+export function renderHuntTabs(container, fixedTabs, huntTabs, options = {}) {
+    const { canAdd = true } = options;
     const canClose = huntTabs.length > 1;
 
     container.innerHTML = `
         ${fixedTabs.map(buildFixedTab).join("")}
         ${huntTabs.map((tab) => buildHuntTab(tab, canClose)).join("")}
-        <button class="hunt-tab-add" id="addHuntButton" type="button" aria-label="Add session">+</button>
+        ${canAdd ? '<button class="hunt-tab-add" id="addHuntButton" type="button" aria-label="Add session">+</button>' : ""}
     `;
 }
