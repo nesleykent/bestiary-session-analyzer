@@ -20,6 +20,14 @@ unlock threshold, so it never enters the charm-point maths.
 - **Charm Plan** optimizes across the sessions for the play time you have.
 - **Bestiary** is what the player is completing, and **charm points** are the reward being optimized.
 
+Two different numbers are both called "kills", and keeping them apart is the point of the design:
+
+- **Session kills** are the kills in one Hunt Analyzer. They measure *speed* — the kill rate and charm rate a session
+  can sustain — and belong to that session alone.
+- **Total kills** are your Bestiary progress. They measure *how far along* an entry is, they are a single player-wide
+  number per creature, and they live in the `Bestiary` tab. Every session reads the same value, so a creature that
+  appears in three logs can no longer hold three disagreeing totals.
+
 Three separate ideas control what `Charm Plan` uses:
 
 - **Respawn mode** is session metadata: the spawn conditions that Hunt Analyzer was recorded under, `Regular` or
@@ -27,29 +35,30 @@ Three separate ideas control what `Charm Plan` uses:
 - **Availability** is a temporary planning constraint you flip as spawns get taken.
 - **Plan respawn mode** is the environment you are planning for right now.
 
-## The Two Modes
+## The Three Modes
 
-Both modes are built from the same sessions. Processing a Hunt Analyzer once serves both.
+`Sessions` and `Tasks` are built from the same pasted logs; `Bestiary` is your own progress record that both read from.
 
-| | Bestiary | Tasks |
-|---|---|---|
-| Question | What should I complete for charm points? | How long will this task target take? |
-| Focus | Charm points | Kill target |
-| Per session | Selected Bestiary creatures, total kills | Selected task creature, task target |
-| Extra views | `Charm Plan`, `All Sessions`, `Compare Sessions` | `All Sessions` task estimates |
+| | Sessions | Bestiary | Tasks |
+|---|---|---|---|
+| Question | What should I complete for charm points? | Where am I across the whole Bestiary? | How long will this task target take? |
+| Scope | The logs you pasted | All 833 creatures | The logs you pasted |
+| Focus | Charm points | Kills, flags, completion | Kill target |
+| Extra views | `Charm Plan`, `All Sessions`, `Library`, `Compare Sessions` | &mdash; | `All Sessions`, `Library` |
 
-Switching modes never asks you to paste again, and each mode remembers its own state for every session as well as the
-view you were last on. Charm points, charm rate, `Charm Plan`, `Compare Sessions`, and Bestiary completion never appear
-in the Tasks flow.
+Switching modes never asks you to paste again. Charm points, charm rate, `Charm Plan`, `Compare Sessions`, and Bestiary
+completion never appear in the Tasks flow.
 
 ## Navigation
 
 Two levels:
 
-- `Bestiary` and `Tasks` are the top-level choice. They share the sessions.
-- Inside `Bestiary`: `Charm Plan`, `All Sessions`, one tab per session, `+` to add a session, and `Compare Sessions` as a
-  separate action on the right.
-- Inside `Tasks`: `All Sessions`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
+- `Sessions`, `Bestiary` and `Tasks` are the top-level choice. All three share the same stored logs and the same
+  Bestiary progress.
+- Inside `Sessions`: `Charm Plan`, `All Sessions`, `Library`, one tab per session, `+` to add a session, and
+  `Compare Sessions` as a separate action on the right.
+- Inside `Bestiary`: a single table of every creature. No session tabs, because it is not session-scoped.
+- Inside `Tasks`: `All Sessions`, `Library`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
 
 Every view is one click from every other view, so re-checking a single creature never means restarting. From
 `Charm Plan`, selecting the session tag on an entry or a route step opens that session directly; adjust its total kills
@@ -82,6 +91,9 @@ across sessions. `All Sessions` in Tasks lists one row per processed session wit
 - Records each session's respawn mode and lets `Charm Plan` plan for one mode at a time.
 - Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
 - Keeps a `Library` of every stored session with a name, a hunt date and free-text notes, sortable by any column and filterable by respawn mode or a search across names, notes and creatures.
+- Tracks your whole Bestiary in a `Bestiary` tab: all 833 creatures with your kills, `Echo Warden` and `Animus Mastery` flags, and a bookmark, filterable by class, status, bookmark and Echo Warden eligibility.
+- Reports charm points, the separate `Echo Warden` pool, and completion as three independent totals.
+- Imports Bestiary progress from a CSV or a TibiaDraptor JSON export, and exports it back to CSV. Only your kills and flags are read; charm points and stage thresholds always come from the game data.
 - Exports the whole workspace to a file and imports it back, including everything you configured.
 - Persists the workspace in `localStorage`, so closing the tab no longer discards it.
 
@@ -97,7 +109,7 @@ python3 -m http.server 4173
 
 - `http://127.0.0.1:4173/src/`
 
-3. Choose `Bestiary` or `Tasks` in the top-level navigation.
+3. Choose `Sessions`, `Bestiary` or `Tasks` in the top-level navigation.
 4. Paste the Hunt Analyzer text into the text area.
 5. Click `Process Log`. The paste area collapses to a one-line session summary; click that line to edit the text
    or the recorded respawn mode again.
@@ -109,10 +121,13 @@ python3 -m http.server 4173
    - Kills left
    - Estimated time remaining
    - Charms per hour
-7. In `Bestiary` mode, optionally fill in `Total Kills` for any creature. The estimate applies when you leave the
-   field, so pressing `Tab` or `Enter` or clicking elsewhere is enough.
+7. Fill in `Total Kills` for any creature, either in the session table or in the `Bestiary` tab. The estimate applies
+   when you leave the field, so pressing `Tab` or `Enter` or clicking elsewhere is enough. Because that number is your
+   Bestiary progress, editing it anywhere updates every session that features the creature.
+   Faster still: open `Bestiary` and import your progress once, and every session is correct without typing anything.
 8. In `Tasks`, select the task creature for a session and enter the total kills that task requires.
-9. Use `Clear Log` or `Reset Totals` to reset the Hunt Analyzer text or manual kill totals of the selected session.
+9. Use `Clear Log` to discard a session's Hunt Analyzer text. `Reset Totals` clears your saved Bestiary kills for the
+   creatures in view and asks first, because that is real progress rather than a per-session value.
 
 ## Comparing Several Sessions
 
@@ -252,11 +267,14 @@ bestiary-session-analyzer/
 |   |   |-- services/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
+|   |   |   |-- bestiary-progress.js
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
+|   |   |   |-- progress-transfer.js
 |   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
+|   |   |   |-- render-bestiary-manager.js
 |   |   |   |-- render-blocks.js
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
@@ -290,7 +308,8 @@ bestiary-session-analyzer/
 - `src/app/ui/render-blocks.js` holds the shared presentation primitives every view is built from, so the same
   information reads the same way everywhere. The Bestiary estimate table in a session and in `All Sessions` comes from
   one builder and cannot drift.
-- `src/app/state` owns the sessions, persists the workspace in `sessionStorage`, and handles file export and import.
+- `src/app/state` owns the sessions and the Bestiary progress record, persists the workspace in `localStorage`, and handles file export and import.
+- `src/app/state/bestiary-progress.js` stores only what cannot be derived — kills and three flags per creature — and derives stage, status, kills remaining and charm points from the game data, so a rebalanced creature is picked up automatically instead of going stale in a saved file.
 - The comparison consumes the same Bestiary summary each session displays, so both views always agree.
 - `src/data` stores application-owned datasets.
 

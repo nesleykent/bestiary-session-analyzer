@@ -1,8 +1,11 @@
+import { restoreProgress } from "./bestiary-progress.js";
+
 let huntSequence = 0;
 
 const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison", "library"];
 const TASKS_VIEWS = ["session", "allSessions", "library"];
 const RESPAWN_MODES = ["regular", "rapid"];
+const MODES = ["bestiary", "progress", "tasks"];
 
 function normalizeRespawnMode(value) {
     return RESPAWN_MODES.includes(value) ? value : "regular";
@@ -38,6 +41,7 @@ export function createWorkspace() {
 
     return {
         mode: "bestiary",
+        bestiaryProgress: {},
         hunts: [hunt],
         activeHuntId: hunt.id,
         bestiaryView: "session",
@@ -151,6 +155,10 @@ function normalizeView(savedView, allowedViews) {
     return allowedViews.includes(savedView) ? savedView : "session";
 }
 
+function normalizeMode(savedMode) {
+    return MODES.includes(savedMode) ? savedMode : "bestiary";
+}
+
 export function restoreWorkspace(savedState) {
     const savedHunts = Array.isArray(savedState?.hunts) ? savedState.hunts : [];
 
@@ -171,7 +179,8 @@ export function restoreWorkspace(savedState) {
         : [];
 
     return {
-        mode: savedState?.mode === "tasks" ? "tasks" : "bestiary",
+        mode: normalizeMode(savedState?.mode),
+        bestiaryProgress: restoreProgress(savedState?.bestiaryProgress),
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
         bestiaryView: normalizeView(savedState?.bestiaryView, BESTIARY_VIEWS),

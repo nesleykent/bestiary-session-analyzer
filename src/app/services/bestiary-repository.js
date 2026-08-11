@@ -1,15 +1,41 @@
+/**
+ * Canonical game data. This is read-only: the upstream dump carries a
+ * `user_data` block per creature, but that belongs to whoever exported it and
+ * is deliberately ignored here. All user progress lives in its own store.
+ */
+
+function splitLocations(locations) {
+    return String(locations ?? "")
+        .split(",")
+        .map((location) => location.trim())
+        .filter(Boolean);
+}
+
 function normalizeCreature(creature) {
+    const charm = creature.charm_details ?? {};
+    const echo = creature.echo_warden_details ?? {};
+
     return {
         ID: creature.id,
         Name: creature.name,
         Class: creature.class?.name ?? "",
         Difficulty: creature.difficulty ?? "",
         Occurrence: creature.occurrence ?? "",
-        Charms: Number(creature.charm_details?.charm_points ?? 0),
-        "Stage 1": Number(creature.charm_details?.first_stage ?? 0),
-        "Stage 2": Number(creature.charm_details?.second_stage ?? 0),
-        "Kills to Unlock": Number(creature.charm_details?.third_stage ?? 0),
-        Locations: creature.locations ?? ""
+        Charms: Number(charm.charm_points ?? 0),
+        "Stage 1": Number(charm.first_stage ?? 0),
+        "Stage 2": Number(charm.second_stage ?? 0),
+        "Kills to Unlock": Number(charm.third_stage ?? 0),
+        Locations: creature.locations ?? "",
+        locationList: splitLocations(creature.locations),
+        // Echo Warden is a separate charm-point pool. Eligibility is the gate:
+        // ineligible creatures still carry a point value upstream.
+        echoWarden: {
+            eligible: Boolean(echo.can_be_echo_warden),
+            points: Number(echo.charm_points ?? 0)
+        },
+        isPremium: Boolean(creature.is_premium),
+        canBeBoosted: Boolean(creature.can_be_boosted),
+        releasedIn: creature.released_in ?? ""
     };
 }
 

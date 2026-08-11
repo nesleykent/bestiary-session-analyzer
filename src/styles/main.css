@@ -1016,6 +1016,194 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   Bestiary manager
+   -------------------------------------------------------------------------- */
+
+.progress-table table {
+    min-width: 860px;
+}
+
+.progress-table th,
+.progress-table td {
+    padding: 6px 8px;
+}
+
+.progress-table .creature-cell {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.progress-table .cell-muted {
+    color: var(--color-text-subtle);
+}
+
+.star-cell {
+    width: 34px;
+}
+
+.star-toggle {
+    border: 0;
+    background: none;
+    color: var(--color-border);
+    font-size: 15px;
+    line-height: 1;
+    padding: 2px;
+    cursor: pointer;
+    transition: color var(--transition);
+}
+
+.star-toggle:hover {
+    color: var(--color-text-subtle);
+}
+
+.star-toggle.is-on {
+    color: #e8a13a;
+}
+
+.star-toggle:focus-visible,
+.flag-toggle:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+/* Echo Warden is its own point pool, so its cell reads as a claimable value
+   rather than as part of the charm-point column beside it. */
+.flag-toggle {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-subtle);
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 40px;
+    padding: 3px 7px;
+    cursor: pointer;
+    transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.flag-toggle:hover {
+    border-color: #c4c4c4;
+    color: var(--color-text);
+}
+
+.flag-toggle.is-on {
+    border-color: var(--color-brand);
+    background: var(--color-brand-tint);
+    color: var(--color-brand-deep);
+}
+
+.kills-cell {
+    white-space: nowrap;
+}
+
+.progress-kills {
+    width: 78px;
+    padding: 4px 6px;
+    border: 1px solid #f1c28a;
+    border-radius: var(--radius-sm);
+    background: #fff8ef;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    transition: border-color var(--transition);
+}
+
+.progress-kills:hover {
+    border-color: #e2a75f;
+}
+
+.progress-kills:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring);
+}
+
+.status-mark {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+}
+
+tr.is-done .status-mark {
+    color: #197f4f;
+}
+
+tr.is-inProgress .status-mark {
+    color: var(--color-accent-strong);
+}
+
+.progress-select {
+    width: 100%;
+    max-width: 220px;
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 14px;
+}
+
+.progress-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px 24px;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.check-row {
+    display: grid;
+    gap: 6px;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.check input {
+    accent-color: var(--color-brand);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.pager-count {
+    font-size: 13px;
+    color: var(--color-text-subtle);
+    font-variant-numeric: tabular-nums;
+}
+
+.pager-sizes,
+.pager-steps {
+    display: flex;
+    gap: 6px;
+}
+
+.row-action.is-on {
+    border-color: var(--color-brand);
+    background: var(--color-brand-tint);
+    color: var(--color-brand-deep);
+}
+
+/* --------------------------------------------------------------------------
    Session library
    -------------------------------------------------------------------------- */
 

@@ -22,11 +22,14 @@ bestiary-session-analyzer/
 |   |   |-- services/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
+|   |   |   |-- bestiary-progress.js
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
+|   |   |   |-- progress-transfer.js
 |   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
+|   |   |   |-- render-bestiary-manager.js
 |   |   |   |-- render-blocks.js
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js

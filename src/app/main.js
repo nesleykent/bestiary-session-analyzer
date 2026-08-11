@@ -19,9 +19,26 @@ import {
     resetHunt,
     restoreWorkspace
 } from "./state/hunt-workspace.js";
+import {
+    buildTotalKillsByName,
+    createProgress,
+    deriveCreatureProgress,
+    getProgressEntry,
+    restoreProgress,
+    setProgressKills,
+    summarizeProgress,
+    toggleProgressFlag
+} from "./state/bestiary-progress.js";
 import { loadWorkspaceState, saveWorkspaceState } from "./state/local-store.js";
+import {
+    buildProgressExportFileName,
+    exportProgressCsv,
+    importProgressCsv,
+    importProgressJson
+} from "./state/progress-transfer.js";
 import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
+import { MANAGER_COLUMNS, renderBestiaryManager } from "./ui/render-bestiary-manager.js";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
@@ -46,6 +63,7 @@ const elements = {
     appAlert: document.getElementById("appAlert"),
     inputSection: document.getElementById("inputSection"),
     modeBestiaryButton: document.getElementById("modeBestiaryButton"),
+    modeProgressButton: document.getElementById("modeProgressButton"),
     respawnModeBlock: document.getElementById("respawnModeBlock"),
     respawnModeHint: document.getElementById("respawnModeHint"),
     sessionRapidButton: document.getElementById("sessionRapidButton"),
@@ -87,6 +105,8 @@ const VIEW_CONTENT = {
 
 const FIXED_VIEWS = {
     bestiary: ["charmPlan", "allSessions", "library"],
+    // The Bestiary manager is a single surface with no session tabs of its own.
+    progress: [],
     tasks: ["allSessions", "library"]
 };
 
@@ -110,6 +130,13 @@ const state = {
     // deliberately absent from getWorkspaceSnapshot() and the export format.
     librarySort: { key: "label", direction: "asc" },
     libraryFilters: { respawnMode: "all", search: "" },
+    // Bestiary progress is user data and IS persisted; its sort, filters and
+    // paging are view state and are not.
+    bestiaryProgress: {},
+    progressSort: { key: "name", direction: "asc" },
+    progressFilters: { search: "", className: "all", status: "all", bookmarkedOnly: false, echoWardenOnly: false },
+    progressPageSize: 60,
+    progressPageIndex: 0,
     excludedAllTabsEntries: [],
     hunts: [],
     ignoredPlanHuntIds: [],
@@ -163,6 +190,7 @@ function getWorkspaceSnapshot() {
     return {
         mode: state.mode,
         activeHuntId: state.activeHuntId,
+        bestiaryProgress: state.bestiaryProgress,
         bestiaryView: state.bestiaryView,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
@@ -185,15 +213,19 @@ function persistState() {
     saveWorkspaceState(getWorkspaceSnapshot());
 }
 
-function readTotalKillsInputs(hunt) {
-    const inputs = elements.output.querySelectorAll(".kills-input");
+/**
+ * Reads every visible total-kills field into the canonical progress record.
+ * Editing the number anywhere is editing your Bestiary, so all sessions that
+ * feature the creature update together.
+ */
+function commitVisibleTotalKills() {
+    elements.output.querySelectorAll(".kills-input").forEach((input) => {
+        setProgressKills(state.bestiaryProgress, input.dataset.monsterName, input.value);
+    });
+}
 
-    return Array.from(inputs).reduce((totals, input) => {
-        totals[input.dataset.monsterName] = Number.parseInt(input.value, 10) || 0;
-        return totals;
-    }, Object.fromEntries(
-        hunt.matchedMonsters.map((monster) => [monster.name, monster.totalKills || 0])
-    ));
+function commitAllHuntProgress() {
+    state.hunts.forEach(commitHuntProgress);
 }
 
 function commitHuntProgress(hunt) {
@@ -212,12 +244,8 @@ function captureActiveHuntInputs() {
 
     hunt.sessionLog = elements.sessionLog.value;
 
-    const totalKillsByName = readTotalKillsInputs(hunt);
-    hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
-        ...monster,
-        totalKills: totalKillsByName[monster.name] ?? monster.totalKills ?? 0
-    }));
-    commitHuntProgress(hunt);
+    commitVisibleTotalKills();
+    commitAllHuntProgress();
 }
 
 function captureAllTabsInputs() {
@@ -225,27 +253,10 @@ function captureAllTabsInputs() {
         return;
     }
 
-    const totalKillsByHuntId = new Map();
-
-    elements.output.querySelectorAll(".kills-input").forEach((input) => {
-        const huntTotals = totalKillsByHuntId.get(input.dataset.huntId) || {};
-        huntTotals[input.dataset.monsterName] = Number.parseInt(input.value, 10) || 0;
-        totalKillsByHuntId.set(input.dataset.huntId, huntTotals);
-    });
-
-    state.hunts.forEach((hunt) => {
-        const huntTotals = totalKillsByHuntId.get(hunt.id);
-
-        if (!huntTotals) {
-            return;
-        }
-
-        hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
-            ...monster,
-            totalKills: huntTotals[monster.name] ?? monster.totalKills ?? 0
-        }));
-        commitHuntProgress(hunt);
-    });
+    // All Sessions shows one row per session, but the totals behind them are a
+    // single per-creature fact, so the hunt id on the field no longer matters.
+    commitVisibleTotalKills();
+    commitAllHuntProgress();
 }
 
 function captureTaskInputs() {
@@ -264,6 +275,11 @@ function captureTaskInputs() {
 }
 
 function captureVisibleInputs() {
+    if (state.mode === "progress") {
+        captureProgressInputs();
+        return;
+    }
+
     if (state.mode === "tasks") {
         captureTaskInputs();
         return;
@@ -277,12 +293,23 @@ function captureVisibleInputs() {
     captureActiveHuntInputs();
 }
 
+/**
+ * Bestiary totals are a property of the player, not of a session. Every session
+ * reads the same canonical record, so a creature that appears in three logs can
+ * no longer hold three disagreeing totals.
+ *
+ * The arithmetic in recalculateProgress is untouched — only the source of its
+ * totalKills argument changed.
+ */
 function calculateBestiaryResult(hunt) {
     const monsters = recalculateProgress(
         hunt.matchedMonsters,
         state.bestiaryData,
         hunt.sessionDuration,
-        Object.fromEntries(hunt.matchedMonsters.map((monster) => [monster.name, monster.totalKills || 0]))
+        buildTotalKillsByName(
+            state.bestiaryProgress,
+            hunt.matchedMonsters.map((monster) => monster.name)
+        )
     );
     const availableMonsterNames = new Set(monsters.map((monster) => monster.name));
     const selectedMonsterNames = hunt.selectedBestiaryMonsterNames
@@ -630,6 +657,132 @@ function renderTaskSessionView() {
     attachTaskActions();
 }
 
+/* --------------------------------------------------------------------------
+   Bestiary manager
+   -------------------------------------------------------------------------- */
+
+function captureProgressInputs() {
+    elements.output.querySelectorAll(".progress-kills").forEach((input) => {
+        setProgressKills(state.bestiaryProgress, input.dataset.progressName, input.value);
+    });
+}
+
+function buildProgressRows() {
+    return state.bestiaryData.map((creature) => {
+        const derived = deriveCreatureProgress(creature, getProgressEntry(state.bestiaryProgress, creature.Name));
+
+        return {
+            ...derived,
+            name: creature.Name,
+            className: creature.Class,
+            wikiLink: `https://tibia.fandom.com/wiki/${creature.Name.replace(/\s/g, "_")}`,
+            searchText: creature.Name.toLowerCase()
+        };
+    });
+}
+
+function filterProgressRows(rows) {
+    const { search, className, status, bookmarkedOnly, echoWardenOnly } = state.progressFilters;
+    const needle = search.trim().toLowerCase();
+
+    return rows.filter((row) => {
+        if (needle && !row.searchText.includes(needle)) {
+            return false;
+        }
+
+        if (className !== "all" && row.className !== className) {
+            return false;
+        }
+
+        if (status !== "all" && row.status !== status) {
+            return false;
+        }
+
+        if (bookmarkedOnly && !row.bookmark) {
+            return false;
+        }
+
+        return !echoWardenOnly || row.echoWardenEligible;
+    });
+}
+
+function sortProgressRows(rows) {
+    const { key, direction } = state.progressSort;
+    const column = MANAGER_COLUMNS.find((candidate) => candidate.key === key) || MANAGER_COLUMNS[1];
+    const factor = direction === "desc" ? -1 : 1;
+    const isNumericKey = column.isNumeric || key === "kills" || key === "bookmark";
+
+    return [...rows].sort((left, right) => {
+        const a = isNumericKey ? Number(left[key]) || 0 : String(left[key] ?? "").toLowerCase();
+        const b = isNumericKey ? Number(right[key]) || 0 : String(right[key] ?? "").toLowerCase();
+
+        if (a === b) {
+            return left.name.localeCompare(right.name) * factor;
+        }
+
+        return (a < b ? -1 : 1) * factor;
+    });
+}
+
+/**
+ * 833 rows re-render on every keystroke in a kills field, so the default page
+ * size is a deliberate performance guard rather than a nicety.
+ */
+function paginateProgressRows(rows) {
+    const size = state.progressPageSize;
+
+    if (!size) {
+        return { rows, page: { from: rows.length ? 1 : 0, to: rows.length, total: rows.length, size, index: 0, lastIndex: 0 } };
+    }
+
+    const lastIndex = Math.max(0, Math.ceil(rows.length / size) - 1);
+    const index = Math.min(state.progressPageIndex, lastIndex);
+
+    state.progressPageIndex = index;
+
+    const start = index * size;
+    const pageRows = rows.slice(start, start + size);
+
+    return {
+        rows: pageRows,
+        page: {
+            from: rows.length ? start + 1 : 0,
+            to: start + pageRows.length,
+            total: rows.length,
+            size,
+            index,
+            lastIndex
+        }
+    };
+}
+
+function getProgressView() {
+    const all = buildProgressRows();
+    const filtered = sortProgressRows(filterProgressRows(all));
+    const { rows, page } = paginateProgressRows(filtered);
+
+    return {
+        rows,
+        page,
+        sort: state.progressSort,
+        filters: state.progressFilters,
+        classes: [...new Set(state.bestiaryData.map((creature) => creature.Class).filter(Boolean))].sort(),
+        totals: summarizeProgress(state.bestiaryData, state.bestiaryProgress)
+    };
+}
+
+function renderBestiaryManagerView() {
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
+    elements.resultsTitle.textContent = "Bestiary Progress";
+    elements.resultsCopy.textContent = "Your whole Bestiary, not just the creatures in a session. Charm points and stage thresholds come from the game data; only kills and flags are yours.";
+
+    renderBestiaryManager(elements.output, getProgressView());
+    attachProgressActions();
+}
+
 function buildLibraryRows() {
     return state.hunts.map((hunt, index) => {
         const summary = hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).summary : null;
@@ -732,12 +885,18 @@ function renderTaskSessionsView() {
 }
 
 function applyPrimaryMode() {
-    const isBestiary = state.mode === "bestiary";
+    const buttonsByMode = {
+        bestiary: elements.modeBestiaryButton,
+        progress: elements.modeProgressButton,
+        tasks: elements.modeTasksButton
+    };
 
-    elements.modeBestiaryButton.classList.toggle("is-selected", isBestiary);
-    elements.modeTasksButton.classList.toggle("is-selected", !isBestiary);
-    elements.modeBestiaryButton.setAttribute("aria-selected", String(isBestiary));
-    elements.modeTasksButton.setAttribute("aria-selected", String(!isBestiary));
+    Object.entries(buttonsByMode).forEach(([mode, button]) => {
+        const isSelected = state.mode === mode;
+
+        button.classList.toggle("is-selected", isSelected);
+        button.setAttribute("aria-selected", String(isSelected));
+    });
 }
 
 function renderApp() {
@@ -746,6 +905,16 @@ function renderApp() {
     elements.appAlert.textContent = "";
 
     applyPrimaryMode();
+
+    // The manager covers the whole Bestiary rather than one session, so the
+    // session strip has nothing to say about it.
+    if (state.mode === "progress") {
+        elements.huntWorkspace.hidden = true;
+        renderBestiaryManagerView();
+        return;
+    }
+
+    elements.huntWorkspace.hidden = false;
     renderHuntTabStrip();
 
     // The library manages the logs both modes share, so it renders identically
@@ -901,30 +1070,37 @@ function selectFixedView(view) {
     persistState();
 }
 
-function clearInputs() {
-    const hunt = getActiveHunt();
+/**
+ * Totals are Bestiary progress now, so resetting them edits the player's record
+ * rather than a scratch value on one session. That is worth confirming.
+ */
+function resetTotalsForCreatures(creatureNames, promptText) {
+    const names = [...new Set(creatureNames)];
+    const withKills = names.filter((name) => getProgressEntry(state.bestiaryProgress, name).kills > 0);
 
-    hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
-        ...monster,
-        totalKills: 0
-    }));
-    commitHuntProgress(hunt);
+    if (!withKills.length || !window.confirm(promptText(withKills.length))) {
+        return;
+    }
 
+    withKills.forEach((name) => setProgressKills(state.bestiaryProgress, name, 0));
+    commitAllHuntProgress();
     renderApp();
     persistState();
+    announce(`Total kills reset for ${withKills.length} creatures.`);
+}
+
+function clearInputs() {
+    resetTotalsForCreatures(
+        getActiveHunt().matchedMonsters.map((monster) => monster.name),
+        (count) => `Reset your Bestiary total kills for ${count} ${count === 1 ? "creature" : "creatures"} in this session? This is your saved progress, not a per-session value.`
+    );
 }
 
 function resetAllTabsTotals() {
-    state.hunts.forEach((hunt) => {
-        hunt.matchedMonsters = hunt.matchedMonsters.map((monster) => ({
-            ...monster,
-            totalKills: 0
-        }));
-        commitHuntProgress(hunt);
-    });
-
-    renderApp();
-    persistState();
+    resetTotalsForCreatures(
+        state.hunts.flatMap((hunt) => hunt.matchedMonsters.map((monster) => monster.name)),
+        (count) => `Reset your Bestiary total kills for ${count} ${count === 1 ? "creature" : "creatures"} across every session? This is your saved progress, not a per-session value.`
+    );
 }
 
 function toggleAllTabsEntry(entryKey) {
@@ -1078,6 +1254,146 @@ function attachCharmPlanActions() {
         updateCharmPlanResult();
         persistState();
     });
+}
+
+/**
+ * The manager's kills fields deliberately use their own class and data
+ * attribute. Reusing `.kills-input` would put them on the session commit path,
+ * which reads every visible field into whichever hunt is active.
+ */
+function commitProgressKills(input) {
+    const previous = getProgressEntry(state.bestiaryProgress, input.dataset.progressName).kills;
+
+    if ((Number.parseInt(input.value, 10) || 0) === previous) {
+        return;
+    }
+
+    setProgressKills(state.bestiaryProgress, input.dataset.progressName, input.value);
+    commitAllHuntProgress();
+    persistState();
+    renderBestiaryManagerView();
+
+    const restored = elements.output
+        .querySelector(`.progress-kills[data-progress-name="${input.dataset.progressName}"]`);
+
+    if (restored) {
+        restored.focus();
+        restored.select();
+    }
+}
+
+function attachProgressActions() {
+    elements.output.querySelectorAll(".progress-kills").forEach((input) => {
+        input.addEventListener("focusout", () => commitProgressKills(input));
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                input.blur();
+            }
+        });
+    });
+
+    const bindFlag = (attribute, flag) => {
+        elements.output.querySelectorAll(`[${attribute}]`).forEach((button) => {
+            button.addEventListener("click", () => {
+                toggleProgressFlag(state.bestiaryProgress, button.getAttribute(attribute), flag);
+                persistState();
+                renderBestiaryManagerView();
+            });
+        });
+    };
+
+    bindFlag("data-progress-bookmark", "bookmark");
+    bindFlag("data-progress-echo", "echoWarden");
+
+    elements.output.querySelectorAll("[data-progress-sort]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.progressSort = {
+                key: button.dataset.progressSort,
+                direction: button.dataset.progressDirection === "desc" ? "desc" : "asc"
+            };
+            renderBestiaryManagerView();
+        });
+    });
+
+    elements.output.querySelectorAll("[data-progress-status]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.progressFilters.status = button.dataset.progressStatus;
+            state.progressPageIndex = 0;
+            renderBestiaryManagerView();
+        });
+    });
+
+    elements.output.querySelectorAll("[data-progress-page-size]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.progressPageSize = Number(button.dataset.progressPageSize) || 0;
+            state.progressPageIndex = 0;
+            renderBestiaryManagerView();
+        });
+    });
+
+    elements.output.querySelectorAll("[data-progress-page]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.progressPageIndex += button.dataset.progressPage === "next" ? 1 : -1;
+            state.progressPageIndex = Math.max(0, state.progressPageIndex);
+            renderBestiaryManagerView();
+        });
+    });
+
+    const search = document.getElementById("progressSearch");
+
+    if (search) {
+        search.addEventListener("input", () => {
+            state.progressFilters.search = search.value;
+            state.progressPageIndex = 0;
+            renderBestiaryManagerView();
+
+            const restored = document.getElementById("progressSearch");
+
+            if (restored) {
+                restored.focus();
+                restored.setSelectionRange(restored.value.length, restored.value.length);
+            }
+        });
+    }
+
+    const classSelect = document.getElementById("progressClass");
+
+    if (classSelect) {
+        classSelect.addEventListener("change", () => {
+            state.progressFilters.className = classSelect.value;
+            state.progressPageIndex = 0;
+            renderBestiaryManagerView();
+        });
+    }
+
+    const bindCheck = (id, key) => {
+        const box = document.getElementById(id);
+
+        if (box) {
+            box.addEventListener("change", () => {
+                state.progressFilters[key] = box.checked;
+                state.progressPageIndex = 0;
+                renderBestiaryManagerView();
+            });
+        }
+    };
+
+    bindCheck("progressBookmarked", "bookmarkedOnly");
+    bindCheck("progressEchoEligible", "echoWardenOnly");
+
+    const importButton = document.getElementById("progressImportButton");
+    const importInput = document.getElementById("progressImportInput");
+    const exportButton = document.getElementById("progressExportButton");
+
+    if (importButton && importInput) {
+        importButton.addEventListener("click", () => importInput.click());
+        importInput.addEventListener("change", () => importProgressFile(importInput));
+    }
+
+    if (exportButton) {
+        exportButton.addEventListener("click", exportProgressFile);
+    }
 }
 
 function findHuntById(huntId) {
@@ -1308,6 +1624,7 @@ function processLog() {
 
 function applyWorkspace(workspace) {
     state.mode = workspace.mode;
+    state.bestiaryProgress = workspace.bestiaryProgress ?? createProgress();
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
@@ -1323,6 +1640,79 @@ function restoreWorkspaceState() {
     applyWorkspace(restoreWorkspace(loadWorkspaceState()) || createWorkspace());
 
     return hasWorkspaceContent();
+}
+
+function downloadFile(text, fileName, mimeType) {
+    const blob = new Blob([text], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+
+    downloadLink.href = url;
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    URL.revokeObjectURL(url);
+}
+
+function exportProgressFile() {
+    captureVisibleInputs();
+
+    const exportedAt = new Date().toISOString();
+
+    downloadFile(
+        exportProgressCsv(state.bestiaryData, state.bestiaryProgress),
+        buildProgressExportFileName(exportedAt),
+        "text/csv"
+    );
+    announce("Bestiary progress exported.");
+}
+
+/**
+ * Import replaces the whole progress record, so it asks first when there is
+ * something to lose. Charm points and thresholds are never read from the file.
+ */
+async function importProgressFile(input) {
+    const file = input.files?.[0];
+
+    input.value = "";
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        const text = await file.text();
+        const isJson = /\.json$/i.test(file.name) || text.trimStart().startsWith("{") || text.trimStart().startsWith("[");
+        const result = isJson
+            ? importProgressJson(text, state.bestiaryData)
+            : importProgressCsv(text, state.bestiaryData);
+
+        if (!result.matched) {
+            throw new Error("No creature in that file matched the Bestiary dataset.");
+        }
+
+        const existing = Object.keys(state.bestiaryProgress).length;
+
+        if (existing && !window.confirm(`Replace your saved Bestiary progress (${existing} creatures) with ${result.matched} rows from this file?`)) {
+            return;
+        }
+
+        state.bestiaryProgress = result.progress;
+        commitAllHuntProgress();
+        renderApp();
+        persistState();
+
+        const unmatched = result.unmatched.length;
+
+        announce(`Imported ${result.matched} creatures.`);
+
+        if (unmatched) {
+            showAlert(`Imported ${result.matched} creatures. ${unmatched} name${unmatched === 1 ? "" : "s"} did not match the dataset and were skipped: ${result.unmatched.slice(0, 5).join(", ")}${unmatched > 5 ? "…" : ""}`);
+        }
+    } catch (error) {
+        showAlert(error.message);
+    }
 }
 
 function exportWorkspace() {
@@ -1401,6 +1791,7 @@ elements.pasteLogButton.addEventListener("click", pasteLog);
 elements.clearLogButton.addEventListener("click", clearLog);
 elements.compareHuntsButton.addEventListener("click", showComparison);
 elements.modeBestiaryButton.addEventListener("click", () => setMode("bestiary"));
+elements.modeProgressButton.addEventListener("click", () => setMode("progress"));
 elements.modeTasksButton.addEventListener("click", () => setMode("tasks"));
 elements.sessionRegularButton.addEventListener("click", () => setSessionRespawnMode("regular"));
 elements.sessionRapidButton.addEventListener("click", () => setSessionRespawnMode("rapid"));
