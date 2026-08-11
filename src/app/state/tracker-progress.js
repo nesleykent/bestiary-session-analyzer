@@ -1,0 +1,127 @@
+/**
+ * The player's progress across every tracker — user data, kept strictly apart
+ * from the game data in src/data.
+ *
+ *   { [trackerId]: { [itemKey]: entry } }
+ *
+ * An entry only ever holds facts that cannot be derived: kills for a counter,
+ * a done flag for a checklist, plus whatever flags the tracker declares. Status,
+ * points earned, remaining and percentages are all derived from the entry plus
+ * game data, never stored, so a rebalanced item is picked up automatically
+ * rather than going stale in a saved file.
+ *
+ * Entries at their defaults are absent from the record rather than stored as
+ * zeroes. For a real account that is a few hundred rows instead of thousands.
+ */
+
+function toCount(value) {
+    const count = Math.floor(Number(value));
+
+    return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
+/**
+ * Field types come from the shape of the tracker's declared defaults, so a
+ * tracker never has to supply its own coercion code.
+ */
+export function normalizeEntry(entryDefaults, raw) {
+    return Object.entries(entryDefaults).reduce((entry, [field, fallback]) => {
+        entry[field] = typeof fallback === "number" ? toCount(raw?.[field]) : Boolean(raw?.[field]);
+        return entry;
+    }, {});
+}
+
+export function isDefaultEntry(entryDefaults, entry) {
+    return Object.entries(entryDefaults).every(([field, fallback]) => entry[field] === fallback);
+}
+
+export function createTrackerProgress() {
+    return {};
+}
+
+export function getTrackerRecord(progress, trackerId) {
+    return progress[trackerId] ?? {};
+}
+
+export function getEntry(progress, trackerId, itemKey, entryDefaults) {
+    return getTrackerRecord(progress, trackerId)[itemKey] ?? normalizeEntry(entryDefaults, {});
+}
+
+/**
+ * Writes are in place and drop entries that fall back to their defaults, so the
+ * record never accumulates rows that say nothing.
+ */
+export function setEntry(progress, trackerId, itemKey, entryDefaults, changes) {
+    const record = progress[trackerId] ?? (progress[trackerId] = {});
+    const next = normalizeEntry(entryDefaults, { ...getEntry(progress, trackerId, itemKey, entryDefaults), ...changes });
+
+    if (isDefaultEntry(entryDefaults, next)) {
+        delete record[itemKey];
+    } else {
+        record[itemKey] = next;
+    }
+
+    if (!Object.keys(record).length) {
+        delete progress[trackerId];
+    }
+
+    return progress;
+}
+
+export function toggleEntryFlag(progress, trackerId, itemKey, entryDefaults, field) {
+    if (!(field in entryDefaults)) {
+        return progress;
+    }
+
+    const current = getEntry(progress, trackerId, itemKey, entryDefaults)[field];
+
+    return setEntry(progress, trackerId, itemKey, entryDefaults, { [field]: !current });
+}
+
+export function countTrackedEntries(progress) {
+    return Object.values(progress).reduce((total, record) => total + Object.keys(record).length, 0);
+}
+
+/**
+ * Restores the record, discarding anything that does not belong to a known
+ * tracker and re-normalizing every entry against that tracker's declared
+ * fields, so a hand-edited or older file cannot smuggle in junk.
+ *
+ * `legacyBestiaryProgress` is the pre-framework shape, when Bestiary was the
+ * only tracker and its record sat at the top level of the workspace.
+ */
+export function restoreTrackerProgress(saved, trackerDefaults, legacyBestiaryProgress) {
+    const progress = createTrackerProgress();
+
+    const adopt = (trackerId, record) => {
+        const entryDefaults = trackerDefaults[trackerId];
+
+        if (!entryDefaults || !record || typeof record !== "object" || Array.isArray(record)) {
+            return;
+        }
+
+        Object.entries(record).forEach(([itemKey, rawEntry]) => {
+            if (typeof itemKey !== "string" || !itemKey.trim()) {
+                return;
+            }
+
+            const entry = normalizeEntry(entryDefaults, rawEntry);
+
+            if (!isDefaultEntry(entryDefaults, entry)) {
+                (progress[trackerId] ?? (progress[trackerId] = {}))[itemKey] = entry;
+            }
+        });
+    };
+
+    if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+        Object.entries(saved).forEach(([trackerId, record]) => adopt(trackerId, record));
+    }
+
+    // Only fall back to the legacy shape when the new one carried nothing for
+    // Bestiary, so a migrated workspace is never overwritten by a stale copy.
+    if (!progress.bestiary) {
+        adopt("bestiary", legacyBestiaryProgress);
+    }
+
+    return progress;
+}

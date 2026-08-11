@@ -1,11 +1,12 @@
-import { restoreProgress } from "./bestiary-progress.js";
+import { restoreTrackerProgress } from "./tracker-progress.js";
+import { getTrackerEntryDefaults } from "../trackers/registry.js";
 
 let huntSequence = 0;
 
 const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison", "library"];
 const TASKS_VIEWS = ["session", "allSessions", "library"];
 const RESPAWN_MODES = ["regular", "rapid"];
-const MODES = ["bestiary", "progress", "tasks"];
+const MODES = ["bestiary", "trackers", "tasks"];
 
 function normalizeRespawnMode(value) {
     return RESPAWN_MODES.includes(value) ? value : "regular";
@@ -41,7 +42,7 @@ export function createWorkspace() {
 
     return {
         mode: "bestiary",
-        bestiaryProgress: {},
+        trackerProgress: {},
         hunts: [hunt],
         activeHuntId: hunt.id,
         bestiaryView: "session",
@@ -180,7 +181,13 @@ export function restoreWorkspace(savedState) {
 
     return {
         mode: normalizeMode(savedState?.mode),
-        bestiaryProgress: restoreProgress(savedState?.bestiaryProgress),
+        // `bestiaryProgress` is the pre-framework shape, when Bestiary was the
+        // only tracker and its record sat at the top level.
+        trackerProgress: restoreTrackerProgress(
+            savedState?.trackerProgress,
+            getTrackerEntryDefaults(),
+            savedState?.bestiaryProgress
+        ),
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
         bestiaryView: normalizeView(savedState?.bestiaryView, BESTIARY_VIEWS),

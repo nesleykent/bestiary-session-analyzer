@@ -37,14 +37,15 @@ Three separate ideas control what `Charm Plan` uses:
 
 ## The Three Modes
 
-`Sessions` and `Tasks` are built from the same pasted logs; `Bestiary` is your own progress record that both read from.
+`Sessions` and `Tasks` are built from the same pasted logs; `Trackers` is your own progress record that both read
+from. Each tracker is one collection you are completing — `Bestiary` today, with more sharing the same engine.
 
-| | Sessions | Bestiary | Tasks |
+| | Sessions | Trackers | Tasks |
 |---|---|---|---|
-| Question | What should I complete for charm points? | Where am I across the whole Bestiary? | How long will this task target take? |
-| Scope | The logs you pasted | All 833 creatures | The logs you pasted |
-| Focus | Charm points | Kills, flags, completion | Kill target |
-| Extra views | `Charm Plan`, `All Sessions`, `Library`, `Compare Sessions` | &mdash; | `All Sessions`, `Library` |
+| Question | What should I complete for charm points? | Where am I across everything? | How long will this task target take? |
+| Scope | The logs you pasted | Every tracked collection | The logs you pasted |
+| Focus | Charm points | Progress, points, completion | Kill target |
+| Extra views | `Charm Plan`, `All Sessions`, `Library`, `Compare Sessions` | one tab per tracker | `All Sessions`, `Library` |
 
 Switching modes never asks you to paste again. Charm points, charm rate, `Charm Plan`, `Compare Sessions`, and Bestiary
 completion never appear in the Tasks flow.
@@ -53,11 +54,11 @@ completion never appear in the Tasks flow.
 
 Two levels:
 
-- `Sessions`, `Bestiary` and `Tasks` are the top-level choice. All three share the same stored logs and the same
-  Bestiary progress.
+- `Sessions`, `Trackers` and `Tasks` are the top-level choice. All three share the same stored logs and the same
+  tracker progress.
 - Inside `Sessions`: `Charm Plan`, `All Sessions`, `Library`, one tab per session, `+` to add a session, and
   `Compare Sessions` as a separate action on the right.
-- Inside `Bestiary`: a single table of every creature. No session tabs, because it is not session-scoped.
+- Inside `Trackers`: one tab per tracker, each showing its own progress. `Bestiary` is the first; more are configurations on the same engine.
 - Inside `Tasks`: `All Sessions`, `Library`, one tab per session, and `+`. No `Charm Plan` and no `Compare Sessions`.
 
 Every view is one click from every other view, so re-checking a single creature never means restarting. From
@@ -91,9 +92,9 @@ across sessions. `All Sessions` in Tasks lists one row per processed session wit
 - Records each session's respawn mode and lets `Charm Plan` plan for one mode at a time.
 - Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
 - Keeps a `Library` of every stored session with a name, a hunt date and free-text notes, sortable by any column and filterable by respawn mode or a search across names, notes and creatures.
-- Tracks your whole Bestiary in a `Bestiary` tab: all 833 creatures with your kills, `Echo Warden` and `Animus Mastery` flags, and a bookmark, filterable by class, status, bookmark and Echo Warden eligibility.
+- Tracks your whole Bestiary under `Trackers`: all 833 creatures with your kills, `Echo Warden` and `Animus Mastery` flags, and a bookmark, filterable by class, status, bookmark and Echo Warden eligibility. Sorting, filtering, paging, totals and import/export are shared by every tracker.
 - Reports charm points, the separate `Echo Warden` pool, and completion as three independent totals.
-- Imports Bestiary progress from a CSV or a TibiaDraptor JSON export, and exports it back to CSV. Only your kills and flags are read; charm points and stage thresholds always come from the game data.
+- Imports tracker progress from a CSV or a TibiaDraptor JSON export, and exports it back to CSV losslessly. Only your own progress is read; points and thresholds always come from the game data.
 - Exports the whole workspace to a file and imports it back, including everything you configured.
 - Persists the workspace in `localStorage`, so closing the tab no longer discards it.
 
@@ -267,20 +268,23 @@ bestiary-session-analyzer/
 |   |   |-- services/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
-|   |   |   |-- bestiary-progress.js
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
-|   |   |   |-- progress-transfer.js
+|   |   |   |-- tracker-progress.js
+|   |   |   |-- tracker-transfer.js
 |   |   |   `-- workspace-transfer.js
+|   |   |-- trackers/
+|   |   |   |-- bestiary.js
+|   |   |   `-- registry.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
-|   |   |   |-- render-bestiary-manager.js
 |   |   |   |-- render-blocks.js
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
 |   |   |   |-- render-session-library.js
+|   |   |   |-- render-tracker.js
 |   |   |   |-- render-task-results.js
 |   |   |   `-- render-task-sessions.js
 |   |   |-- utils/
@@ -311,7 +315,9 @@ bestiary-session-analyzer/
   information reads the same way everywhere. The Bestiary estimate table in a session and in `All Sessions` comes from
   one builder and cannot drift.
 - `src/app/state` owns the sessions and the Bestiary progress record, persists the workspace in `localStorage`, and handles file export and import.
-- `src/app/state/bestiary-progress.js` stores only what cannot be derived — kills and three flags per creature — and derives stage, status, kills remaining and charm points from the game data, so a rebalanced creature is picked up automatically instead of going stale in a saved file.
+- `src/app/trackers` holds one definition per tracker — its columns, filters, totals and import format. Adding a tracker is a definition plus a dataset, not a new view, store or navigation.
+- `src/app/state/tracker-progress.js` stores only what cannot be derived, keyed by tracker: kills for a counter, a done flag for a checklist, plus the tracker's own flags. Status, points earned and remaining are derived from the game data, so a rebalanced item is picked up instead of going stale in a saved file. Field types come from the shape of each tracker's declared defaults, so no tracker writes its own coercion code.
+- `src/app/ui/render-tracker.js` is the one table every tracker renders through, so they cannot drift apart.
 - The comparison consumes the same Bestiary summary each session displays, so both views always agree.
 - `src/data` stores application-owned datasets.
 
