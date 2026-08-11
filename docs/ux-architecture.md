@@ -1,5 +1,7 @@
 # Complete UX Architecture
 
+The governing end-to-end behavior, persistent objective loop, transition context, and recovery model are defined in [UX Journey System](ux-journey-system.md). This document remains the capability and screen-behavior inventory; where the two documents conflict, the journey system governs.
+
 ## Purpose
 
 This document defines the experience before visual design. It covers every shipped tracker, Bestiary-session calculation, Task Session, data operation, shared interaction, and responsive state.

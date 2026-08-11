@@ -1,6 +1,6 @@
 # Product Foundation and Journey — Rebuilt from Scratch
 
-Detailed screen behavior, states, transitions, responsive rules, and accessibility are defined in [Complete UX Architecture](ux-architecture.md).
+The governing user loop, cross-feature transitions, and recovery behavior are defined in [UX Journey System](ux-journey-system.md). Detailed capability behavior, responsive rules, and accessibility are defined in [Complete UX Architecture](ux-architecture.md).
 
 ## Status
 
