@@ -1,5 +1,7 @@
 # Bestiary Session Analyzer
 
+The current UX contract for manually entering all tracker data is documented in [Tracker Data Entry UX](docs/tracker-data-entry-ux.md). It defines source matching, sequential entry, confirmed zero/no, review completion, and resume behavior without prescribing a visual redesign.
+
 Bestiary Session Analyzer answers one question for Tibia charm-point farming: given the hunting sessions you actually
 played and the time you have tonight, which Bestiary entries can you finish and where should you hunt? It reads the kill
 data out of the Hunt Analyzer text you paste and turns it into a route.

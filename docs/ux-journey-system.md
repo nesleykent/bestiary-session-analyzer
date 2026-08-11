@@ -1,5 +1,7 @@
 # UX Journey System
 
+The binding manual-entry journey for all seven trackers is defined in [Tracker Data Entry UX](tracker-data-entry-ux.md). It must be accepted before tracker interface work resumes.
+
 The testable Given/When/Then contract for this model is defined in [UX Journey Acceptance Scenarios](ux-scenario-suite.md).
 
 ## Scope
