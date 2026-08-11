@@ -107,15 +107,20 @@ across sessions. `All Sessions` in Tasks lists one row per processed session wit
 
 ## How To Use It
 
-1. Start a local static server from the repository root:
+1. Start a local static server from the repository root. Port **4173** is the one port this project uses; stop any
+   previous one first rather than starting a second:
 
 ```bash
-python3 -m http.server 4173
+pkill -f "http.server 4173"; python3 -m http.server 4173 --bind 127.0.0.1
 ```
 
 2. Open the app in your browser:
 
 - `http://127.0.0.1:4173/src/`
+
+   After editing a module or the stylesheet, reload with `Cmd+Shift+R` (or `Ctrl+Shift+R`). `http.server` sends no
+   cache headers, so a plain reload can keep running the previous version of `src/app/**/*.js`. See
+   [CONTRIBUTING.md](CONTRIBUTING.md#stale-modules-are-the-trap) for a no-cache server if you prefer.
 
 3. Choose `Sessions`, `Bestiary` or `Tasks` in the top-level navigation.
 4. Paste the Hunt Analyzer text into the text area.

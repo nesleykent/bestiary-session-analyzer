@@ -8,13 +8,39 @@
 
 ## Local Verification
 
-Run a local static server before testing browser behavior:
+Always use port **4173**. One port, reused for every change — do not start a second server to get around a stale
+file, and stop the old one before starting a new one:
 
 ```bash
-python3 -m http.server 4173
+pkill -f "http.server 4173"; python3 -m http.server 4173 --bind 127.0.0.1
 ```
 
 Then open `http://127.0.0.1:4173/src/`.
+
+### Stale modules are the trap
+
+`http.server` sends no cache headers, so the browser holds on to `src/app/**/*.js` and `main.css`. After editing a
+module, an ordinary reload can still run the previous version — which looks exactly like a bug in the code you just
+wrote, and has cost real debugging time here more than once.
+
+Fix it in the browser, not by changing port:
+
+- **Hard reload** — `Cmd+Shift+R` (macOS) or `Ctrl+Shift+R`.
+- **Keep it off while working** — DevTools → Network → *Disable cache*, with DevTools left open.
+
+If you would rather the server never allow caching, serve with no-store headers instead:
+
+```bash
+python3 -c "import http.server as h; \
+C=type('C',(h.SimpleHTTPRequestHandler,),{'end_headers':lambda s:(s.send_header('Cache-Control','no-store'),h.SimpleHTTPRequestHandler.end_headers(s))}); \
+h.test(HandlerClass=C, port=4173, bind='127.0.0.1')"
+```
+
+When you are done, stop it:
+
+```bash
+pkill -f "http.server 4173"
+```
 
 ## Pull Requests
 
