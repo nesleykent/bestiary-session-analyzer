@@ -19,7 +19,7 @@ import {
     resetHunt,
     restoreWorkspace
 } from "./state/hunt-workspace.js";
-import { loadSessionState, saveSessionState } from "./state/session-store.js";
+import { loadWorkspaceState, saveWorkspaceState } from "./state/local-store.js";
 import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
@@ -171,7 +171,7 @@ function persistState() {
         return;
     }
 
-    saveSessionState(getWorkspaceSnapshot());
+    saveWorkspaceState(getWorkspaceSnapshot());
 }
 
 function readTotalKillsInputs(hunt) {
@@ -1096,7 +1096,7 @@ function applyWorkspace(workspace) {
 }
 
 function restoreWorkspaceState() {
-    applyWorkspace(restoreWorkspace(loadSessionState()) || createWorkspace());
+    applyWorkspace(restoreWorkspace(loadWorkspaceState()) || createWorkspace());
 
     return hasWorkspaceContent();
 }

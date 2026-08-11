@@ -23,7 +23,7 @@ bestiary-session-analyzer/
 |   |   |   `-- bestiary-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
-|   |   |   |-- session-store.js
+|   |   |   |-- local-store.js
 |   |   |   `-- workspace-transfer.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
