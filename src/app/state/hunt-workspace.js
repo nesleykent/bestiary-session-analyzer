@@ -1,7 +1,7 @@
 let huntSequence = 0;
 
-const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison"];
-const TASKS_VIEWS = ["session", "allSessions"];
+const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison", "library"];
+const TASKS_VIEWS = ["session", "allSessions", "library"];
 const RESPAWN_MODES = ["regular", "rapid"];
 
 function normalizeRespawnMode(value) {
@@ -16,6 +16,11 @@ function nextHuntId() {
 export function createHunt() {
     return {
         id: nextHuntId(),
+        // Archive metadata. `name` is empty until the user renames the session,
+        // so the positional "Session N" label stays the default.
+        name: "",
+        huntedOn: "",
+        notes: "",
         respawnMode: "regular",
         sessionLog: "",
         sessionDuration: 0,
@@ -44,8 +49,14 @@ export function createWorkspace() {
     };
 }
 
-export function getHuntLabel(index) {
-    return `Session ${index + 1}`;
+/**
+ * A session's display label. A user-supplied name wins; otherwise the label is
+ * positional, so unnamed sessions renumber themselves when one is deleted.
+ */
+export function getHuntLabel(index, hunt) {
+    const name = typeof hunt?.name === "string" ? hunt.name.trim() : "";
+
+    return name || `Session ${index + 1}`;
 }
 
 export function addHunt(hunts) {
@@ -57,10 +68,17 @@ export function addHunt(hunts) {
     };
 }
 
+/**
+ * Clearing the log discards the analysis, not the archive metadata — the name,
+ * date and notes describe the hunt itself and survive re-pasting its text.
+ */
 export function resetHunt(hunt) {
     return {
         ...createHunt(),
         id: hunt.id,
+        name: hunt.name,
+        huntedOn: hunt.huntedOn,
+        notes: hunt.notes,
         respawnMode: hunt.respawnMode
     };
 }
@@ -102,6 +120,9 @@ function normalizeHunt(savedHunt, adoptedIds) {
     return {
         ...hunt,
         id: adoptSavedHuntId(savedHunt?.id, hunt.id, adoptedIds),
+        name: typeof savedHunt?.name === "string" ? savedHunt.name : "",
+        huntedOn: typeof savedHunt?.huntedOn === "string" ? savedHunt.huntedOn : "",
+        notes: typeof savedHunt?.notes === "string" ? savedHunt.notes : "",
         respawnMode: normalizeRespawnMode(savedHunt?.respawnMode),
         sessionLog: typeof savedHunt?.sessionLog === "string" ? savedHunt.sessionLog : "",
         sessionDuration: Number(savedHunt?.sessionDuration) || 0,

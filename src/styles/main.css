@@ -1005,13 +1005,162 @@ a:hover {
     outline-offset: 2px;
 }
 
-.plan-controls {
+.plan-controls,
+.library-controls {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 12px 24px;
     margin-top: 24px;
     padding-top: 18px;
     border-top: 1px solid var(--color-border-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Session library
+   -------------------------------------------------------------------------- */
+
+.library-table table {
+    min-width: 860px;
+}
+
+.library-table th,
+.library-table td {
+    padding: 8px;
+}
+
+/* A sortable header stays header-shaped: the button inherits the th voice
+   instead of looking like a control dropped into the table. */
+.column-sort {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.column-sort:hover,
+th.is-sorted .column-sort {
+    color: var(--color-text);
+}
+
+.column-sort:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+.sort-mark {
+    font-size: 9px;
+    color: var(--color-brand);
+}
+
+th.is-num,
+td.is-num {
+    text-align: right;
+}
+
+/* The creature count rides under the charm points rather than taking a column
+   of its own, so the whole archive row fits without horizontal scrolling. */
+.row-aside {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+}
+
+.library-name,
+.library-notes,
+.library-date,
+.library-search {
+    width: 100%;
+    min-width: 0;
+    padding: 5px 8px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: left;
+    transition: border-color var(--transition);
+}
+
+/* Field widths are tuned so the whole row — including Open and Delete — fits
+   the content column without horizontal scrolling. Actions being scrolled out
+   of reach is worse than a snug Notes field. */
+.library-name {
+    min-width: 116px;
+    font-weight: 600;
+}
+
+.library-notes {
+    min-width: 128px;
+}
+
+.library-date {
+    min-width: 116px;
+    font-variant-numeric: tabular-nums;
+}
+
+.library-search {
+    max-width: 280px;
+}
+
+.library-name:hover,
+.library-notes:hover,
+.library-date:hover,
+.library-search:hover {
+    border-color: #c4c4c4;
+}
+
+.library-name:focus-visible,
+.library-notes:focus-visible,
+.library-date:focus-visible,
+.library-search:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring);
+}
+
+tbody tr.is-active {
+    background: var(--color-brand-wash);
+}
+
+.library-actions {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+/* Row actions here are content-sized; the shared 66px minimum is for the
+   wider Charm Plan rows. */
+.library-actions .row-action {
+    min-width: 0;
+    padding: 5px 8px;
+}
+
+.row-action.is-danger:hover {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+    background: rgba(192, 57, 43, 0.08);
+}
+
+.row-action:disabled {
+    color: #c9c9c9;
+    border-color: var(--color-border-soft);
+    cursor: not-allowed;
+}
+
+.row-action:disabled:hover {
+    border-color: var(--color-border-soft);
+    color: #c9c9c9;
+    background: none;
 }
 
 @keyframes GradientBackground {
@@ -1053,8 +1202,13 @@ a:hover {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     }
 
-    .plan-controls {
+    .plan-controls,
+    .library-controls {
         grid-template-columns: 1fr;
+    }
+
+    .library-search {
+        max-width: none;
     }
 
     .btn,

@@ -26,6 +26,7 @@ import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-p
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
 import { renderResults } from "./ui/render-results.js";
+import { LIBRARY_COLUMNS, renderSessionLibrary } from "./ui/render-session-library.js";
 import { renderTaskResults } from "./ui/render-task-results.js";
 import { renderTaskSessions } from "./ui/render-task-sessions.js";
 import { formatCharmsPerHour, formatNumber, formatTaskRate, formatTimeDetailed } from "./utils/formatters.js";
@@ -77,12 +78,16 @@ const VIEW_CONTENT = {
     },
     session: {
         resultsCopy: "Total kills apply when you leave the field."
+    },
+    library: {
+        resultsTitle: "Session Library",
+        resultsCopy: "Every Hunt Analyzer you have stored. Name them, date them, and note the conditions so a rate you recorded months ago still means something."
     }
 };
 
 const FIXED_VIEWS = {
-    bestiary: ["charmPlan", "allSessions"],
-    tasks: ["allSessions"]
+    bestiary: ["charmPlan", "allSessions", "library"],
+    tasks: ["allSessions", "library"]
 };
 
 const RESPAWN_MODE_LABELS = {
@@ -101,6 +106,10 @@ const state = {
     bestiaryData: [],
     bestiaryView: "session",
     isSessionInputOpen: false,
+    // Library sort and filters are view state, not workspace data, so they are
+    // deliberately absent from getWorkspaceSnapshot() and the export format.
+    librarySort: { key: "label", direction: "asc" },
+    libraryFilters: { respawnMode: "all", search: "" },
     excludedAllTabsEntries: [],
     hunts: [],
     ignoredPlanHuntIds: [],
@@ -141,7 +150,9 @@ function getActiveHunt() {
 }
 
 function getHuntLabelById(huntId) {
-    return getHuntLabel(state.hunts.findIndex((hunt) => hunt.id === huntId));
+    const index = state.hunts.findIndex((hunt) => hunt.id === huntId);
+
+    return getHuntLabel(index, state.hunts[index]);
 }
 
 function getComparableHunts() {
@@ -289,7 +300,7 @@ function calculateBestiaryResult(hunt) {
 
 function calculateAllTabsResult() {
     const huntEntries = state.hunts
-        .map((hunt, index) => ({ hunt, label: getHuntLabel(index) }))
+        .map((hunt, index) => ({ hunt, label: getHuntLabel(index, hunt) }))
         .filter((huntEntry) => hasBestiaryAnalysis(huntEntry.hunt))
         .map((huntEntry) => ({
             id: huntEntry.hunt.id,
@@ -313,7 +324,7 @@ function isHuntAvailableForPlan(huntId) {
 
 function getProcessedSessions() {
     return state.hunts
-        .map((hunt, index) => ({ hunt, id: hunt.id, label: getHuntLabel(index) }))
+        .map((hunt, index) => ({ hunt, id: hunt.id, label: getHuntLabel(index, hunt) }))
         .filter((session) => hasBestiaryAnalysis(session.hunt));
 }
 
@@ -440,18 +451,30 @@ function getTaskTabMeta(hunt) {
         : `${formatNumber(hunt.taskMonsters.length)} creatures`;
 }
 
+function buildLibraryTab(view) {
+    return {
+        key: "library",
+        label: "Library",
+        meta: `${formatNumber(state.hunts.length)} ${state.hunts.length === 1 ? "session" : "sessions"}`,
+        isActive: view === "library"
+    };
+}
+
 function buildFixedTabs(view) {
     if (state.mode === "tasks") {
         const processedCount = state.hunts.filter(hasTaskAnalysis).length;
 
-        return [{
-            key: "allSessions",
-            label: "All Sessions",
-            meta: processedCount
-                ? `${formatNumber(processedCount)} processed`
-                : "No analysis",
-            isActive: view === "allSessions"
-        }];
+        return [
+            {
+                key: "allSessions",
+                label: "All Sessions",
+                meta: processedCount
+                    ? `${formatNumber(processedCount)} processed`
+                    : "No analysis",
+                isActive: view === "allSessions"
+            },
+            buildLibraryTab(view)
+        ];
     }
 
     const { analysis, summary } = calculateAllTabsResult();
@@ -469,7 +492,8 @@ function buildFixedTabs(view) {
             label: "All Sessions",
             meta: analysis.rows.length ? formatCharmsPerHour(summary.charmRate) : "No analysis",
             isActive: view === "allSessions"
-        }
+        },
+        buildLibraryTab(view)
     ];
 }
 
@@ -503,7 +527,7 @@ function renderHuntTabStrip() {
     const isBestiary = state.mode === "bestiary";
     const huntTabs = state.hunts.map((hunt, index) => ({
         id: hunt.id,
-        label: getHuntLabel(index),
+        label: getHuntLabel(index, hunt),
         meta: [
             isBestiary ? getBestiaryTabMeta(hunt) : getTaskTabMeta(hunt),
             hunt.hasProcessedLog ? RESPAWN_MODE_SHORT_LABELS[hunt.respawnMode] : ""
@@ -568,7 +592,7 @@ function renderCharmPlanView() {
 function renderComparisonView() {
     const comparison = buildHuntComparison(state.hunts.map((hunt, index) => ({
         id: hunt.id,
-        label: getHuntLabel(index),
+        label: getHuntLabel(index, hunt),
         summary: hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).summary : null
     })));
 
@@ -606,9 +630,88 @@ function renderTaskSessionView() {
     attachTaskActions();
 }
 
+function buildLibraryRows() {
+    return state.hunts.map((hunt, index) => {
+        const summary = hasBestiaryAnalysis(hunt) ? calculateBestiaryResult(hunt).summary : null;
+
+        return {
+            id: hunt.id,
+            name: hunt.name,
+            label: getHuntLabel(index, hunt),
+            huntedOn: hunt.huntedOn,
+            notes: hunt.notes,
+            respawnMode: hunt.respawnMode,
+            respawnModeLabel: RESPAWN_MODE_LABELS[hunt.respawnMode],
+            duration: hunt.sessionDuration,
+            creatureCount: hunt.matchedMonsters.length,
+            charmPoints: summary ? summary.totalCharms : 0,
+            charmRate: summary ? summary.totalCharmsPerHour : 0,
+            hasProcessedLog: hunt.hasProcessedLog,
+            isActive: hunt.id === state.activeHuntId,
+            canDelete: state.hunts.length > 1,
+            searchText: [hunt.name, hunt.notes, ...hunt.matchedMonsters.map((monster) => monster.name)]
+                .join(" ")
+                .toLowerCase()
+        };
+    });
+}
+
+function filterLibraryRows(rows) {
+    const { respawnMode, search } = state.libraryFilters;
+    const needle = search.trim().toLowerCase();
+
+    return rows.filter((row) => {
+        if (respawnMode !== "all" && row.respawnMode !== respawnMode) {
+            return false;
+        }
+
+        return !needle || row.searchText.includes(needle) || row.label.toLowerCase().includes(needle);
+    });
+}
+
+function sortLibraryRows(rows) {
+    const { key, direction } = state.librarySort;
+    const column = LIBRARY_COLUMNS.find((candidate) => candidate.key === key) || LIBRARY_COLUMNS[0];
+    const factor = direction === "desc" ? -1 : 1;
+
+    // Sorting a copy keeps state.hunts in its own order: the positional
+    // "Session N" labels must not renumber just because the table is re-sorted.
+    return [...rows].sort((left, right) => {
+        const a = column.isNumeric ? Number(left[key]) || 0 : String(left[key] ?? "").toLowerCase();
+        const b = column.isNumeric ? Number(right[key]) || 0 : String(right[key] ?? "").toLowerCase();
+
+        if (a === b) {
+            return left.label.localeCompare(right.label, undefined, { numeric: true }) * factor;
+        }
+
+        return (a < b ? -1 : 1) * factor;
+    });
+}
+
+function renderSessionLibraryView() {
+    const rows = buildLibraryRows();
+    const visible = sortLibraryRows(filterLibraryRows(rows));
+
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
+    elements.resultsTitle.textContent = VIEW_CONTENT.library.resultsTitle;
+    elements.resultsCopy.textContent = VIEW_CONTENT.library.resultsCopy;
+
+    renderSessionLibrary(
+        elements.output,
+        visible,
+        state.librarySort,
+        state.libraryFilters,
+        { shown: visible.length, total: rows.length }
+    );
+    attachLibraryActions();
+}
+
 function renderTaskSessionsView() {
     const sessions = state.hunts
-        .map((hunt, index) => ({ hunt, id: hunt.id, label: getHuntLabel(index) }))
+        .map((hunt, index) => ({ hunt, id: hunt.id, label: getHuntLabel(index, hunt) }))
         .filter((session) => hasTaskAnalysis(session.hunt))
         .map((session) => ({
             id: session.id,
@@ -644,6 +747,13 @@ function renderApp() {
 
     applyPrimaryMode();
     renderHuntTabStrip();
+
+    // The library manages the logs both modes share, so it renders identically
+    // in either one.
+    if (view === "library") {
+        renderSessionLibraryView();
+        return;
+    }
 
     if (state.mode === "tasks") {
         if (view === "allSessions") {
@@ -747,6 +857,16 @@ function closeHuntTab(huntId) {
     captureVisibleInputs();
 
     const closedLabel = getHuntLabelById(huntId);
+    const closedHunt = findHuntById(huntId);
+
+    // Closing discards the pasted Hunt Analyzer and everything derived from it,
+    // and there is no undo. An empty session has nothing to lose, so only ask
+    // when there is something.
+    if (closedHunt && huntHasContent(closedHunt)
+        && !window.confirm(`Delete ${closedLabel}? Its Hunt Analyzer text, creature selection and total kills are discarded.`)) {
+        return;
+    }
+
     const { activeHuntId, hunts } = removeHunt(state.hunts, huntId, state.activeHuntId);
 
     state.hunts = hunts;
@@ -960,6 +1080,103 @@ function attachCharmPlanActions() {
     });
 }
 
+function findHuntById(huntId) {
+    return state.hunts.find((hunt) => hunt.id === huntId);
+}
+
+/**
+ * Renaming has to show up in the tab strip immediately, but a full re-render
+ * while typing would destroy the field. So the one affected tab label is
+ * updated in place, the same way updateCharmPlanResult() refreshes its tab.
+ */
+function syncHuntTabLabel(huntId) {
+    const label = elements.huntTabStrip
+        .querySelector(`[data-hunt-select="${huntId}"] .hunt-tab-label`);
+
+    if (label) {
+        label.textContent = getHuntLabelById(huntId);
+    }
+}
+
+/**
+ * Library text fields write straight to state on every keystroke and do not
+ * re-render, so the caret is never disturbed while typing.
+ */
+function attachLibraryFieldEditors() {
+    const bindField = (attribute, apply) => {
+        elements.output.querySelectorAll(`[${attribute}]`).forEach((input) => {
+            input.addEventListener("input", () => {
+                const huntId = input.getAttribute(attribute);
+                const hunt = findHuntById(huntId);
+
+                if (!hunt) {
+                    return;
+                }
+
+                apply(hunt, input.value);
+                persistState();
+                syncHuntTabLabel(huntId);
+            });
+        });
+    };
+
+    bindField("data-library-name", (hunt, value) => { hunt.name = value; });
+    bindField("data-library-date", (hunt, value) => { hunt.huntedOn = value; });
+    bindField("data-library-notes", (hunt, value) => { hunt.notes = value; });
+}
+
+function attachLibraryActions() {
+    attachLibraryFieldEditors();
+
+    elements.output.querySelectorAll("[data-library-sort]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.librarySort = {
+                key: button.dataset.librarySort,
+                direction: button.dataset.libraryDirection === "desc" ? "desc" : "asc"
+            };
+            renderApp();
+        });
+    });
+
+    elements.output.querySelectorAll("[data-library-filter-respawn]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.libraryFilters.respawnMode = button.dataset.libraryFilterRespawn;
+            renderApp();
+        });
+    });
+
+    const search = document.getElementById("librarySearch");
+
+    if (search) {
+        search.addEventListener("input", () => {
+            state.libraryFilters.search = search.value;
+            renderSessionLibraryView();
+
+            // Re-rendering replaces the field, so focus and caret are restored.
+            const restored = document.getElementById("librarySearch");
+
+            if (restored) {
+                restored.focus();
+                restored.setSelectionRange(restored.value.length, restored.value.length);
+            }
+        });
+    }
+
+    elements.output.querySelectorAll("[data-library-open]").forEach((button) => {
+        button.addEventListener("click", () => selectHunt(button.dataset.libraryOpen));
+    });
+
+    elements.output.querySelectorAll("[data-library-delete]").forEach((button) => {
+        button.addEventListener("click", () => closeHuntTab(button.dataset.libraryDelete));
+    });
+
+    const addButton = document.getElementById("libraryAddButton");
+
+    if (addButton) {
+        addButton.addEventListener("click", addHuntTab);
+    }
+}
+
 function attachAllTabsActions() {
     const resetButton = document.getElementById("allTabsResetButton");
 
@@ -1045,6 +1262,13 @@ function processHuntLog(hunt, logText) {
     dropAllTabsEntriesOfHunt(hunt.id);
     hunt.sessionDuration = bestiary.sessionDuration;
     hunt.hasProcessedLog = true;
+
+    // Stamp the archive date on first processing only, so a date the user
+    // corrected in the library is never overwritten by re-processing.
+    if (!hunt.huntedOn) {
+        hunt.huntedOn = new Date().toISOString().slice(0, 10);
+    }
+
     hunt.matchedMonsters = bestiary.monsters;
     hunt.selectedBestiaryMonsterNames = bestiary.monsters.map((monster) => monster.name);
     hunt.taskMonsters = tasks.monsters;

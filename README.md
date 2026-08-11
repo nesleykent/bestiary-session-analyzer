@@ -14,6 +14,7 @@ unlock threshold, so it never enters the charm-point maths.
   used for.
 - **Session** is what this app builds from one Hunt Analyzer: the Bestiary analysis derived from it. `+` adds a session
   by pasting and processing another Hunt Analyzer.
+- **Library** is the archive of every stored session, where you name them, date them and note the conditions.
 - **All Sessions** is the aggregated Bestiary workspace across every processed session.
 - **Compare Sessions** ranks those sessions by their Bestiary result.
 - **Charm Plan** optimizes across the sessions for the play time you have.
@@ -80,7 +81,9 @@ across sessions. `All Sessions` in Tasks lists one row per processed session wit
 - Plans a session against the hunting time you actually have, and works out which Bestiaries you can finish in it.
 - Records each session's respawn mode and lets `Charm Plan` plan for one mode at a time.
 - Lets you ignore a session in `Charm Plan` while its spawn is taken, without touching the session itself.
+- Keeps a `Library` of every stored session with a name, a hunt date and free-text notes, sortable by any column and filterable by respawn mode or a search across names, notes and creatures.
 - Exports the whole workspace to a file and imports it back, including everything you configured.
+- Persists the workspace in `localStorage`, so closing the tab no longer discards it.
 
 ## How To Use It
 
@@ -259,6 +262,7 @@ bestiary-session-analyzer/
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
+|   |   |   |-- render-session-library.js
 |   |   |   |-- render-task-results.js
 |   |   |   `-- render-task-sessions.js
 |   |   |-- utils/

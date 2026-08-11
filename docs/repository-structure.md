@@ -32,6 +32,7 @@ bestiary-session-analyzer/
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
 |   |   |   |-- render-results.js
+|   |   |   |-- render-session-library.js
 |   |   |   |-- render-task-results.js
 |   |   |   `-- render-task-sessions.js
 |   |   |-- utils/
