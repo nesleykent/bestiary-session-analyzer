@@ -1093,6 +1093,14 @@ a:hover {
     color: var(--color-brand-deep);
 }
 
+/* A value another tracker satisfied: shown as earned, but not a control here,
+   because editing it would mean recording the same fact twice. */
+.flag-toggle.is-locked {
+    display: inline-block;
+    border-style: dashed;
+    cursor: help;
+}
+
 .kills-cell {
     white-space: nowrap;
 }

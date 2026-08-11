@@ -120,7 +120,9 @@ export function importTrackerCsv(text, items, tracker) {
         throw new Error(`That CSV is missing the ${missing.join(" and ")} column${missing.length > 1 ? "s" : ""}.`);
     }
 
-    const nameIndex = indexOf("Name");
+    // The identifying column is usually "Name", but a tracker may call it
+    // something truer to its own data — the Cyclopedia Map calls it "Subarea".
+    const nameIndex = indexOf(tracker.transfer.nameColumn ?? "Name");
     const firstIndex = 0;
     const byKey = buildKeyIndex(items, tracker);
     const unmatched = [];

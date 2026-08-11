@@ -14,10 +14,15 @@ import { escapeText, plainText, trackerFlagCell, trackerStarCell } from "../ui/r
  * the spoilers contain real HTML anchors, so all of it goes through escapeText.
  */
 
-export function deriveAchievementRow(achievement, entry) {
-    const done = entry.done;
+export function deriveAchievementRow(achievement, entry, context = {}) {
+    // Some achievements are a consequence of another tracker — completing a
+    // Cyclopedia Map area earns its achievement. Those are shown as earned and
+    // are not editable here, so the same fact is never recorded twice.
+    const isDerived = Boolean(context.externalDone?.has(achievement.Name)) && !entry.done;
+    const done = entry.done || isDerived;
 
     return {
+        isDerived,
         key: achievement.Name,
         name: achievement.Name,
         points: achievement.points,
@@ -47,6 +52,8 @@ export const achievementsTracker = {
     resultsCopy: "Every achievement in the game, with what it takes to earn it. Tick the ones you already have; points and rarity come from the game data.",
     progress: "boolean",
     entryDefaults: { done: false, bookmark: false },
+    // Cyclopedia Map area completion satisfies 20 of these.
+    consumesDerived: true,
     loadItems: loadAchievementsData,
     itemKey: (achievement) => achievement.Name,
     derive: deriveAchievementRow,
@@ -98,7 +105,11 @@ export const achievementsTracker = {
             key: "done",
             label: "Earned",
             isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "done", { label: row.done ? "Yes" : "No" })
+            cell: (row) => trackerFlagCell(row, "done", {
+                label: row.done ? "Yes" : "No",
+                locked: row.isDerived,
+                title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
+            })
         }
     ],
 

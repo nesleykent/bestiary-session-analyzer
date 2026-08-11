@@ -713,16 +713,40 @@ function renderTaskSessionView() {
    -------------------------------------------------------------------------- */
 
 /**
- * Datasets load once at boot. Bestiary reuses the copy the session analysis
- * already needs, so bestiary.json is fetched once rather than twice.
+ * Datasets load once at boot, in registry order, and each loader is handed what
+ * has loaded already — which is how the Cyclopedia Map subareas pick up their
+ * Bestiary creature counts without fetching bestiary.json a second time.
+ *
+ * Bestiary itself reuses the copy the session analysis already needs.
  */
 async function loadTrackerItems(bestiaryData) {
-    const loaded = await Promise.all(TRACKERS.map(async (tracker) => [
-        tracker.id,
-        tracker.id === "bestiary" ? bestiaryData : await tracker.loadItems()
-    ]));
+    const loaded = { bestiary: bestiaryData };
 
-    return Object.fromEntries(loaded);
+    for (const tracker of TRACKERS) {
+        if (!loaded[tracker.id]) {
+            loaded[tracker.id] = await tracker.loadItems(loaded);
+        }
+    }
+
+    return loaded;
+}
+
+/**
+ * Some progress is a consequence of another tracker: completing every subarea of
+ * a Cyclopedia Map area earns that area's achievement, so the Achievements
+ * tracker should show it without the user recording it twice.
+ *
+ * One level only — a tracker that supplies derived keys must not itself consume
+ * them, which keeps this a single pass with no cycle to resolve.
+ */
+function getExternalDoneKeys(trackerId) {
+    return TRACKERS.reduce((keys, tracker) => {
+        if (tracker.derivesFor === trackerId && tracker.deriveExternalDone) {
+            tracker.deriveExternalDone(buildTrackerRows(tracker)).forEach((key) => keys.add(key));
+        }
+
+        return keys;
+    }, new Set());
 }
 
 function getActiveTracker() {
@@ -754,8 +778,12 @@ function entryFor(tracker, item) {
     return getEntry(state.trackerProgress, tracker.id, tracker.itemKey(item), tracker.entryDefaults);
 }
 
-function buildTrackerRows(tracker) {
-    return getTrackerItems(tracker).map((item) => tracker.derive(item, entryFor(tracker, item)));
+function buildTrackerRows(tracker, externalDone) {
+    const context = {
+        externalDone: externalDone ?? (tracker.consumesDerived ? getExternalDoneKeys(tracker.id) : null)
+    };
+
+    return getTrackerItems(tracker).map((item) => tracker.derive(item, entryFor(tracker, item), context));
 }
 
 function filterTrackerRows(tracker, rows) {
@@ -864,7 +892,9 @@ function renderTrackerView() {
 
     renderTracker(elements.output, getTrackerView(tracker));
     attachTrackerActions();
-    syncTrackerTabMeta(tracker);
+    // Completing a Cyclopedia Map area changes the Achievements total too, so
+    // every tab's meta is refreshed rather than only the active one.
+    TRACKERS.forEach(syncTrackerTabMeta);
 }
 
 

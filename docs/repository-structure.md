@@ -21,7 +21,8 @@ bestiary-session-analyzer/
 |   |   |   `-- task-analysis.js
 |   |   |-- services/
 |   |   |   |-- achievements-repository.js
-|   |   |   `-- bestiary-repository.js
+|   |   |   |-- bestiary-repository.js
+|   |   |   `-- measuring-tibia-repository.js
 |   |   |-- state/
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
@@ -31,6 +32,7 @@ bestiary-session-analyzer/
 |   |   |-- trackers/
 |   |   |   |-- achievements.js
 |   |   |   |-- bestiary.js
+|   |   |   |-- measuring-tibia.js
 |   |   |   `-- registry.js
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
