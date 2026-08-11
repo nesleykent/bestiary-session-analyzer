@@ -349,11 +349,20 @@ value carried in an imported file, because an export goes stale as soon as CipSo
 |---|---|---|
 | `src/data/bestiary.json` | 833 creatures — charm points, stage thresholds, class, difficulty, occurrence, locations, Echo Warden eligibility | [TibiaDraptor](https://tibiadraptor.com/) |
 | `src/data/bosstiary.json` | 316 bosses — three stage thresholds and the points each awards, category | [TibiaDraptor](https://tibiadraptor.com/) |
-| `src/data/charms.json` | 25 charms — three stages each, with cost and effect value | [TibiaDraptor](https://tibiadraptor.com/) |
+| `src/data/charms.json` | 25 charms — 14 Major and 11 Minor, three stages each with cost and effect value | [TibiaDraptor](https://tibiadraptor.com/) |
 | `src/data/achievements.json` | 570 achievements and 18 categories — points, grade, secret flag, spoiler, community rarity | [TibiaDraptor](https://tibiadraptor.com/) |
 | `src/data/quests.json` | 237 quests across 94 questlogs, with rewards | [TibiaDraptor](https://tibiadraptor.com/) |
 | `src/data/titles.json` | 113 titles — how to earn each, and whether it is permanent | [TibiaDraptor](https://tibiadraptor.com/) |
 | `src/data/measuring-tibia.json` | 20 Cyclopedia Map areas, 171 subareas, and the achievement each area awards | [Tibiopedia.pl](https://tibiopedia.pl/quests/Measuring_Tibia_Quest) |
+
+Charms are bought in **two different currencies**, which the tracker keeps apart because they cannot be added
+together:
+
+- **Major charms** (14) cost **charm points**, earned from the Bestiary — including the points an Echo Warden first
+  kill awards. Maxing all of them needs 48,900, and only 37,231 charm points exist in the game.
+- **Minor charms** (11) cost **Minor Charm Echoes**, which are not charm points. Echoes are earned by unlocking
+  Major charm stages — 50, 100 and 200 for stages 1, 2 and 3 — so majors fund minors. A promoted character also
+  receives 100. Maxing all 11 minors needs 5,225 echoes, while maxing every major generates 4,900.
 
 Upstream names are not tidy — 47 quest names and one achievement name carry a trailing space — so names are trimmed
 when the data is read and keys are matched whitespace-insensitively. Without both, importing a progress CSV silently

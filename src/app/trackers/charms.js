@@ -5,14 +5,38 @@ import { escapeText, plainText, trackerCountCell, trackerStarCell } from "../ui/
 const MAX_STAGE = 3;
 
 /**
- * The Charms tracker: a staged counter that *spends* rather than earns.
+ * The Charms tracker: a staged counter that spends rather than earns, in two
+ * different currencies.
  *
- * Every other tracker accumulates something. Charms are bought with the charm
- * points the Bestiary earns, so this is the one tracker whose headline is a
- * budget — and the budget genuinely cannot cover everything: unlocking all 25
- * charms to stage 3 costs 54,125 points, while only 37,231 exist in the game
- * (28,734 base plus the 8,497 Echo Warden pool).
+ *   Major charms cost Charm Points, earned from the Bestiary (including the
+ *   points an Echo Warden first kill awards).
+ *
+ *   Minor charms cost Minor Charm Echoes, which are not charm points at all.
+ *   They are earned by unlocking Major charm stages — 50, 100 and 200 for
+ *   stages 1, 2 and 3 — so majors fund minors. A promoted character also
+ *   receives 100.
+ *
+ * Neither budget can cover everything, which is why this tracker reports budgets
+ * rather than a collection:
+ *
+ *   majors need 48,900 charm points, and only 37,231 exist in the game
+ *   minors need 5,225 echoes, and maxing every major yields 4,900 (+100 promoted)
+ *
+ * Costs come from the dataset, not from these notes; the notes only explain why
+ * the two currencies are kept apart.
  */
+
+/** Minor Charm Echoes awarded for reaching each Major charm stage. */
+const ECHOES_PER_MAJOR_STAGE = [50, 100, 200];
+
+/** A promoted character receives this many echoes on top. */
+export const PROMOTION_ECHOES = 100;
+
+export const CURRENCY_LABELS = { points: "charm points", echoes: "echoes" };
+
+function currencyFor(type) {
+    return type === "Minor" ? "echoes" : "points";
+}
 
 export function deriveCharmRow(charm, entry) {
     // Clamped rather than trusted: a hand-edited file could carry any number, and
@@ -21,11 +45,14 @@ export function deriveCharmRow(charm, entry) {
     const unlocked = charm.stages.slice(0, stage);
     const current = unlocked[unlocked.length - 1] ?? null;
     const next = charm.stages[stage] ?? null;
+    const currency = currencyFor(charm.type);
 
     return {
         key: charm.Name,
         name: charm.Name,
         type: charm.type,
+        currency,
+        currencyLabel: CURRENCY_LABELS[currency],
         stage,
         stages: charm.stages,
         // The effect text carries a {{}} placeholder for the stage's value; with
@@ -36,6 +63,10 @@ export function deriveCharmRow(charm, entry) {
         spent: current ? current.cumulativeCost : 0,
         nextCost: next ? next.cost : 0,
         totalCost: charm.totalCost,
+        // Only majors generate echoes, and only for the stages actually unlocked.
+        echoesGenerated: charm.type === "Minor"
+            ? 0
+            : ECHOES_PER_MAJOR_STAGE.slice(0, stage).reduce((sum, value) => sum + value, 0),
         isComplete: stage >= MAX_STAGE,
         status: stage >= MAX_STAGE ? "done" : (stage > 0 ? "inProgress" : "notStarted"),
         bookmark: entry.bookmark,
@@ -45,12 +76,27 @@ export function deriveCharmRow(charm, entry) {
 
 const STATUS_LABELS = { notStarted: "Locked", inProgress: "Partial", done: "Maxed" };
 
+/** Splits the rows into the two budgets they actually draw on. */
+function summarizeCurrencies(rows) {
+    const of = (currency) => rows.filter((row) => row.currency === currency);
+    const sum = (list, field) => list.reduce((total, row) => total + row[field], 0);
+    const majors = of("points");
+    const minors = of("echoes");
+
+    return {
+        majors: { rows: majors, spent: sum(majors, "spent"), needed: sum(majors, "totalCost") },
+        minors: { rows: minors, spent: sum(minors, "spent"), needed: sum(minors, "totalCost") },
+        // Majors fund minors, so the echo budget comes from this tracker itself.
+        echoesEarned: sum(majors, "echoesGenerated")
+    };
+}
+
 export const charmsTracker = {
     id: "charms",
     label: "Charms",
     tableTitle: "My Charms",
     resultsTitle: "Charm Spending",
-    resultsCopy: "Charms are bought with the charm points your Bestiary earns, so this is a budget rather than a collection. Record the stage you have unlocked for each one.",
+    resultsCopy: "Charms are bought, not collected, and in two currencies: Major charms cost charm points your Bestiary earns, while Minor charms cost echoes that unlocking Major stages generates.",
     progress: "counter",
     entryDefaults: { stage: 0, bookmark: false },
     loadItems: loadCharmsData,
@@ -58,18 +104,24 @@ export const charmsTracker = {
     derive: deriveCharmRow,
     defaultSortKey: "name",
 
-    /** Spends what the Bestiary tracker earns. */
+    /** Major charms spend what the Bestiary earns. */
     consumesBudgetFrom: "bestiary",
 
     columns: [
         { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
         { key: "name", label: "Charm", isNumeric: false, cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>` },
-        { key: "type", label: "Type", isNumeric: false, cell: (row) => `<td class="cell-muted">${escapeText(row.type) || "&mdash;"}</td>` },
+        {
+            key: "type",
+            label: "Type",
+            isNumeric: false,
+            // The type IS the currency, so it says which.
+            cell: (row) => `<td class="cell-muted">${escapeText(row.type)}<span class="row-aside">${escapeText(row.currencyLabel)}</span></td>`
+        },
         { key: "effect", label: "Effect", isNumeric: false, cell: (row) => `<td class="spoiler-cell">${plainText(row.effect) || '<span class="cell-muted">&mdash;</span>'}</td>` },
         { key: "stage", label: "Stage", isNumeric: false, cell: (row) => trackerCountCell(row, "stage", `/ ${MAX_STAGE}`) },
         {
             key: "spent",
-            label: "Points Spent",
+            label: "Spent",
             isNumeric: true,
             cell: (row) => `<td class="is-num">${formatNumber(row.spent)}<span class="row-aside">of ${formatNumber(row.totalCost)}</span></td>`
         },
@@ -85,8 +137,8 @@ export const charmsTracker = {
             label: "Type",
             options: () => [
                 { value: "all", label: "All" },
-                { value: "Minor", label: "Minor" },
-                { value: "Major", label: "Major" }
+                { value: "Major", label: "Major" },
+                { value: "Minor", label: "Minor" }
             ],
             matches: (row, value) => row.type === value
         },
@@ -106,57 +158,61 @@ export const charmsTracker = {
     ],
 
     tabMeta(rows) {
-        return `${formatNumber(rows.reduce((sum, row) => sum + row.spent, 0))} spent`;
+        const { majors, minors } = summarizeCurrencies(rows);
+
+        return `${formatNumber(majors.spent)} pts · ${formatNumber(minors.spent)} echoes`;
     },
 
     /**
-     * The headline is what is left to spend, because that is the decision the
-     * player is actually making. Without a Bestiary record there is no budget to
-     * report, so it falls back to what has been spent.
+     * The headline is the charm points left, because that is the scarcer decision.
+     * The echo budget is reported alongside it, since it is a different currency
+     * and cannot be added to the first.
      */
     totals(rows, context = {}) {
-        const spent = rows.reduce((sum, row) => sum + row.spent, 0);
-        const maxedCount = rows.filter((row) => row.isComplete).length;
-        const outstanding = rows.reduce((sum, row) => sum + (row.totalCost - row.spent), 0);
+        const { majors, minors, echoesEarned } = summarizeCurrencies(rows);
+        const maxed = rows.filter((row) => row.isComplete).length;
         const budget = context.budget;
+        const echoesLeft = echoesEarned - minors.spent;
+        const echoStat = `Echoes ${formatNumber(Math.max(0, echoesLeft))} of ${formatNumber(echoesEarned)} generated`;
+        const stats = [
+            `${formatNumber(maxed)} of ${formatNumber(rows.length)} maxed`,
+            echoStat,
+            `Minors need ${formatNumber(minors.needed)} echoes in total`
+        ];
 
         if (budget === null || budget === undefined) {
             return {
                 answer: {
                     label: "Charm Points Spent",
-                    value: formatNumber(spent),
-                    note: `of ${formatNumber(spent + outstanding)} needed to max every charm.`
+                    value: formatNumber(majors.spent),
+                    note: `of ${formatNumber(majors.needed)} needed to max every Major charm.`
                 },
-                stats: [
-                    `${formatNumber(maxedCount)} of ${formatNumber(rows.length)} maxed`,
-                    `${formatNumber(outstanding)} still to spend`
-                ]
+                stats
             };
         }
 
-        const available = budget.earned - spent;
+        const available = budget.earned - majors.spent;
 
         return {
             answer: {
                 label: "Charm Points Available",
                 value: formatNumber(Math.max(0, available)),
                 note: available < 0
-                    ? `You have spent ${formatNumber(-available)} more than your Bestiary has earned &mdash; check the stages recorded here.`
-                    : `${formatNumber(budget.earned)} earned from your Bestiary, ${formatNumber(spent)} spent on charms.`
+                    ? `Major charms have used ${formatNumber(-available)} more charm points than your Bestiary has earned &mdash; check the stages recorded here.`
+                    : `${formatNumber(budget.earned)} earned from your Bestiary, ${formatNumber(majors.spent)} spent on Major charms of ${formatNumber(majors.needed)} needed.`
             },
             stats: [
-                `${formatNumber(maxedCount)} of ${formatNumber(rows.length)} maxed`,
-                `${formatNumber(outstanding)} needed to max the rest`,
-                `${formatNumber(budget.total)} exists in the whole game`
+                ...stats,
+                `${formatNumber(budget.total)} charm points exist in the game`
             ]
         };
     },
 
     transfer: {
         fileStem: "charm-progress",
-        csvColumns: ["Name", "Type", "Stage", "Points Spent", "Total Cost", "Bookmark"],
+        csvColumns: ["Name", "Type", "Currency", "Stage", "Spent", "Total Cost", "Bookmark"],
         requiredColumns: ["Name", "Stage"],
-        writeRow: (row) => [row.name, row.type, row.stage, row.spent, row.totalCost, row.bookmark ? "Yes" : "No"],
+        writeRow: (row) => [row.name, row.type, row.currencyLabel, row.stage, row.spent, row.totalCost, row.bookmark ? "Yes" : "No"],
         readRow: (cell) => ({
             // Clamped on the way in as well, so a bad file cannot store nonsense.
             stage: Math.min(Number.parseInt(String(cell("Stage") ?? "").replace(/[,\s]/g, ""), 10) || 0, MAX_STAGE),
