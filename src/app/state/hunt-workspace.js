@@ -41,7 +41,7 @@ export function createWorkspace() {
     const hunt = createHunt();
 
     return {
-        mode: "bestiary",
+        mode: "trackers",
         trackerProgress: {},
         hunts: [hunt],
         activeHuntId: hunt.id,

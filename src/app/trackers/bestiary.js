@@ -1,4 +1,4 @@
-import { loadBestiaryData } from "../services/bestiary-repository.js";
+import { loadBestiaryData } from "../services/bestiary-repository.js?v=3";
 import { formatNumber } from "../utils/formatters.js";
 import { escapeAttribute } from "../ui/render-blocks.js";
 import {
@@ -6,7 +6,7 @@ import {
     trackerCountCell,
     trackerFlagCell,
     trackerStarCell
-} from "../ui/render-tracker.js";
+} from "../ui/render-tracker.js?v=5";
 
 /**
  * The Bestiary tracker: a counter, because progress is kills against an unlock
@@ -67,7 +67,6 @@ export const bestiaryTracker = {
     derive: deriveBestiaryRow,
 
     columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
         {
             key: "name",
             label: "Creature",
@@ -75,7 +74,10 @@ export const bestiaryTracker = {
             cell: (row) => `<td class="creature-cell"><a href="${escapeAttribute(row.wikiLink)}" target="_blank" rel="noreferrer">${escapeText(row.name)}</a></td>`
         },
         { key: "className", label: "Class", isNumeric: false, cell: (row) => `<td class="cell-muted">${escapeText(row.className) || "&mdash;"}</td>` },
-        { key: "charms", label: "Charm Points", isNumeric: true, cell: (row) => `<td class="is-num">${formatNumber(row.charms)}</td>` },
+        { key: "kills", label: "Kills", isNumeric: false, cell: (row) => trackerCountCell(row, "kills", `/ ${formatNumber(row.unlockTarget)}`) },
+        { key: "status", label: "Stage", isNumeric: false, cell: (row) => `<td><span class="status-mark">${STATUS_LABELS[row.status]}</span></td>` },
+        { key: "killsLeft", label: "Remaining", isNumeric: true, cell: (row) => `<td class="is-num">${row.isComplete ? "&mdash;" : formatNumber(row.killsLeft)}</td>` },
+        { key: "charms", label: "Charm points", isNumeric: true, cell: (row) => `<td class="is-num">${formatNumber(row.charms)}</td>` },
         {
             key: "echoWardenPoints",
             label: "Echo Warden",
@@ -85,9 +87,7 @@ export const bestiaryTracker = {
                 eligible: row.echoWardenEligible
             })
         },
-        { key: "kills", label: "Kills", isNumeric: false, cell: (row) => trackerCountCell(row, "kills", `/ ${formatNumber(row.unlockTarget)}`) },
-        { key: "killsLeft", label: "Kills Left", isNumeric: true, cell: (row) => `<td class="is-num">${row.isComplete ? "&mdash;" : formatNumber(row.killsLeft)}</td>` },
-        { key: "status", label: "Status", isNumeric: false, cell: (row) => `<td><span class="status-mark">${STATUS_LABELS[row.status]}</span></td>` }
+        { key: "bookmark", label: "", mark: '<span class="material-symbols-outlined" aria-hidden="true">star</span>', srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) }
     ],
 
     facets: [
@@ -106,9 +106,9 @@ export const bestiaryTracker = {
             label: "Status",
             options: () => [
                 { value: "all", label: "All" },
-                { value: "notStarted", label: "Not Started" },
+                { value: "notStarted", label: "Missing" },
                 { value: "inProgress", label: "In Progress" },
-                { value: "done", label: "Done" }
+                { value: "done", label: "Completed" }
             ],
             matches: (row, value) => row.status === value
         },
@@ -153,20 +153,16 @@ export const bestiaryTracker = {
             inProgress: 0,
             notStarted: 0
         });
-        const percent = totals.charmPointsTotal > 0
-            ? (totals.charmPointsEarned / totals.charmPointsTotal) * 100
-            : 0;
-
         return {
             answer: {
-                label: "Charm Points",
-                value: formatNumber(totals.charmPointsEarned),
-                note: `of ${formatNumber(totals.charmPointsTotal)} in the game &mdash; ${percent.toFixed(1)}% earned.`
+                label: "",
+                value: `${formatNumber(totals.completed)} / ${formatNumber(rows.length)} complete`,
+                note: ""
             },
             stats: [
-                `${formatNumber(totals.completed)} of ${formatNumber(rows.length)} completed`,
+                `${formatNumber(totals.charmPointsEarned)} charm points`,
                 `${formatNumber(totals.inProgress)} in progress`,
-                `${formatNumber(totals.notStarted)} never hunted`,
+                `${formatNumber(totals.notStarted)} remaining`,
                 `Echo Warden ${formatNumber(totals.echoWardenEarned)} of ${formatNumber(totals.echoWardenTotal)}`
             ]
         };

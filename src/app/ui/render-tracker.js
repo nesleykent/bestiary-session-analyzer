@@ -80,7 +80,7 @@ export function trackerStarCell(row, field = "bookmark") {
                 data-tracker-flag="${escapeAttribute(field)}"
                 aria-pressed="${row[field] ? "true" : "false"}"
                 aria-label="Bookmark ${escapeAttribute(row.name)}"
-            >${row[field] ? "★" : "☆"}</button>
+            ><span class="material-symbols-outlined" aria-hidden="true">${row[field] ? "star" : "star_border"}</span></button>
         </td>
     `;
 }
@@ -123,7 +123,9 @@ function buildHead(columns, sort) {
     return `<tr>${columns.map((column) => {
         const isSorted = sort.key === column.key;
         const nextDirection = isSorted && sort.direction === "asc" ? "desc" : "asc";
-        const indicator = isSorted ? (sort.direction === "asc" ? "▲" : "▼") : "";
+        const indicator = isSorted
+            ? `<span class="material-symbols-outlined" aria-hidden="true">${sort.direction === "asc" ? "arrow_upward" : "arrow_downward"}</span>`
+            : "";
         const label = column.label || column.srLabel || "";
 
         return `
@@ -226,9 +228,11 @@ function buildChecks(checks, filters) {
 
 function buildFilters(facets, filters, items) {
     const checks = facets.filter((facet) => facet.kind === "check");
-    const rest = facets.filter((facet) => facet.kind !== "check");
+    const viewFacets = facets.filter((facet) => facet.kind === "segmented");
+    const rest = facets.filter((facet) => facet.kind !== "check" && facet.kind !== "segmented");
 
     return `
+        ${viewFacets.length ? `<div class="progress-view-tabs">${viewFacets.map((facet) => buildFacet(facet, filters, items)).join("")}</div>` : ""}
         <div class="progress-filters">
             ${rest.map((facet) => buildFacet(facet, filters, items)).join("")}
             ${buildChecks(checks, filters)}
@@ -273,7 +277,7 @@ function buildTotals(totals) {
 }
 
 export function renderTracker(container, view) {
-    const { tracker, rows, columns, page, sort, filters, items, totals } = view;
+    const { tracker, rows, columns, page, sort, filters, items, totals, selectedKey = "" } = view;
 
     container.className = "results-shell";
     container.innerHTML = `
@@ -282,11 +286,13 @@ export function renderTracker(container, view) {
         <section class="results-section" aria-labelledby="trackerTableTitle">
             <h3 class="subsection-title" id="trackerTableTitle">${escapeText(tracker.tableTitle ?? tracker.label)}</h3>
 
+            ${buildFilters(tracker.facets, filters, items)}
+
             ${rows.length ? `
                 <div class="table-container progress-table">
                     <table>
                         <thead>${buildHead(columns, sort)}</thead>
-                        <tbody>${rows.map((row) => `<tr class="is-${escapeAttribute(row.status)}">${
+                        <tbody>${rows.map((row) => `<tr class="is-${escapeAttribute(row.status)}${row.key === selectedKey ? " is-peek-selected" : ""}" data-tracker-row="${escapeAttribute(row.key)}">${
                             columns.map((column) => column.cell(row)).join("")
                         }</tr>`).join("")}</tbody>
                     </table>
@@ -296,8 +302,6 @@ export function renderTracker(container, view) {
                 "Nothing matches these filters.",
                 "Clear the search, or set the filters back to All."
             )}
-
-            ${buildFilters(tracker.facets, filters, items)}
         </section>
 
         ${tracker.transfer ? `

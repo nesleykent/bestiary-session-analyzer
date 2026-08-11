@@ -1,5 +1,5 @@
 import { achievementsTracker } from "./achievements.js";
-import { bestiaryTracker } from "./bestiary.js";
+import { bestiaryTracker } from "./bestiary.js?v=5";
 import { bosstiaryTracker } from "./bosstiary.js";
 import { charmsTracker } from "./charms.js";
 import { measuringTibiaTracker } from "./measuring-tibia.js";

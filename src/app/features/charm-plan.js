@@ -1,4 +1,4 @@
-import { isBestiaryEntryComplete } from "./session-analysis.js";
+import { isBestiaryEntryComplete } from "./session-analysis.js?v=2";
 
 const MINUTE_TOLERANCE = 0.000001;
 

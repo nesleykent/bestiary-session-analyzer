@@ -1,4 +1,4 @@
-import { parsePlayTimeMinutes, planCharmTime } from "./features/charm-plan.js";
+import { parsePlayTimeMinutes, planCharmTime } from "./features/charm-plan.js?v=2";
 import {
     aggregateAllTabsSummary,
     buildAllTabsAnalysis,
@@ -6,9 +6,9 @@ import {
     isEntryKeyForHunt
 } from "./features/hunt-comparison.js";
 import { buildOpportunityAnalysis } from "./features/opportunity-analysis.js";
-import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js";
+import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js?v=2";
 import { analyzeTaskSession, calculateTaskEstimate } from "./features/task-analysis.js";
-import { loadBestiaryData } from "./services/bestiary-repository.js";
+import { loadBestiaryData } from "./services/bestiary-repository.js?v=3";
 import {
     addHunt,
     createWorkspace,
@@ -19,7 +19,7 @@ import {
     removeHunt,
     resetHunt,
     restoreWorkspace
-} from "./state/hunt-workspace.js";
+} from "./state/hunt-workspace.js?v=2";
 import { loadWorkspaceState, saveWorkspaceState } from "./state/local-store.js";
 import {
     countTrackedEntries,
@@ -35,17 +35,17 @@ import {
     importTrackerCsv,
     importTrackerJson
 } from "./state/tracker-transfer.js";
-import { bestiaryTracker } from "./trackers/bestiary.js";
+import { bestiaryTracker } from "./trackers/bestiary.js?v=5";
 import {
     buildInitialFilters,
     getTracker,
     getTrackerEntryDefaults,
     getTrackerIds,
     TRACKERS
-} from "./trackers/registry.js";
+} from "./trackers/registry.js?v=5";
 import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
-import { renderTracker } from "./ui/render-tracker.js";
+import { escapeText, renderTracker } from "./ui/render-tracker.js?v=5";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
@@ -57,11 +57,15 @@ import { renderTaskSessions } from "./ui/render-task-sessions.js";
 import { formatCharmsPerHour, formatNumber, formatTaskRate, formatTimeDetailed } from "./utils/formatters.js";
 
 const elements = {
+    appShell: document.querySelector(".app-shell"),
     analysisSection: document.getElementById("analysisSection"),
     clearLogButton: document.getElementById("clearLogButton"),
     compareHuntsButton: document.getElementById("compareHuntsButton"),
     comparisonOutput: document.getElementById("comparisonOutput"),
     comparisonSection: document.getElementById("comparisonSection"),
+    detailCloseButton: document.getElementById("detailCloseButton"),
+    detailPanel: document.getElementById("detailPanel"),
+    detailPanelContent: document.getElementById("detailPanelContent"),
     exportWorkspaceButton: document.getElementById("exportWorkspaceButton"),
     importWorkspaceButton: document.getElementById("importWorkspaceButton"),
     importWorkspaceInput: document.getElementById("importWorkspaceInput"),
@@ -77,15 +81,24 @@ const elements = {
     sessionRapidButton: document.getElementById("sessionRapidButton"),
     sessionRegularButton: document.getElementById("sessionRegularButton"),
     modeTasksButton: document.getElementById("modeTasksButton"),
+    newSessionButton: document.getElementById("newSessionButton"),
     output: document.getElementById("output"),
     pasteLogButton: document.getElementById("pasteLogButton"),
     processLogButton: document.getElementById("processLogButton"),
     resultsCopy: document.getElementById("resultsCopy"),
     resultsTitle: document.getElementById("resultsTitle"),
+    pageDescription: document.getElementById("pageDescription"),
+    pageEyebrow: document.getElementById("pageEyebrow"),
+    pageTitle: document.getElementById("pageTitle"),
     sessionEditor: document.getElementById("sessionEditor"),
     sessionLog: document.getElementById("sessionLog"),
     sessionToggle: document.getElementById("sessionToggle"),
-    srStatus: document.getElementById("srStatus")
+    sidebarCollapseButton: document.getElementById("sidebarCollapseButton"),
+    sidebarOpenButton: document.getElementById("sidebarOpenButton"),
+    sidebarScrim: document.getElementById("sidebarScrim"),
+    sidebarSearchButton: document.getElementById("sidebarSearchButton"),
+    srStatus: document.getElementById("srStatus"),
+    workspaceMain: document.getElementById("workspaceMain")
 };
 
 const RESPAWN_MODE_HINT = "Records the spawn conditions this Hunt Analyzer was captured under. It changes no calculation.";
@@ -133,7 +146,7 @@ const RESPAWN_MODE_SHORT_LABELS = {
 };
 
 const state = {
-    mode: "bestiary",
+    mode: "trackers",
     activeHuntId: "",
     bestiaryData: [],
     bestiaryView: "session",
@@ -151,6 +164,7 @@ const state = {
     trackerFilters: {},
     trackerPageSize: 60,
     trackerPageIndex: 0,
+    selectedTrackerKey: "",
     excludedAllTabsEntries: [],
     hunts: [],
     ignoredPlanHuntIds: [],
@@ -900,8 +914,110 @@ function getTrackerView(tracker) {
         sort: getTrackerSort(tracker),
         filters: getTrackerFilters(tracker),
         items: getTrackerItems(tracker),
-        totals: tracker.totals(allRows, context)
+        totals: tracker.totals(allRows, context),
+        selectedKey: state.selectedTrackerKey
     };
+}
+
+function closeDetailPanel() {
+    state.selectedTrackerKey = "";
+    elements.detailPanel.hidden = true;
+    elements.appShell.classList.remove("has-detail");
+}
+
+function renderBestiaryDetail(row) {
+    const item = getTrackerItems(bestiaryTracker)
+        .find((creature) => bestiaryTracker.itemKey(creature) === row.key);
+    const locations = item?.Locations || "No locations listed";
+    const progressPercent = Math.round(row.progress * 100);
+
+    elements.detailPanelContent.innerHTML = `
+        <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">pets</span>${escapeText(row.name)}</h2>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Progress</h3>
+            <p class="detail-label">Current kills</p>
+            <p class="detail-value">${formatNumber(row.kills)} / ${formatNumber(row.unlockTarget)}</p>
+            <div class="detail-progress" role="progressbar" aria-label="Bestiary progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPercent}"><span style="width:${progressPercent}%"></span></div>
+            <p class="detail-note">${formatNumber(row.killsLeft)} remaining</p>
+        </section>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Charm points</h3>
+            <p class="detail-value">${formatNumber(row.charms)}</p>
+        </section>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Locations</h3>
+            <p class="detail-note">${escapeText(locations)}</p>
+        </section>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Tracking</h3>
+            ${row.echoWardenEligible ? `<label class="detail-check"><input type="checkbox" data-detail-flag="echoWarden" ${row.echoWarden ? "checked" : ""}>Echo Warden</label>` : ""}
+            <label class="detail-check"><input type="checkbox" data-detail-flag="animusMastery" ${row.animusMastery ? "checked" : ""}>Animus Mastery</label>
+            <label class="detail-check"><input type="checkbox" data-detail-flag="bookmark" ${row.bookmark ? "checked" : ""}>Bookmarked</label>
+        </section>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Actions</h3>
+            <div class="detail-actions">
+                <button class="btn btn-secondary" type="button" id="detailSessionsButton"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span>View measured sessions</button>
+                <a class="btn btn-secondary" href="${row.wikiLink}" target="_blank" rel="noreferrer"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>Open Tibia Wiki</a>
+            </div>
+        </section>
+    `;
+
+    elements.detailPanelContent.querySelectorAll("[data-detail-flag]").forEach((input) => {
+        input.addEventListener("change", () => {
+            toggleEntryFlag(
+                state.trackerProgress,
+                bestiaryTracker.id,
+                row.key,
+                bestiaryTracker.entryDefaults,
+                input.dataset.detailFlag
+            );
+            onTrackerProgressChanged();
+            renderTrackerView();
+        });
+    });
+
+    document.getElementById("detailSessionsButton")?.addEventListener("click", () => {
+        closeDetailPanel();
+        state.mode = "bestiary";
+        state.bestiaryView = "allSessions";
+        renderApp();
+        persistState();
+    });
+}
+
+function renderTrackerDetail(tracker) {
+    if (!state.selectedTrackerKey) {
+        closeDetailPanel();
+        return;
+    }
+
+    const row = buildTrackerRows(tracker).find((candidate) => candidate.key === state.selectedTrackerKey);
+
+    if (!row) {
+        closeDetailPanel();
+        return;
+    }
+
+    elements.detailPanel.hidden = false;
+    elements.detailPanel.scrollTop = 0;
+    elements.appShell.classList.add("has-detail");
+
+    if (tracker.id === "bestiary") {
+        renderBestiaryDetail(row);
+        return;
+    }
+
+    elements.detailPanelContent.innerHTML = `
+        <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">description</span>${escapeText(row.name)}</h2>
+        <section class="detail-group"><h3 class="detail-group-title">Tracker</h3><p class="detail-note">${escapeText(tracker.label)}</p></section>
+        <section class="detail-group"><h3 class="detail-group-title">Status</h3><p class="detail-value">${escapeText(row.status || "Tracked")}</p></section>
+    `;
 }
 
 /**
@@ -931,6 +1047,7 @@ function renderTrackerView() {
 
     renderTracker(elements.output, getTrackerView(tracker));
     attachTrackerActions();
+    renderTrackerDetail(tracker);
     // Completing a Cyclopedia Map area changes the Achievements total too, so
     // every tab's meta is refreshed rather than only the active one.
     TRACKERS.forEach(syncTrackerTabMeta);
@@ -1100,20 +1217,92 @@ function applyPrimaryMode() {
     });
 }
 
+function getPageContent() {
+    const view = getModeView();
+
+    if (state.mode === "trackers") {
+        const tracker = getActiveTracker();
+        const trackerDescriptions = {
+            bestiary: "Character-wide progress for every creature.",
+            bosstiary: "Character-wide progress for every boss.",
+            charms: "Plan charm unlocks against the points you have earned.",
+            achievements: "Track achievement progress and earned points.",
+            quests: "Keep every quest state in one dependable list.",
+            titles: "Track the titles your character has unlocked.",
+            measuringTibia: "Follow Cyclopedia Map areas and their completion requirements."
+        };
+
+        return {
+            eyebrow: "Tracker",
+            title: tracker.label,
+            description: trackerDescriptions[tracker.id] ?? tracker.resultsCopy
+        };
+    }
+
+    if (state.mode === "tasks") {
+        return {
+            eyebrow: "Sessions · Tasks",
+            title: view === "library" ? "Session History" : (view === "allSessions" ? "Task Sessions" : "Task Estimate"),
+            description: view === "allSessions"
+                ? "Estimate each task target from the measured kill rate in its Hunt Analyzer."
+                : "Use measured sessions to project how long a task target will take."
+        };
+    }
+
+    const contentByView = {
+        charmPlan: ["Charm Plan", "Turn your measured sessions and remaining Bestiary progress into a focused hunting plan."],
+        opportunities: ["Opportunities", "Find unfinished creatures your existing measured sessions can help you complete."],
+        allSessions: ["Bestiary Sessions", "Compare measured sessions and see where hunting time produces the most progress."],
+        library: ["Session History", "Your stored Hunt Analyzers, notes, dates, and recorded spawn conditions."],
+        comparison: ["Compare Sessions", "Compare measured hunts by time, progress, and charm efficiency."],
+        session: ["Bestiary Session", "Paste one Hunt Analyzer and turn its evidence into a progress estimate."]
+    };
+    const [title, description] = contentByView[view] ?? contentByView.session;
+
+    return { eyebrow: "Sessions · Bestiary", title, description };
+}
+
+function applyWorkspaceChrome() {
+    const content = getPageContent();
+    const view = getModeView();
+
+    elements.pageEyebrow.textContent = content.eyebrow;
+    elements.pageTitle.textContent = content.title;
+    elements.pageDescription.textContent = content.description;
+    elements.newSessionButton.hidden = state.mode === "trackers";
+    elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
+
+    document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
+        const isBrandOrHome = button.classList.contains("sidebar-brand") || button.hasAttribute("data-sidebar-home");
+        const isSelected = !isBrandOrHome
+            && button.dataset.sidebarMode === state.mode
+            && button.dataset.sidebarView === view;
+
+        button.classList.toggle("is-selected", isSelected);
+        if (button.tagName === "BUTTON") {
+            button.setAttribute("aria-current", isSelected ? "page" : "false");
+        }
+    });
+}
+
 function renderApp() {
     const view = getModeView();
 
     elements.appAlert.textContent = "";
 
     applyPrimaryMode();
-
-    elements.huntWorkspace.hidden = false;
-    renderHuntTabStrip();
+    applyWorkspaceChrome();
 
     if (state.mode === "trackers") {
+        elements.huntWorkspace.hidden = true;
+        renderHuntTabStrip();
         renderTrackerView();
         return;
     }
+
+    closeDetailPanel();
+    elements.huntWorkspace.hidden = false;
+    renderHuntTabStrip();
 
     // The library manages the logs both modes share, so it renders identically
     // in either one.
@@ -1513,6 +1702,17 @@ function onTrackerProgressChanged() {
 
 function attachTrackerActions() {
     const tracker = getActiveTracker();
+
+    elements.output.querySelectorAll("[data-tracker-row]").forEach((row) => {
+        row.addEventListener("click", (event) => {
+            if (event.target.closest("a, button, input, select, label")) {
+                return;
+            }
+
+            state.selectedTrackerKey = row.dataset.trackerRow;
+            renderTrackerView();
+        });
+    });
 
     elements.output.querySelectorAll(".tracker-count").forEach((input) => {
         input.addEventListener("focusout", () => commitTrackerCount(input));
@@ -2066,6 +2266,81 @@ elements.importWorkspaceInput.addEventListener("change", (event) => {
     if (file) {
         importWorkspaceFile(file);
     }
+});
+
+function closeMobileSidebar() {
+    document.body.classList.remove("sidebar-open");
+    elements.sidebarScrim.hidden = true;
+}
+
+function navigateWorkspace(mode, view) {
+    captureVisibleInputs();
+    state.mode = mode;
+    setModeView(view);
+    state.selectedTrackerKey = "";
+    state.isSessionInputOpen = false;
+    closeMobileSidebar();
+    renderApp();
+    persistState();
+}
+
+document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+        event.preventDefault();
+        navigateWorkspace(button.dataset.sidebarMode, button.dataset.sidebarView);
+    });
+});
+
+document.querySelectorAll(".sidebar-section-title").forEach((button) => {
+    button.addEventListener("click", () => {
+        button.setAttribute("aria-expanded", String(button.getAttribute("aria-expanded") !== "true"));
+    });
+});
+
+function focusWorkspaceSearch() {
+    if (state.mode !== "trackers") {
+        navigateWorkspace("trackers", "bestiary");
+    }
+
+    requestAnimationFrame(() => {
+        const search = elements.output.querySelector('[data-tracker-facet="search"]');
+
+        search?.focus();
+        search?.select();
+    });
+}
+
+elements.sidebarSearchButton.addEventListener("click", focusWorkspaceSearch);
+document.addEventListener("keydown", (event) => {
+    const target = event.target;
+
+    if (event.key === "/" && !target.closest("input, textarea, select, [contenteditable]")) {
+        event.preventDefault();
+        focusWorkspaceSearch();
+    }
+});
+
+elements.sidebarCollapseButton.addEventListener("click", () => {
+    document.body.classList.toggle("sidebar-collapsed");
+});
+elements.sidebarOpenButton.addEventListener("click", () => {
+    document.body.classList.add("sidebar-open");
+    elements.sidebarScrim.hidden = false;
+});
+elements.sidebarScrim.addEventListener("click", closeMobileSidebar);
+elements.detailCloseButton.addEventListener("click", () => {
+    closeDetailPanel();
+    if (state.mode === "trackers") {
+        renderTrackerView();
+    }
+});
+elements.newSessionButton.addEventListener("click", () => {
+    if (state.mode !== "bestiary") {
+        captureVisibleInputs();
+        state.mode = "bestiary";
+    }
+    state.bestiaryView = "session";
+    addHuntTab();
 });
 
 initializeApp();
