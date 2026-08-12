@@ -40,10 +40,10 @@
 
     /* 1 — grid */
     --grid-columns: 12;
-    --grid-gutter: var(--u6);
+    --grid-gutter: var(--u4);
     --grid-margin: var(--u8);
-    --sidebar-width: 264px;
-    --page-max: 1392px;
+    --sidebar-width: 240px;
+    --page-max: 1920px;
 
     /* 4 — colour */
     --ink-900: #14130e;
@@ -104,10 +104,10 @@
     display: grid;
     grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
     column-gap: var(--grid-gutter);
-    row-gap: var(--u6);
+    row-gap: var(--u4);
     width: min(100%, var(--page-max));
     margin: 0 auto;
-    padding: var(--u12) var(--grid-margin) var(--u16);
+    padding: var(--u8) var(--grid-margin) var(--u16);
     align-content: start;
 }
 
@@ -118,33 +118,14 @@
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(clamp(calc(var(--u24) * 3 - var(--u4)), 18vw, calc(var(--u24) * 3 + var(--u8))), 1fr));
     column-gap: var(--grid-gutter);
     row-gap: var(--grid-gutter);
-    margin: var(--u2) 0 var(--u6);
+    margin: var(--u4) 0 var(--u6);
 }
 
-/* Four across of twelve. The responsive story is a span count, not a new design. */
 .progress-card {
-    grid-column: span 3;
-}
-
-@media (max-width: 1400px) {
-    .progress-card {
-        grid-column: span 4;
-    }
-}
-
-@media (max-width: 1180px) {
-    .progress-card {
-        grid-column: span 6;
-    }
-}
-
-@media (max-width: 620px) {
-    .progress-card {
-        grid-column: span 12;
-    }
+    min-width: 0;
 }
 
 @media (max-width: 900px) {

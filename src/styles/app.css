@@ -308,13 +308,24 @@ h3 {
 
 .page-heading-row {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: var(--u6);
     flex-wrap: wrap;
-    padding-bottom: var(--u6);
-    margin-bottom: var(--u6);
+    padding-bottom: var(--u4);
+    margin-bottom: 0;
     border-bottom: 1px solid var(--ink-100);
+}
+
+@media (min-width: 901px) {
+    .workspace-main.is-trackers .workspace-content {
+        padding-top: var(--u12);
+    }
+
+    .workspace-main.is-trackers .page-heading-row {
+        padding-bottom: var(--u6);
+        margin-bottom: var(--u2);
+    }
 }
 
 .page-eyebrow {
@@ -425,6 +436,41 @@ textarea,
     color: var(--ink-900);
     font: inherit;
     font-size: var(--t-200);
+    line-height: var(--leading-snug);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+.library-search,
+.plan-time-input,
+.task-total-input {
+    height: var(--control-height);
+}
+
+select {
+    padding-right: var(--u8);
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--ink-500) 50%),
+        linear-gradient(135deg, var(--ink-500) 50%, transparent 50%);
+    background-position:
+        calc(100% - var(--u4)) 50%,
+        calc(100% - var(--u3)) 50%;
+    background-repeat: no-repeat;
+    background-size: var(--u1) var(--u1);
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
 }
 
 textarea {
@@ -467,9 +513,11 @@ input[type="checkbox"] {
 .segmented,
 .progress-view-tabs .segmented {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: var(--u6);
     border-bottom: 1px solid var(--ink-100);
+    overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .segmented-button {
@@ -481,6 +529,7 @@ input[type="checkbox"] {
     font-size: var(--t-200);
     color: var(--ink-700);
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .segmented-button:hover {
@@ -519,6 +568,7 @@ input[type="checkbox"] {
     align-items: center;
     gap: var(--u2);
     min-height: var(--control-height);
+    height: var(--control-height);
     padding: 0 var(--u4);
     border: 1px solid var(--ink-300);
     border-radius: var(--radius-control);
@@ -563,7 +613,12 @@ input[type="checkbox"] {
 .answer {
     display: grid;
     gap: var(--u1);
-    margin-bottom: var(--u2);
+    margin: 0;
+    padding: var(--u4) var(--u6) var(--u2);
+    border: 1px solid var(--ink-100);
+    border-bottom: 0;
+    border-radius: var(--radius-surface) var(--radius-surface) 0 0;
+    background: var(--surface);
 }
 
 .answer .summary-label {
@@ -590,28 +645,96 @@ input[type="checkbox"] {
 .stat-line {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--u2) var(--u3);
-    margin-top: var(--u2);
-    padding-bottom: var(--u6);
-    border-bottom: 1px solid var(--ink-100);
+    align-items: center;
+    gap: 0;
+    margin: 0;
+    padding: var(--u2) var(--u6) var(--u4);
+    border: 1px solid var(--ink-100);
+    border-top: 0;
+    border-radius: 0 0 var(--radius-surface) var(--radius-surface);
+    background: var(--surface);
     font-variant-numeric: tabular-nums;
 }
 
-.stat-line > span {
-    color: var(--ink-300);
+.stat-item {
+    padding-right: var(--u4);
+    margin-right: var(--u4);
+    border-right: 1px solid var(--ink-100);
+    color: var(--ink-700);
+    white-space: nowrap;
+}
+
+.stat-item:last-child {
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0;
+}
+
+/* On desktop the tracker answer and its supporting counts are one metric strip.
+   Keeping them in separate stacked boxes left half the header visually unused. */
+@media (min-width: 1200px) {
+    .workspace-main.is-trackers #output.results-shell {
+        display: grid;
+        grid-template-columns: calc(var(--u24) * 3) minmax(0, 1fr);
+        column-gap: 0;
+        row-gap: var(--u6);
+    }
+
+    .workspace-main.is-trackers #output > .answer {
+        align-content: center;
+        min-height: var(--u24);
+        padding: var(--u6);
+        border-right: 0;
+        border-bottom: 1px solid var(--ink-100);
+        border-radius: var(--radius-surface) 0 0 var(--radius-surface);
+    }
+
+    .workspace-main.is-trackers #output > .stat-line {
+        flex-wrap: nowrap;
+        min-height: var(--u24);
+        padding: var(--u6);
+        border-top: 1px solid var(--ink-100);
+        border-left: 0;
+        border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+    }
+
+    .workspace-main.is-trackers #output > .stat-line .stat-item {
+        flex: 1;
+        text-align: center;
+    }
+
+    .workspace-main.is-trackers #output > :not(.answer):not(.stat-line) {
+        grid-column: 1 / -1;
+    }
 }
 
 .toolbar {
     display: flex;
     align-items: flex-end;
-    gap: var(--u3);
-    flex-wrap: wrap;
-    padding: var(--u4) 0;
+    gap: var(--u4);
+    flex-wrap: nowrap;
+    padding: var(--u4) var(--u6);
+    border: 1px solid var(--ink-100);
+    border-radius: 0 0 var(--radius-surface) var(--radius-surface);
+    background: var(--surface);
+}
+
+.toolbar > :first-child {
+    flex: 1 1 calc(var(--u24) * 3);
 }
 
 .toolbar .library-search {
-    min-width: calc(var(--u24) * 2 + var(--u16));
+    width: 100%;
+    min-width: calc(var(--u24) * 2);
+}
+
+.results-section > .segmented {
+    gap: var(--u6);
+    padding: var(--u1) var(--u6) 0;
+    border: 1px solid var(--ink-100);
+    border-bottom: 0;
+    border-radius: var(--radius-surface) var(--radius-surface) 0 0;
+    background: var(--surface);
 }
 
 .toolbar-spacer {
@@ -633,16 +756,19 @@ input[type="checkbox"] {
 .progress-card {
     display: flex;
     flex-direction: column;
-    gap: var(--u3);
-    padding: var(--u4);
-    border: 1px solid transparent;
+    gap: var(--u2);
+    padding: var(--u3);
+    border: 1px solid var(--ink-100);
     border-radius: var(--radius-surface);
     background: var(--surface);
-    box-shadow: var(--elevation-1);
+    box-shadow: none;
+    transition: transform var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
 }
 
 .progress-card:hover {
-    box-shadow: var(--elevation-2);
+    border-color: var(--ink-300);
+    box-shadow: var(--elevation-1);
+    transform: translateY(calc(var(--u1) / -2));
 }
 
 .progress-card.is-done {
@@ -664,7 +790,7 @@ input[type="checkbox"] {
 .card-title {
     flex: 1;
     min-width: 0;
-    font-size: var(--t-300);
+    font-size: var(--t-200);
     font-weight: var(--weight-bold);
     line-height: var(--leading-snug);
     letter-spacing: var(--tracking-title);
@@ -704,7 +830,7 @@ input[type="checkbox"] {
 }
 
 .card-control {
-    margin-top: auto;
+    margin-top: var(--u1);
 }
 
 .card-foot {
@@ -712,6 +838,7 @@ input[type="checkbox"] {
     align-items: center;
     justify-content: space-between;
     gap: var(--u2);
+    flex-wrap: wrap;
     min-height: var(--u6);
     font-size: var(--t-100);
     color: var(--ink-500);
@@ -722,6 +849,7 @@ input[type="checkbox"] {
     display: flex;
     align-items: center;
     gap: var(--u2);
+    margin-left: auto;
 }
 
 .card-select {
@@ -740,7 +868,7 @@ input[type="checkbox"] {
 }
 
 .stage {
-    min-height: var(--control-height);
+    min-height: var(--u8);
     padding: 0 var(--u2);
     border: 0;
     border-left: 1px solid var(--ink-100);
@@ -861,6 +989,7 @@ input[type="checkbox"] {
     font-variant-numeric: tabular-nums;
     color: var(--ink-700);
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .chip-toggle:hover {
@@ -1238,16 +1367,21 @@ input[type="checkbox"] {
 }
 
 .undo-bar {
+    position: fixed;
+    right: var(--u6);
+    bottom: var(--u6);
+    z-index: 35;
     display: flex;
     align-items: center;
-    gap: var(--u3);
-    margin-bottom: var(--u4);
+    gap: var(--u2);
+    width: min(calc(var(--u24) * 4), calc(100vw - var(--u12)));
+    margin: 0;
     padding: var(--u2) var(--u3);
-    border: 1px solid var(--ink-300);
+    border: 1px solid var(--ink-100);
     border-radius: var(--radius-control);
     background: var(--surface);
-    box-shadow: var(--elevation-1);
-    font-size: var(--t-200);
+    box-shadow: var(--elevation-2);
+    font-size: var(--t-100);
 }
 
 .undo-text {
@@ -1257,12 +1391,17 @@ input[type="checkbox"] {
 
 .undo-action {
     min-height: var(--u8);
-    padding: 0 var(--u3);
-    border: 1px solid var(--ink-300);
+    padding: 0 var(--u2);
+    border: 0;
     border-radius: var(--radius-control);
-    background: var(--surface);
+    background: none;
+    color: var(--accent);
     font-weight: var(--weight-bold);
     cursor: pointer;
+}
+
+.undo-action:hover {
+    background: var(--accent-tint);
 }
 
 .quick-add {
@@ -1388,6 +1527,13 @@ input[type="checkbox"] {
 
 .content-section {
     margin-top: var(--u8);
+}
+
+/* Tracker pages already sit in the workspace grid below the page heading. The
+   legacy session section margin doubled that separation and stranded the summary
+   beneath a large empty band. */
+.workspace-main.is-trackers #analysisSection {
+    margin-top: 0;
 }
 
 .section-heading {

@@ -1,5 +1,5 @@
 import { formatNumber } from "../utils/formatters.js";
-import { buildAnswer, buildEmptyState, buildStatLine, escapeAttribute } from "./render-blocks.js";
+import { buildAnswer, buildEmptyState, buildMetricLine, escapeAttribute } from "./render-blocks.js";
 import { escapeText, plainText, selectControl } from "./render-controls.js";
 
 /**
@@ -272,7 +272,7 @@ export function renderTracker(container, view) {
     container.className = "results-shell";
     container.innerHTML = `
         ${buildAnswer(totals.answer.label, totals.answer.value, totals.answer.note ?? "")}
-        ${buildStatLine(totals.stats ?? [])}
+        ${buildMetricLine(totals.stats ?? [])}
 
         <section class="results-section" aria-labelledby="trackerGridTitle">
             <h2 class="sr-only" id="trackerGridTitle">${escapeText(tracker.tableTitle ?? tracker.label)}</h2>

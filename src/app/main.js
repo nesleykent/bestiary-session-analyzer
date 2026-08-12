@@ -181,7 +181,7 @@ const state = {
     activeTrackerId: TRACKERS[0].id,
     trackerSort: {},
     trackerFilters: {},
-    trackerPageSize: 60,
+    trackerPageSize: 24,
     trackerPageIndex: 0,
     selectedTrackerKey: "",
     // Selection, the keyboard cursor and the pending undo are all view state.
@@ -1983,9 +1983,11 @@ function syncTrackerTotals(tracker) {
     }
 
     if (stats) {
-        // Same separator buildStatLine uses, so a patched line is indistinguishable
-        // from a freshly rendered one.
-        stats.innerHTML = (totals.stats ?? []).filter(Boolean).join("<span>·</span>");
+        // Tracker metrics keep their desktop column geometry after an inline edit.
+        stats.innerHTML = (totals.stats ?? [])
+            .filter(Boolean)
+            .map((part) => `<span class="stat-item">${part}</span>`)
+            .join("");
     }
 }
 

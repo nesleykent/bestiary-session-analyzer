@@ -38,6 +38,14 @@ export function buildStatLine(parts) {
     return filled.length ? `<p class="stat-line">${filled.join("<span>·</span>")}</p>` : "";
 }
 
+export function buildMetricLine(parts) {
+    const filled = parts.filter(Boolean);
+
+    return filled.length
+        ? `<p class="stat-line">${filled.map((part) => `<span class="stat-item">${part}</span>`).join("")}</p>`
+        : "";
+}
+
 export function buildPill(text, isBrand = false) {
     return `<span class="pill${isBrand ? " is-brand" : ""}">${text}</span>`;
 }
