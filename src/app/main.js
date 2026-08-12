@@ -106,7 +106,6 @@ const elements = {
     sessionEditor: document.getElementById("sessionEditor"),
     sessionLog: document.getElementById("sessionLog"),
     sessionToggle: document.getElementById("sessionToggle"),
-    sidebarCollapseButton: document.getElementById("sidebarCollapseButton"),
     sidebarOpenButton: document.getElementById("sidebarOpenButton"),
     sidebarScrim: document.getElementById("sidebarScrim"),
     sidebarSearchButton: document.getElementById("sidebarSearchButton"),
@@ -3222,12 +3221,6 @@ document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((but
     });
 });
 
-document.querySelectorAll(".sidebar-section-title").forEach((button) => {
-    button.addEventListener("click", () => {
-        button.setAttribute("aria-expanded", String(button.getAttribute("aria-expanded") !== "true"));
-    });
-});
-
 /**
  * Everything the player could want to change, from every tracker, as one flat list
  * for the quick-add combobox. Each entry carries the controls that make sense for
@@ -3400,9 +3393,6 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-elements.sidebarCollapseButton.addEventListener("click", () => {
-    document.body.classList.toggle("sidebar-collapsed");
-});
 elements.sidebarOpenButton.addEventListener("click", () => {
     document.body.classList.add("sidebar-open");
     elements.sidebarScrim.hidden = false;

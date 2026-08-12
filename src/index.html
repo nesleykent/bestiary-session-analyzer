@@ -15,31 +15,23 @@
         <aside class="workspace-sidebar" id="workspaceSidebar" aria-label="Workspace navigation">
             <div class="sidebar-brand-row">
                 <a class="sidebar-brand" href="#" data-sidebar-mode="trackers" data-sidebar-view="bestiary">Tibia Progress</a>
-                <button class="icon-button sidebar-collapse" id="sidebarCollapseButton" type="button" aria-label="Collapse sidebar">
-                    <span class="material-symbols-outlined" aria-hidden="true">left_panel_close</span>
-                </button>
             </div>
 
             <nav class="sidebar-nav" aria-label="Primary">
-                <button class="sidebar-link" type="button" data-sidebar-home data-sidebar-mode="trackers" data-sidebar-view="bestiary">
-                    <span class="material-symbols-outlined" aria-hidden="true">home</span>
-                    <span>Home</span>
-                </button>
-                <button class="sidebar-link" id="sidebarRecordButton" type="button">
-                    <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
-                    <span>Record progress</span>
-                </button>
-                <button class="sidebar-link" id="sidebarSearchButton" type="button">
-                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                    <span>Search</span>
-                    <span class="sidebar-shortcut">/</span>
-                </button>
+                <div class="sidebar-utilities">
+                    <button class="sidebar-link" id="sidebarRecordButton" type="button">
+                        <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+                        <span>Record progress</span>
+                    </button>
+                    <button class="sidebar-link" id="sidebarSearchButton" type="button">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        <span>Search</span>
+                        <span class="sidebar-shortcut">/</span>
+                    </button>
+                </div>
 
                 <section class="sidebar-section" aria-labelledby="trackersNavTitle">
-                    <button class="sidebar-section-title" id="trackersNavTitle" type="button" aria-expanded="true">
-                        <span>Trackers</span>
-                        <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-                    </button>
+                    <h2 class="sidebar-section-title" id="trackersNavTitle">Trackers</h2>
                     <div class="sidebar-section-items" id="trackerNavItems">
                         <button class="sidebar-link is-selected" type="button" data-sidebar-mode="trackers" data-sidebar-view="bestiary"><span class="material-symbols-outlined" aria-hidden="true">pets</span><span>Bestiary</span></button>
                         <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="bosstiary"><span class="material-symbols-outlined" aria-hidden="true">skull</span><span>Bosstiary</span></button>
@@ -52,16 +44,11 @@
                 </section>
 
                 <section class="sidebar-section" aria-labelledby="sessionsNavTitle">
-                    <button class="sidebar-section-title" id="sessionsNavTitle" type="button" aria-expanded="false">
-                        <span>Sessions</span>
-                        <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-                    </button>
+                    <h2 class="sidebar-section-title" id="sessionsNavTitle">Planning &amp; sessions</h2>
                     <div class="sidebar-section-items">
-                        <p class="sidebar-group-label">Bestiary sessions</p>
                         <button class="sidebar-link" type="button" data-sidebar-mode="bestiary" data-sidebar-view="charmPlan"><span class="material-symbols-outlined" aria-hidden="true">route</span><span>Charm Plan</span></button>
                         <button class="sidebar-link" type="button" data-sidebar-mode="bestiary" data-sidebar-view="opportunities"><span class="material-symbols-outlined" aria-hidden="true">explore</span><span>Opportunities</span></button>
                         <button class="sidebar-link" type="button" data-sidebar-mode="bestiary" data-sidebar-view="library"><span class="material-symbols-outlined" aria-hidden="true">history</span><span>Session History</span></button>
-                        <p class="sidebar-group-label">Tasks</p>
                         <button class="sidebar-link" type="button" data-sidebar-mode="tasks" data-sidebar-view="allSessions"><span class="material-symbols-outlined" aria-hidden="true">checklist</span><span>Task Sessions</span></button>
                     </div>
                 </section>
