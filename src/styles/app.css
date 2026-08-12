@@ -40,7 +40,6 @@
     --accent: #1f5fd0;
     --accent-soft: #edf2fc;
     --accent-line: #b7ccf1;
-    --good: #1c6b४2;
     --good: #1a6b45;
     --good-soft: #e9f4ed;
     --warn: #8a4b12;
@@ -84,6 +83,16 @@
 *::before,
 *::after {
     box-sizing: border-box;
+}
+
+/*
+ * The hidden attribute has to win. A class that sets `display` beats the UA rule for
+ * [hidden], so every section the app hides by attribute — the session editor, the
+ * comparison pane, the hunt tab strip — stayed on screen and bled into pages it did
+ * not belong to. One rule, and the leak class is closed for good.
+ */
+[hidden] {
+    display: none !important;
 }
 
 html {
