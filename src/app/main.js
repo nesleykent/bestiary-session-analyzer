@@ -30,8 +30,7 @@ import {
     isAnsweredEntry,
     isKnownEntry,
     REVIEWED_FIELD,
-    setEntry,
-    toggleEntryFlag
+    setEntry
 } from "./state/tracker-progress.js";
 
 import {
@@ -1025,21 +1024,62 @@ function closeDetailPanel() {
     elements.appShell.classList.remove("has-detail");
 }
 
+function formatDetailRecordedAt(itemKey) {
+    const change = state.changeLog.find((candidate) => candidate.trackerId === bestiaryTracker.id
+        && Object.prototype.hasOwnProperty.call(candidate.entries ?? {}, itemKey));
+
+    if (!change?.at) {
+        return "Never";
+    }
+
+    const recordedAt = new Date(change.at);
+
+    if (Number.isNaN(recordedAt.getTime())) {
+        return "Never";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+    }).format(recordedAt);
+}
+
 function renderBestiaryDetail(row) {
     const item = getTrackerItems(bestiaryTracker)
         .find((creature) => bestiaryTracker.itemKey(creature) === row.key);
     const locations = item?.Locations || "No locations listed";
-    const progressPercent = Math.round(row.progress * 100);
+    const locationItems = locations.split(/,\s*/).filter(Boolean);
+    const progressPercent = row.progress * 100;
+    const progressLabel = `${progressPercent.toFixed(1)}%`;
 
     elements.detailPanelContent.innerHTML = `
-        <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">pets</span>${escapeText(row.name)}</h2>
+        <header class="detail-header">
+            <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">pets</span>${escapeText(row.name)}</h2>
+            <p class="detail-header-meta">${escapeText(row.className)} <span aria-hidden="true">·</span> ${formatNumber(row.charms)} charm points</p>
+        </header>
 
         <section class="detail-group">
             <h3 class="detail-group-title">Progress</h3>
-            <p class="detail-label">Current kills</p>
-            <p class="detail-value">${formatNumber(row.kills)} / ${formatNumber(row.unlockTarget)}</p>
-            <div class="detail-progress" role="progressbar" aria-label="Bestiary progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPercent}"><span style="width:${progressPercent}%"></span></div>
-            <p class="detail-note">${formatNumber(row.killsLeft)} remaining</p>
+            <div class="detail-kills-row">
+                <label class="detail-kills-field">
+                    <span>Kills</span>
+                    <input
+                        class="detail-kills-input"
+                        type="number"
+                        min="0"
+                        max="${row.unlockTarget}"
+                        inputmode="numeric"
+                        value="${row.kills || ""}"
+                        aria-describedby="detailKillsTarget"
+                    >
+                </label>
+                <span class="detail-kills-target" id="detailKillsTarget">of ${formatNumber(row.unlockTarget)}</span>
+            </div>
+            <div class="detail-progress" role="progressbar" aria-label="Bestiary progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPercent.toFixed(1)}"><span style="width:${progressPercent}%"></span></div>
+            <div class="detail-progress-meta">
+                <span data-detail-progress-percent>${progressLabel}</span>
+                <span data-detail-kills-left>${formatNumber(row.killsLeft)} remaining</span>
+            </div>
         </section>
 
         <section class="detail-group">
@@ -1049,7 +1089,9 @@ function renderBestiaryDetail(row) {
 
         <section class="detail-group">
             <h3 class="detail-group-title">Locations</h3>
-            <p class="detail-note">${escapeText(locations)}</p>
+            <ul class="detail-location-list">
+                ${locationItems.map((location) => `<li>${escapeText(location)}</li>`).join("")}
+            </ul>
         </section>
 
         <section class="detail-group">
@@ -1064,23 +1106,107 @@ function renderBestiaryDetail(row) {
         <section class="detail-group">
             <h3 class="detail-group-title">Actions</h3>
             <div class="detail-actions">
-                <button class="btn btn-secondary" type="button" id="detailSessionsButton"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span>View measured sessions</button>
-                <a class="btn btn-secondary" href="${row.wikiLink}" target="_blank" rel="noreferrer"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>Open Tibia Wiki</a>
+                <button class="btn btn-secondary detail-action" type="button" id="detailSessionsButton"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span><span>View measured sessions</span></button>
+                <a class="btn btn-secondary detail-action" href="${row.wikiLink}" target="_blank" rel="noreferrer"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span><span>Open Tibia Wiki</span><span class="material-symbols-outlined detail-action-tail" aria-hidden="true">north_east</span></a>
             </div>
+            <p class="detail-last-recorded">Last recorded: ${escapeText(formatDetailRecordedAt(row.key))}</p>
         </section>
     `;
 
+    const killsInput = elements.detailPanelContent.querySelector(".detail-kills-input");
+    let killsDirty = false;
+
+    const previewKills = () => {
+        const entered = Number.parseInt(killsInput.value, 10) || 0;
+        const kills = Math.min(row.unlockTarget, Math.max(0, entered));
+        const percent = row.unlockTarget > 0 ? (kills / row.unlockTarget) * 100 : 0;
+        const remaining = Math.max(0, row.unlockTarget - kills);
+        const bar = elements.detailPanelContent.querySelector(".detail-progress");
+
+        bar?.setAttribute("aria-valuenow", percent.toFixed(1));
+        bar?.querySelector("span")?.style.setProperty("width", `${percent}%`);
+        elements.detailPanelContent.querySelector("[data-detail-progress-percent]").textContent = `${percent.toFixed(1)}%`;
+        elements.detailPanelContent.querySelector("[data-detail-kills-left]").textContent = `${formatNumber(remaining)} remaining`;
+    };
+
+    killsInput?.addEventListener("input", () => {
+        killsDirty = true;
+        previewKills();
+    });
+
+    killsInput?.addEventListener("focusout", () => {
+        if (!killsDirty) {
+            return;
+        }
+
+        const entered = Number.parseInt(killsInput.value, 10) || 0;
+        const next = Math.min(row.unlockTarget, Math.max(0, entered));
+        const previous = Number.parseInt(
+            getEntry(state.trackerProgress, bestiaryTracker.id, row.key, bestiaryTracker.entryDefaults).kills,
+            10
+        ) || 0;
+
+        if (next === previous) {
+            return;
+        }
+
+        const change = writeTrackerEntries(bestiaryTracker, [row.key], () => ({ kills: next }), {
+            kind: "entry",
+            label: `${row.name} ${previous} → ${next}`
+        });
+
+        refreshTrackerRow(bestiaryTracker, row.key);
+        showUndo(change);
+
+        const updated = buildTrackerRows(bestiaryTracker)
+            .find((candidate) => candidate.key === row.key);
+
+        if (updated) {
+            renderBestiaryDetail(updated);
+        }
+    });
+
+    killsInput?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            killsInput.blur();
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            killsDirty = false;
+            killsInput.value = row.kills || "";
+            previewKills();
+            killsInput.blur();
+        }
+    });
+
     elements.detailPanelContent.querySelectorAll("[data-detail-flag]").forEach((input) => {
         input.addEventListener("change", () => {
-            toggleEntryFlag(
+            const field = input.dataset.detailFlag;
+            const current = getEntry(
                 state.trackerProgress,
                 bestiaryTracker.id,
                 row.key,
-                bestiaryTracker.entryDefaults,
-                input.dataset.detailFlag
-            );
-            onTrackerProgressChanged();
-            renderTrackerView();
+                bestiaryTracker.entryDefaults
+            )[field];
+            const change = writeTrackerEntries(bestiaryTracker, [row.key], () => ({ [field]: !current }), {
+                kind: "entry",
+                label: `${row.name} ${field === "bookmark" ? (current ? "unbookmarked" : "bookmarked") : (current ? "cleared" : "marked")}`
+            });
+
+            refreshTrackerRow(bestiaryTracker, row.key);
+
+            if (field !== "bookmark") {
+                showUndo(change);
+            }
+
+            const updated = buildTrackerRows(bestiaryTracker)
+                .find((candidate) => candidate.key === row.key);
+
+            if (updated) {
+                renderBestiaryDetail(updated);
+            }
         });
     });
 
@@ -1116,7 +1242,10 @@ function renderTrackerDetail(tracker) {
     }
 
     elements.detailPanelContent.innerHTML = `
-        <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">description</span>${escapeText(row.name)}</h2>
+        <header class="detail-header">
+            <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">description</span>${escapeText(row.name)}</h2>
+            <p class="detail-header-meta">${escapeText(tracker.label)}</p>
+        </header>
         <section class="detail-group"><h3 class="detail-group-title">Tracker</h3><p class="detail-note">${escapeText(tracker.label)}</p></section>
         <section class="detail-group"><h3 class="detail-group-title">Status</h3><p class="detail-value">${escapeText(row.status || "Tracked")}</p></section>
     `;
