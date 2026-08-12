@@ -1054,9 +1054,11 @@ function renderBestiaryDetail(row) {
 
         <section class="detail-group">
             <h3 class="detail-group-title">Tracking</h3>
-            ${row.echoWardenEligible ? `<label class="detail-check"><input type="checkbox" data-detail-flag="echoWarden" ${row.echoWarden ? "checked" : ""}>Echo Warden</label>` : ""}
-            <label class="detail-check"><input type="checkbox" data-detail-flag="animusMastery" ${row.animusMastery ? "checked" : ""}>Animus Mastery</label>
-            <label class="detail-check"><input type="checkbox" data-detail-flag="bookmark" ${row.bookmark ? "checked" : ""}>Bookmarked</label>
+            <div class="detail-checks">
+                ${row.echoWardenEligible ? `<label class="detail-check"><input type="checkbox" data-detail-flag="echoWarden" ${row.echoWarden ? "checked" : ""}><span>Echo Warden</span></label>` : ""}
+                <label class="detail-check"><input type="checkbox" data-detail-flag="animusMastery" ${row.animusMastery ? "checked" : ""}><span>Animus Mastery</span></label>
+                <label class="detail-check"><input type="checkbox" data-detail-flag="bookmark" ${row.bookmark ? "checked" : ""}><span>Bookmarked</span></label>
+            </div>
         </section>
 
         <section class="detail-group">

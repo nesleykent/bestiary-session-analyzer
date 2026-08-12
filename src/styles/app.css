@@ -165,7 +165,7 @@ h3 {
 }
 
 .app-shell.has-detail {
-    grid-template-columns: var(--sidebar-width) minmax(0, 1fr) calc(var(--u24) * 3 + var(--u12));
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
 }
 
 .workspace-sidebar {
@@ -1191,6 +1191,12 @@ input[type="checkbox"] {
     text-align: center;
 }
 
+/* Empty results occupy the same slot and rhythm as a populated card grid. Without
+   this shared margin they fused to the filter surface and read like its footer. */
+.results-section > .empty-state {
+    margin: var(--u4) 0 var(--u6);
+}
+
 /* --- 6  record: landing, unit, review --------------------------------- */
 
 .results-section + .results-section {
@@ -1576,18 +1582,51 @@ input[type="checkbox"] {
 }
 
 .detail-panel {
-    position: sticky;
-    top: 0;
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 40;
+    width: min(calc(var(--u24) * 3 + var(--u12)), calc(100vw - var(--sidebar-width)));
     height: 100vh;
     overflow-y: auto;
-    padding: var(--u6);
+    padding: var(--u8) var(--u6);
     border-left: 1px solid var(--ink-100);
     background: var(--surface);
+    box-shadow: var(--elevation-2);
+}
+
+.detail-close {
+    position: absolute;
+    top: var(--u6);
+    right: var(--u6);
+}
+
+#detailPanelContent {
+    display: grid;
+    gap: var(--u6);
+}
+
+.detail-title {
+    display: flex;
+    align-items: center;
+    gap: var(--u2);
+    min-height: var(--u8);
+    padding-right: var(--u12);
+    padding-bottom: var(--u4);
+    border-bottom: 1px solid var(--ink-100);
+}
+
+.detail-title .material-symbols-outlined {
+    flex: 0 0 auto;
+}
+
+.detail-group {
+    display: grid;
+    gap: var(--u2);
 }
 
 .detail-group + .detail-group {
-    margin-top: var(--u6);
-    padding-top: var(--u4);
+    margin-top: 0;
+    padding-top: var(--u6);
     border-top: 1px solid var(--ink-100);
 }
 
@@ -1597,12 +1636,48 @@ input[type="checkbox"] {
     letter-spacing: var(--tracking-label);
     text-transform: uppercase;
     color: var(--ink-500);
-    margin-bottom: var(--u2);
+    margin: 0;
 }
 
 .detail-value {
-    font-size: var(--t-300);
+    font-size: var(--t-400);
+    line-height: var(--leading-tight);
     font-variant-numeric: tabular-nums;
+}
+
+.detail-progress {
+    height: var(--u1);
+    margin-top: var(--u1);
+    overflow: hidden;
+    background: var(--ink-100);
+}
+
+.detail-progress > span {
+    display: block;
+    height: 100%;
+    background: var(--ink-900);
+}
+
+.detail-checks,
+.detail-actions {
+    display: grid;
+    gap: var(--u2);
+}
+
+.detail-check {
+    display: grid;
+    grid-template-columns: var(--u6) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--u2);
+    min-height: var(--control-height);
+    color: var(--ink-700);
+    font-size: var(--t-200);
+    cursor: pointer;
+}
+
+.detail-check input {
+    margin: 0;
+    justify-self: start;
 }
 
 /* --- 8  legacy surfaces: sessions, plans, library --------------------- */
