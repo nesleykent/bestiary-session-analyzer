@@ -369,15 +369,19 @@ h3,
 
 /* --- the unit screen: uniform cells, content forward ------------------- */
 
+/* Hairlines on the tiles themselves rather than a background showing through the
+   gaps: with a background grid, a part-filled last row rendered as grey blocks. */
 .unit-grid {
     grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-    gap: 1px;
-    background: var(--rule);
+    gap: 0;
+    background: none;
     border: 1px solid var(--rule);
 }
 
 .unit-tile {
     border: 0;
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
     border-radius: 0;
     background: var(--paper);
     padding: var(--space-4) var(--space-3);
@@ -545,4 +549,442 @@ h3,
 .progress-table td.tick-cell,
 .progress-table td.count-cell {
     width: 1%;
+}
+
+/* ==========================================================================
+   Legibility pass
+
+   The composition above was right about structure and wrong about density. Swiss
+   restraint is not small, faint and tight — Müller-Brockmann's grids are generous.
+   This pass corrects the four mistakes: type too small, contrast too low, controls
+   drawn so quietly they stopped looking interactive, and no scanning aids in a table
+   hundreds of rows long.
+   ========================================================================== */
+
+:root {
+    /* Contrast raised to clear AA on white: secondary 8.0:1, tertiary 4.9:1. */
+    --ink-2: #373734;
+    --ink-3: #66665f;
+    --rule: #e2e2de;
+    --rule-strong: #b9b9b3;
+
+    --type-micro: 0.75rem;
+    --type-small: 0.875rem;
+    --type-body: 1rem;
+    --type-lead: 1.375rem;
+}
+
+/* --- hierarchy: the name leads, metadata recedes, figures align -------- */
+
+.progress-table .creature-cell a,
+.progress-table .achievement-name,
+.progress-table .row-name {
+    font-size: var(--type-body);
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.row-aside {
+    margin-top: 3px;
+    font-size: var(--type-micro);
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+}
+
+/* Derived numbers are context for the entry, so they sit a step back from it. */
+.progress-table td.is-num {
+    color: var(--ink-2);
+    font-size: var(--type-small);
+}
+
+.progress-table thead th {
+    font-size: var(--type-micro);
+    color: var(--ink-2);
+    padding: var(--space-3);
+}
+
+/* --- spacing: rows you can aim at ------------------------------------- */
+
+.progress-table tbody td {
+    padding: var(--space-4) var(--space-3);
+    font-size: var(--type-body);
+}
+
+/* --- scanning: sticky head, zebra, and a rule between column groups --- */
+
+.progress-table {
+    position: relative;
+}
+
+.progress-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--paper);
+    box-shadow: inset 0 -1px 0 var(--rule-strong);
+}
+
+.progress-table tbody tr:nth-child(even) td {
+    background: #fbfbfa;
+}
+
+.progress-table tbody tr:hover td {
+    background: var(--accent-wash);
+}
+
+/* Where your input ends and the derived figures begin, said once with a rule
+   instead of asking the eye to count columns. */
+.progress-table td.stage-cell,
+.progress-table th.stage-cell {
+    border-left: 1px solid var(--rule);
+}
+
+.progress-table td.count-cell + td,
+.progress-table thead th:nth-child(4) {
+    border-left: 1px solid var(--rule);
+}
+
+/* --- controls that look interactive ----------------------------------- */
+
+.stage-option {
+    min-height: 34px;
+    min-width: 40px;
+    padding: 6px 10px;
+    font-size: var(--type-small);
+    color: var(--ink-2);
+    background: var(--paper);
+}
+
+.stage-set {
+    border-color: var(--rule-strong);
+    box-shadow: 0 1px 0 rgba(17, 17, 17, 0.04);
+}
+
+.stage-option:hover {
+    background: var(--accent-wash);
+    color: var(--ink);
+}
+
+.stage-option:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    z-index: 1;
+}
+
+.tick {
+    width: 28px;
+    height: 28px;
+    border-color: var(--rule-strong);
+    box-shadow: 0 1px 0 rgba(17, 17, 17, 0.04);
+}
+
+.tick:hover {
+    border-color: var(--ink);
+}
+
+/* A field with no box did not read as a field. It has a box again. */
+.count-cell .tracker-count {
+    width: 5rem;
+    min-height: 34px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--paper);
+    padding: 4px 8px;
+}
+
+.count-cell .tracker-count:focus {
+    border: 1px solid var(--accent);
+    outline: 2px solid var(--accent-wash);
+    outline-offset: 0;
+}
+
+.star-toggle {
+    min-width: 32px;
+    min-height: 32px;
+    color: var(--ink-3);
+}
+
+.star-toggle.is-on {
+    color: var(--accent);
+}
+
+/* --- per-row progress, visible without reading ------------------------ */
+
+.cell-bar {
+    display: block;
+    height: 3px;
+    margin-top: 6px;
+    background: var(--rule);
+}
+
+.cell-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--ink-3);
+}
+
+tr.is-done .cell-bar > span {
+    background: var(--accent);
+}
+
+/* --- search, filters, pager: real affordances ------------------------- */
+
+.filter-bar {
+    align-items: end;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+}
+
+.filter-bar .library-search {
+    min-height: 38px;
+    min-width: 260px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--paper);
+    padding: 6px 10px;
+}
+
+.filter-disclosure > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--paper);
+    font-size: var(--type-small);
+    color: var(--ink);
+}
+
+.filter-disclosure > summary::before {
+    content: "tune";
+    font-family: "Material Symbols Outlined";
+    font-size: 18px;
+    line-height: 1;
+    color: var(--ink-3);
+}
+
+.filter-disclosure[open] > summary {
+    border-color: var(--ink);
+}
+
+.progress-filters {
+    margin-top: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--rule);
+    background: var(--paper-2);
+}
+
+.progress-select,
+.progress-filters .library-search {
+    min-height: 38px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--paper);
+    padding: 6px 10px;
+    font-size: var(--type-small);
+}
+
+.pager {
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+    border-top: 1px solid var(--rule);
+    font-size: var(--type-small);
+}
+
+.pager-count {
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.row-action {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.row-action:hover:not([disabled]) {
+    border-color: var(--ink);
+}
+
+.row-action.is-on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+}
+
+.row-action[disabled] {
+    color: var(--ink-3);
+    border-color: var(--rule);
+}
+
+/* --- navigation and selection state you can see ---------------------- */
+
+.progress-view-tabs .segmented {
+    gap: var(--space-6);
+}
+
+.progress-view-tabs .segmented-button {
+    min-height: 40px;
+    font-size: var(--type-small);
+    color: var(--ink-2);
+}
+
+.progress-view-tabs .segmented-button.is-selected::after {
+    height: 3px;
+}
+
+.sidebar-link {
+    min-height: 38px;
+    font-size: var(--type-small);
+    color: var(--ink-2);
+}
+
+.sidebar-link:hover {
+    background: #f1f1ef;
+    color: var(--ink);
+}
+
+.sidebar-link.is-selected {
+    background: #ececea;
+    color: var(--ink);
+    box-shadow: inset 3px 0 0 var(--ink);
+}
+
+/* --- the landing: progress you can read at a glance ------------------ */
+
+.landing-row {
+    padding: var(--space-5) 0;
+}
+
+.landing-progress {
+    height: 6px;
+    background: var(--rule);
+}
+
+.landing-units,
+.landing-unknown {
+    font-size: var(--type-small);
+    color: var(--ink-2);
+}
+
+.landing-next {
+    min-height: 38px;
+    border-color: var(--rule-strong);
+    background: var(--paper);
+    gap: var(--space-3);
+}
+
+.landing-next:hover {
+    border-color: var(--ink);
+}
+
+.landing-next-size {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+}
+
+/* --- unit screen ------------------------------------------------------ */
+
+.unit-tile {
+    padding: var(--space-4);
+    gap: var(--space-3);
+}
+
+.unit-tile-name {
+    font-size: var(--type-small);
+    line-height: 1.35;
+}
+
+.unit-checksum input {
+    min-height: 38px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--paper);
+    padding: 6px 10px;
+    width: 96px;
+}
+
+.unit-checksum-note {
+    font-size: var(--type-small);
+}
+
+.btn {
+    min-height: 38px;
+    font-size: var(--type-small);
+}
+
+@media (pointer: coarse) {
+    .stage-option,
+    .tick,
+    .row-action,
+    .btn {
+        min-height: 44px;
+    }
+}
+
+/* --- grouped extras, and a table that fits ---------------------------- */
+
+.extras {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.extras .flag-toggle {
+    min-width: 34px;
+    min-height: 30px;
+    padding: 2px 8px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--paper);
+    color: var(--ink-2);
+    font-size: var(--type-micro);
+    font-variant-numeric: tabular-nums;
+}
+
+.extras .flag-toggle.is-on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+}
+
+.extras .flag-toggle:hover {
+    border-color: var(--ink);
+}
+
+.extras-empty {
+    display: inline-block;
+    min-width: 34px;
+    text-align: center;
+    color: var(--ink-3);
+}
+
+.extras-cell {
+    white-space: nowrap;
+}
+
+/* The name anchors every row, so it stays put when the table has to scroll. */
+.progress-table td.creature-cell,
+.progress-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--paper);
+}
+
+.progress-table tbody tr:nth-child(even) td.creature-cell {
+    background: #fbfbfa;
+}
+
+.progress-table tbody tr:hover td.creature-cell {
+    background: var(--accent-wash);
+}
+
+.progress-table thead th:first-child {
+    z-index: 3;
 }

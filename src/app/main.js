@@ -851,6 +851,11 @@ function getExternalDoneKeys(trackerId) {
 }
 
 /** Drops out of the record landing or a unit screen back to plain browsing. */
+/** The player-facing name of a unit key: "Bird#1" is bookkeeping, "Bird" is not. */
+function groupNameOf(unitKey) {
+    return String(unitKey).split("#")[0];
+}
+
 function leaveRecordFlow() {
     state.recordView = "";
     state.activeUnit = null;
@@ -1295,6 +1300,10 @@ function buildTrackerGroups(tracker) {
     });
 
     return [...groups.values()].map((group) => {
+        // Pages are read front to back, so they are ordered by name here rather than
+        // inheriting the size ordering the unit list uses for its suggestions.
+        group.pages.sort((left, right) => left.label.localeCompare(right.label, undefined, { numeric: true }));
+
         const read = group.pages.filter((page) => page.recorded).length;
 
         return {
@@ -1899,7 +1908,7 @@ function getPageContent() {
 
         return {
             eyebrow: "Recording",
-            title: `${tracker.label} · ${state.activeUnit.key.split("#")[0]}`,
+            title: `${tracker.label} · ${groupNameOf(state.activeUnit.key)}`,
             description: state.activeUnit.stage === "review"
                 ? "Check what will be saved. Nothing is stored until you confirm."
                 : "Copy what the client screen shows. Untouched items stay unrecorded."

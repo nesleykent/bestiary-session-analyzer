@@ -73,6 +73,11 @@ export function trackerCountCell(row, field, suffix, options = {}) {
                 aria-label="${escapeAttribute(field)} for ${escapeAttribute(row.name)}"
             >
             ${suffix ? `<span class="cell-muted">${escapeText(suffix)}</span>` : ""}
+            ${typeof row.progress === "number" ? `
+                <span class="cell-bar" aria-hidden="true">
+                    <span style="width: ${Math.round(Math.min(1, Math.max(0, row.progress)) * 100)}%"></span>
+                </span>
+            ` : ""}
         </td>
     `;
 }
@@ -146,6 +151,24 @@ export function trackerTickCell(row, field, options = {}) {
     `;
 }
 
+/**
+ * Secondary facts as one cell.
+ *
+ * Echo Warden, Animus Mastery and tracking are real, editable facts, but each had a
+ * column of its own competing with the entry controls and pushing the table past the
+ * window. Grouped, they read as what they are — extras on the row — and the table
+ * fits without hiding anything.
+ */
+export function trackerExtrasCell(row, controls) {
+    return `
+        <td class="extras-cell">
+            <div class="extras">
+                ${controls.map((control) => control.render(row)).join("")}
+            </div>
+        </td>
+    `;
+}
+
 /** The per-row select box that drives the bulk bar. */
 export function trackerSelectCell(row, isSelected) {
     return `
@@ -163,7 +186,7 @@ export function trackerSelectCell(row, isSelected) {
 
 export function trackerStarCell(row, field = "bookmark") {
     return `
-        <td class="star-cell">
+        <td class="star-cell" title="${row[field] ? "Tracked in your client" : "Mark as tracked"}">
             <button
                 class="star-toggle${row[field] ? " is-on" : ""}"
                 type="button"
@@ -181,6 +204,45 @@ export function trackerStarCell(row, field = "bookmark") {
  * renders it inert, which is how a value derived from another tracker is shown
  * without pretending it is editable here.
  */
+/** The flag control on its own, for use inside a grouped cell. */
+export function trackerFlagControl(row, field, options = {}) {
+    const { label = "", eligible = true, locked = false, title = "" } = options;
+
+    if (!eligible) {
+        return '<span class="cell-muted extras-empty" title="Not eligible">&mdash;</span>';
+    }
+
+    if (locked) {
+        return `<span class="flag-toggle is-on is-locked" title="${escapeAttribute(title)}">${escapeText(label)}</span>`;
+    }
+
+    return `
+        <button
+            class="flag-toggle${row[field] ? " is-on" : ""}"
+            type="button"
+            data-tracker-item="${escapeAttribute(row.key)}"
+            data-tracker-flag="${escapeAttribute(field)}"
+            aria-pressed="${row[field] ? "true" : "false"}"
+            title="${escapeAttribute(title || field)}"
+            aria-label="${escapeAttribute(title || field)} for ${escapeAttribute(row.name)}"
+        >${escapeText(label)}</button>
+    `;
+}
+
+export function trackerStarControl(row, field = "bookmark") {
+    return `
+        <button
+            class="star-toggle${row[field] ? " is-on" : ""}"
+            type="button"
+            data-tracker-item="${escapeAttribute(row.key)}"
+            data-tracker-flag="${escapeAttribute(field)}"
+            aria-pressed="${row[field] ? "true" : "false"}"
+            title="${row[field] ? "Tracked in your client" : "Mark as tracked in your client"}"
+            aria-label="Track ${escapeAttribute(row.name)}"
+        ><span class="material-symbols-outlined" aria-hidden="true">${row[field] ? "star" : "star_border"}</span></button>
+    `;
+}
+
 export function trackerFlagCell(row, field, options = {}) {
     const { label = "", eligible = true, locked = false, title = "" } = options;
 

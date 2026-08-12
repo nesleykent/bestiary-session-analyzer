@@ -30,11 +30,15 @@ function buildSuggestion(summary) {
         <button
             class="landing-next"
             type="button"
-            data-record-unit="${escapeAttribute(summary.next.key)}"
+            data-record-unit="${escapeAttribute(summary.next.nextPage?.key ?? summary.next.key)}"
             data-record-tracker="${escapeAttribute(summary.trackerId)}"
         >
             ${escapeText(summary.next.label)}
-            <span class="landing-next-size">${formatNumber(summary.next.total)}</span>
+            <span class="landing-next-size">${
+                summary.next.pageCount > 1
+                    ? `${formatNumber(summary.next.read + 1)}/${formatNumber(summary.next.pageCount)}`
+                    : formatNumber(summary.next.total)
+            }</span>
         </button>
     `;
 }

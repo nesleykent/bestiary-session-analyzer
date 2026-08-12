@@ -4,9 +4,10 @@ import { escapeAttribute } from "../ui/render-blocks.js";
 import {
     escapeText,
     trackerCountCell,
-    trackerFlagCell,
+    trackerExtrasCell,
+    trackerFlagControl,
     trackerStageCell,
-    trackerStarCell
+    trackerStarControl
 } from "../ui/render-tracker.js";
 import { STATUS_LABELS } from "./status.js";
 
@@ -233,22 +234,25 @@ export const bestiaryTracker = {
         { key: "charms", label: "Charm points", isNumeric: true, cell: (row) => `<td class="is-num">${formatNumber(row.charms)}</td>` },
         {
             key: "echoWardenPoints",
-            label: "Echo Warden",
-            isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "echoWarden", {
-                label: formatNumber(row.echoWardenPoints),
-                eligible: row.echoWardenEligible
-            })
-        },
-        {
-            key: "animusMastery",
-            label: "Animus",
-            isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "animusMastery", {
-                label: row.animusMastery ? "Yes" : "No"
-            })
-        },
-        { key: "bookmark", label: "", mark: '<span class="material-symbols-outlined" aria-hidden="true">star</span>', srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) }
+            label: "Extras",
+            isNumeric: false,
+            cell: (row) => trackerExtrasCell(row, [
+                {
+                    render: (candidate) => trackerFlagControl(candidate, "echoWarden", {
+                        label: formatNumber(candidate.echoWardenPoints),
+                        eligible: candidate.echoWardenEligible,
+                        title: "Echo Warden points claimed"
+                    })
+                },
+                {
+                    render: (candidate) => trackerFlagControl(candidate, "animusMastery", {
+                        label: "A",
+                        title: "Animus Mastery"
+                    })
+                },
+                { render: (candidate) => trackerStarControl(candidate) }
+            ])
+        }
     ],
 
     facets: [

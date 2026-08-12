@@ -87,7 +87,11 @@ function buildRowList(rows, tracker) {
 
 function buildEntryStage(view) {
     const { tracker, unit, rows, page, entered, checksumValue, checksumCount } = view;
-    const instruction = tracker.unit.instruction ? tracker.unit.instruction(unit.key) : "";
+    // The instruction names the client screen, so it must use the group's name and
+    // never the internal page key.
+    const instruction = tracker.unit.instruction
+        ? tracker.unit.instruction(String(unit.key).split("#")[0])
+        : "";
 
     return `
         <section class="results-section unit-entry" aria-labelledby="unitTitle">
