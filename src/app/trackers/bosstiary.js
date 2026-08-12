@@ -1,7 +1,7 @@
 import { loadBosstiaryData } from "../services/bosstiary-repository.js";
 import { formatNumber } from "../utils/formatters.js";
 import { escapeAttribute } from "../ui/render-blocks.js";
-import { escapeText, trackerCountCell, trackerStageCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, stageControl, starControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -89,7 +89,7 @@ export const bosstiaryTracker = {
     resultsTitle: "Bosstiary Progress",
     resultsCopy: "Every boss and its three stages. Unlike the Bestiary, boss points are awarded at each stage you reach, so partial progress already counts.",
     progress: "counter",
-    entryDefaults: { kills: 0, stage: BOSS_STAGE_UNSET, bookmark: false },
+    entryDefaults: { kills: 0, stage: BOSS_STAGE_UNSET, bookmark: false, reviewed: false },
     loadItems: loadBosstiaryData,
     itemKey: (boss) => boss.Name,
     derive: deriveBossRow,
@@ -103,61 +103,25 @@ export const bosstiaryTracker = {
         instruction: (unitKey) => `Cyclopedia → Bosstiary → ${unitKey}`
     },
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "name",
-            label: "Boss",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell"><a href="${escapeAttribute(row.wikiLink)}" target="_blank" rel="noreferrer">${escapeText(row.name)}</a></td>`
-        },
-        { key: "category", label: "Category", isNumeric: false, cell: (row) => `<td class="cell-muted">${escapeText(row.category) || "&mdash;"}</td>` },
-        {
-            key: "kills",
-            label: "Kills",
-            isNumeric: false,
-            // The suffix is the next threshold, not the last, so the field always
-            // says what the next stage costs.
-            cell: (row) => trackerCountCell(row, "kills", row.isComplete
-                ? `/ ${formatNumber(row.stages[2].kills)}`
-                : `/ ${formatNumber(row.nextThreshold)}`, {
-                valueField: "typedKills",
-                placeholder: row.isFloor ? `≥ ${formatNumber(row.kills)}` : "",
-                title: row.isFloor ? "From the level you picked — type the exact count if you have it" : ""
-            })
-        },
-        {
-            key: "stage",
-            label: "Level",
-            isInput: true,
-            isNumeric: false,
-            cell: (row) => trackerStageCell(row, "stage", row.stageOptions, { label: "Level" })
-        },
-        {
-            key: "pointsEarned",
-            label: "Boss Points",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num">${formatNumber(row.pointsEarned)}<span class="row-aside">of ${formatNumber(row.totalPoints)}</span></td>`
-        },
-        {
-            key: "killsLeft",
-            label: "To Next Level",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num">${
-                !row.known
-                    ? '<span class="cell-muted">&mdash;</span>'
-                    : (row.isComplete
-                        ? "&mdash;"
-                        : (row.isFloor ? `at most ${formatNumber(row.killsLeft)}` : formatNumber(row.killsLeft)))
-            }</td>`
-        },
-        {
-            key: "status",
-            label: "Status",
-            isNumeric: false,
-            cell: (row) => `<td><span class="status-mark">${row.known ? STATUS_LABELS[row.status] : STATUS_LABELS.unknown}</span></td>`
-        }
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "killsLeft", label: "Closest to next level", isNumeric: true },
+        { key: "totalPoints", label: "Boss points", isNumeric: true }
     ],
+
+    card: (row) => ({
+        title: `<a href="${escapeAttribute(row.wikiLink)}" target="_blank" rel="noreferrer">${escapeText(row.name)}</a>`,
+        meta: `
+            <span>${escapeText(row.category)}</span>
+            <span><strong>${formatNumber(row.pointsEarned)}</strong> of ${formatNumber(row.totalPoints)} points</span>
+        `,
+        control: stageControl(row, "stage", row.stageOptions, { label: "Level" }),
+        status: row.known
+            ? (row.isComplete ? "Mastery" : `${row.isFloor ? "at most " : ""}${formatNumber(row.killsLeft)} to next level`)
+            : "Not recorded yet",
+        extras: starControl(row)
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Boss name", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },

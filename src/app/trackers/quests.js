@@ -1,6 +1,6 @@
 import { loadQuestsData } from "../services/quests-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Quests: boolean progress, grouped by the questlog entry they appear under. */
@@ -26,7 +26,7 @@ export const questsTracker = {
     resultsTitle: "Quest Progress",
     resultsCopy: "Every quest in the game with what it rewards. Several quests can share one questlog entry, so the questlog is shown alongside.",
     progress: "boolean",
-    entryDefaults: { completed: false, bookmark: false },
+    entryDefaults: { completed: false, bookmark: false, reviewed: false },
     tickField: "completed",
     loadItems: loadQuestsData,
     itemKey: (quest) => quest.Name,
@@ -47,34 +47,19 @@ export const questsTracker = {
         instruction: () => "Quest Log"
     },
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "name",
-            label: "Quest",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>`
-        },
-        {
-            key: "rewards",
-            label: "Rewards",
-            isNumeric: false,
-            cell: (row) => `<td class="spoiler-cell">${plainText(row.rewards) || '<span class="cell-muted">&mdash;</span>'}</td>`
-        },
-        {
-            key: "questlog",
-            label: "Questlog",
-            isNumeric: false,
-            cell: (row) => `<td class="cell-muted">${escapeText(row.questlog) || "&mdash;"}</td>`
-        },
-        {
-            key: "completed",
-            label: "Completed",
-            isNumeric: true,
-            isInput: true,
-            cell: (row) => trackerTickCell(row, "completed", { label: "Completed" })
-        }
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "questlog", label: "Questlog" }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: row.questlog ? `<span>${escapeText(row.questlog)}</span>` : "",
+        body: plainText(row.rewards),
+        control: tickControl(row, "completed", { yesLabel: "Done", noLabel: "Not done" }),
+        extras: starControl(row)
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Quest, questlog or reward", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },

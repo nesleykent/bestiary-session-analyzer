@@ -1,6 +1,6 @@
 import { loadTitlesData } from "../services/titles-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Titles: boolean progress, no points — the title itself is the reward. */
@@ -26,7 +26,7 @@ export const titlesTracker = {
     resultsTitle: "Title Progress",
     resultsCopy: "Every title in the game and what it takes to earn one. Permanent titles stay once earned; the rest can be lost again.",
     progress: "boolean",
-    entryDefaults: { earned: false, bookmark: false },
+    entryDefaults: { earned: false, bookmark: false, reviewed: false },
     tickField: "earned",
     loadItems: loadTitlesData,
     itemKey: (title) => title.Name,
@@ -44,34 +44,19 @@ export const titlesTracker = {
         instruction: (unitKey) => `Cyclopedia → Character → Titles (${unitKey.toLowerCase()})`
     },
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "name",
-            label: "Title",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>`
-        },
-        {
-            key: "requirement",
-            label: "How To Earn It",
-            isNumeric: false,
-            cell: (row) => `<td class="spoiler-cell">${plainText(row.requirement) || '<span class="cell-muted">&mdash;</span>'}</td>`
-        },
-        {
-            key: "isPermanent",
-            label: "Permanent",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num cell-muted">${row.isPermanent ? "Yes" : "No"}</td>`
-        },
-        {
-            key: "earned",
-            label: "Earned",
-            isNumeric: true,
-            isInput: true,
-            cell: (row) => trackerTickCell(row, "earned", { label: "Earned" })
-        }
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "isPermanent", label: "Permanence", isNumeric: true }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: `<span>${row.isPermanent ? "Permanent" : "Can be lost"}</span>`,
+        body: plainText(row.requirement),
+        control: tickControl(row, "earned", { yesLabel: "Earned", noLabel: "Not earned" }),
+        extras: starControl(row)
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Title or requirement", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },

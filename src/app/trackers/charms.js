@@ -1,6 +1,6 @@
 import { loadCharmsData } from "../services/charms-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerStageCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, stageControl, starControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -110,7 +110,7 @@ export const charmsTracker = {
     resultsTitle: "Charm Spending",
     resultsCopy: "Charms are bought, not collected, and in two currencies: Major charms cost charm points your Bestiary earns, while Minor charms cost echoes that unlocking Major stages generates.",
     progress: "counter",
-    entryDefaults: { stage: 0, bookmark: false },
+    entryDefaults: { stage: 0, bookmark: false, reviewed: false },
     loadItems: loadCharmsData,
     itemKey: (charm) => charm.Name,
     derive: deriveCharmRow,
@@ -127,38 +127,25 @@ export const charmsTracker = {
     /** Major charms spend what the Bestiary earns. */
     consumesBudgetFrom: "bestiary",
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        { key: "name", label: "Charm", isNumeric: false, cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>` },
-        {
-            key: "type",
-            label: "Type",
-            isNumeric: false,
-            // The type IS the currency, so it says which.
-            cell: (row) => `<td class="cell-muted">${escapeText(row.type)}<span class="row-aside">${escapeText(row.currencyLabel)}</span></td>`
-        },
-        { key: "effect", label: "Effect", isNumeric: false, cell: (row) => `<td class="spoiler-cell">${plainText(row.effect) || '<span class="cell-muted">&mdash;</span>'}</td>` },
-        {
-            key: "stage",
-            label: "Stage",
-            isInput: true,
-            isNumeric: false,
-            cell: (row) => trackerStageCell(row, "stage", CHARM_STAGES, { label: "Stage" })
-        },
-        {
-            key: "spent",
-            label: "Spent",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num">${formatNumber(row.spent)}<span class="row-aside">of ${formatNumber(row.totalCost)}</span></td>`
-        },
-        { key: "nextCost", label: "Next Stage", isNumeric: true, cell: (row) => `<td class="is-num">${row.isComplete ? "&mdash;" : formatNumber(row.nextCost)}</td>` },
-        {
-            key: "status",
-            label: "Status",
-            isNumeric: false,
-            cell: (row) => `<td><span class="status-mark">${row.known ? STATUS_LABELS[row.status] : STATUS_LABELS.unknown}</span></td>`
-        }
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "nextCost", label: "Cheapest next stage", isNumeric: true },
+        { key: "totalCost", label: "Total cost", isNumeric: true }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: `
+            <span>${escapeText(row.type)}</span>
+            <span>${escapeText(row.currencyLabel)}</span>
+            <span><strong>${formatNumber(row.spent)}</strong> of ${formatNumber(row.totalCost)} spent</span>
+        `,
+        body: plainText(row.effect),
+        control: stageControl(row, "stage", CHARM_STAGES, { label: "Stage" }),
+        status: row.isComplete ? "Maxed" : `Next stage ${formatNumber(row.nextCost)}`,
+        extras: starControl(row)
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Charm name", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },

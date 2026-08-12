@@ -1,14 +1,7 @@
 import { loadBestiaryData } from "../services/bestiary-repository.js";
 import { formatNumber } from "../utils/formatters.js";
 import { escapeAttribute } from "../ui/render-blocks.js";
-import {
-    escapeText,
-    trackerCountCell,
-    trackerExtrasCell,
-    trackerFlagControl,
-    trackerStageCell,
-    trackerStarControl
-} from "../ui/render-tracker.js";
+import { chipControl, escapeText, stageControl, starControl } from "../ui/render-controls.js";
 import { STATUS_LABELS } from "./status.js";
 
 /**
@@ -165,7 +158,7 @@ export const bestiaryTracker = {
     resultsTitle: "Bestiary",
     resultsCopy: "Every creature in the game. Copy the tile Tibia shows you — ? · 0/3 · 1/3 · 2/3 · ✓ — or type an exact kill count when you have one. Charm points and thresholds come from the game data.",
     progress: "counter",
-    entryDefaults: { kills: 0, stage: STAGE_UNSET, echoWarden: false, animusMastery: false, bookmark: false },
+    entryDefaults: { kills: 0, stage: STAGE_UNSET, echoWarden: false, animusMastery: false, bookmark: false, reviewed: false },
     loadItems: loadBestiaryData,
     itemKey: (creature) => creature.Name,
     derive: deriveBestiaryRow,
@@ -188,72 +181,36 @@ export const bestiaryTracker = {
         }
     },
 
-    columns: [
-        {
-            key: "name",
-            label: "Creature",
-            isNumeric: false,
-            cell: (row) => `
-                <td class="creature-cell">
-                    <a href="${escapeAttribute(row.wikiLink)}" target="_blank" rel="noreferrer">${escapeText(row.name)}</a>
-                    <span class="row-aside">${escapeText(row.className)}</span>
-                </td>
-            `
-        },
-        {
-            key: "stage",
-            label: "Stage",
-            isInput: true,
-            isNumeric: false,
-            cell: (row) => trackerStageCell(row, "stage", BESTIARY_STAGES)
-        },
-        {
-            key: "kills",
-            label: "Kills",
-            isNumeric: false,
-            cell: (row) => trackerCountCell(row, "kills", `/ ${formatNumber(row.unlockTarget)}`, {
-                valueField: "typedKills",
-                placeholder: row.isFloor ? `≥ ${formatNumber(row.kills)}` : "",
-                title: row.isFloor ? "From the tile you picked — type the exact count if you have it" : ""
-            })
-        },
-        {
-            key: "killsLeft",
-            label: "Remaining",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num">${
-                !row.known
-                    ? '<span class="cell-muted">&mdash;</span>'
-                    : (row.isComplete
-                        ? "&mdash;"
-                        : (row.isFloor
-                            ? `<span title="Between the two thresholds your tile spans">at most ${formatNumber(row.killsLeft)}</span>`
-                            : formatNumber(row.killsLeft)))
-            }</td>`
-        },
-        { key: "charms", label: "Charm points", isNumeric: true, cell: (row) => `<td class="is-num">${formatNumber(row.charms)}</td>` },
-        {
-            key: "echoWardenPoints",
-            label: "Extras",
-            isNumeric: false,
-            cell: (row) => trackerExtrasCell(row, [
-                {
-                    render: (candidate) => trackerFlagControl(candidate, "echoWarden", {
-                        label: formatNumber(candidate.echoWardenPoints),
-                        eligible: candidate.echoWardenEligible,
-                        title: "Echo Warden points claimed"
-                    })
-                },
-                {
-                    render: (candidate) => trackerFlagControl(candidate, "animusMastery", {
-                        label: "A",
-                        title: "Animus Mastery"
-                    })
-                },
-                { render: (candidate) => trackerStarControl(candidate) }
-            ])
-        }
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "killsLeft", label: "Closest to done", isNumeric: true },
+        { key: "charms", label: "Charm points", isNumeric: true },
+        { key: "progress", label: "Progress", isNumeric: true, descending: true }
     ],
+
+    card: (row) => ({
+        title: `<a href="${escapeAttribute(row.wikiLink)}" target="_blank" rel="noreferrer">${escapeText(row.name)}</a>`,
+        meta: `
+            <span>${escapeText(row.className)}</span>
+            <span><strong>${formatNumber(row.charms)}</strong> charm points</span>
+        `,
+        control: stageControl(row, "stage", BESTIARY_STAGES, { label: "Stage" }),
+        status: row.known
+            ? (row.isComplete
+                ? "Complete"
+                : `${row.isFloor ? "at most " : ""}${formatNumber(row.killsLeft)} kills left`)
+            : "Not recorded yet",
+        extras: `
+            ${chipControl(row, "echoWarden", {
+                label: `EW ${formatNumber(row.echoWardenPoints)}`,
+                eligible: row.echoWardenEligible,
+                title: "Echo Warden points claimed"
+            })}
+            ${chipControl(row, "animusMastery", { label: "Animus", title: "Animus Mastery" })}
+            ${starControl(row)}
+        `
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Creature name", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },

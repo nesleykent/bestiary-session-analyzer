@@ -4,7 +4,7 @@ import {
     RARITY_ORDER
 } from "../services/achievements-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerFlagCell, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -53,7 +53,7 @@ export const achievementsTracker = {
     resultsTitle: "Achievement Progress",
     resultsCopy: "Every achievement in the game, with what it takes to earn it. Tick the ones you already have; points and rarity come from the game data.",
     progress: "boolean",
-    entryDefaults: { done: false, bookmark: false },
+    entryDefaults: { done: false, bookmark: false, reviewed: false },
     // Cyclopedia Map area completion satisfies 20 of these.
     consumesDerived: true,
     // The one field a bulk action may write. Echo Warden-style flags must never be
@@ -78,60 +78,32 @@ export const achievementsTracker = {
         instruction: (unitKey) => `Cyclopedia → Achievements → ${unitKey}`
     },
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "name",
-            label: "Achievement",
-            isNumeric: false,
-            cell: (row) => `
-                <td class="achievement-cell">
-                    <span class="achievement-name">${escapeText(row.name)}</span>
-                    ${row.isSecret ? '<span class="pill">Secret</span>' : ""}
-                    ${row.isObtainable ? "" : '<span class="pill">Removed</span>'}
-                </td>
-            `
-        },
-        {
-            key: "spoiler",
-            label: "How To Earn It",
-            isNumeric: false,
-            cell: (row) => `<td class="spoiler-cell">${plainText(row.spoiler) || '<span class="cell-muted">&mdash;</span>'}</td>`
-        },
-        { key: "categoryLabel", label: "Category", isNumeric: false, cell: (row) => `<td class="cell-muted">${escapeText(row.categoryLabel)}</td>` },
-        {
-            key: "grade",
-            label: "Grade",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num"><span class="grade-mark" title="Grade ${row.grade}">${"★".repeat(row.grade)}</span></td>`
-        },
-        {
-            key: "rarityRank",
-            label: "Rarity",
-            isNumeric: false,
-            // 15 achievements have no community stats at all, so the cell has to
-            // read as "unknown" rather than as the rarest tier.
-            cell: (row) => `<td class="rarity-cell">${
-                row.rarityLabel
-                    ? `<span class="rarity-mark is-${escapeText(row.rarity)}" title="${
-                        row.rarityPercent === null ? "" : `${row.rarityPercent}% of tracked characters`
-                      }">${escapeText(row.rarityLabel)}</span>`
-                    : '<span class="cell-muted">&mdash;</span>'
-            }</td>`
-        },
-        { key: "points", label: "Points", isNumeric: true, cell: (row) => `<td class="is-num">${row.points ? formatNumber(row.points) : '<span class="cell-muted">0</span>'}</td>` },
-        {
-            key: "done",
-            isInput: true,
-            label: "Earned",
-            isNumeric: true,
-            cell: (row) => trackerTickCell(row, "done", {
-                label: "Earned",
-                locked: row.isDerived,
-                title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
-            })
-        }
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "points", label: "Points", isNumeric: true, descending: true },
+        { key: "rarityRank", label: "Rarity", isNumeric: true },
+        { key: "grade", label: "Grade", isNumeric: true }
     ],
+
+    card: (row) => ({
+        title: `${escapeText(row.name)}${row.isSecret ? ' <span class="pill">Secret</span>' : ""}`,
+        meta: `
+            <span>${escapeText(row.categoryLabel)}</span>
+            <span><strong>${formatNumber(row.points)}</strong> points</span>
+            ${row.rarityLabel ? `<span>${escapeText(row.rarityLabel)}</span>` : ""}
+            <span>${"\u2605".repeat(row.grade)}</span>
+        `,
+        body: plainText(row.spoiler),
+        control: tickControl(row, "done", {
+            yesLabel: "Earned",
+            noLabel: "Not earned",
+            locked: row.isDerived,
+            title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
+        }),
+        status: row.isObtainable ? "" : "No longer obtainable",
+        extras: starControl(row)
+    }),
+
 
     facets: [
         {

@@ -28,17 +28,12 @@ import {
     getStoredEntry,
     getTrackerRecord,
     isAnsweredEntry,
+    isKnownEntry,
+    REVIEWED_FIELD,
     setEntry,
     toggleEntryFlag
 } from "./state/tracker-progress.js";
-import {
-    countRecordedUnits,
-    createTrackerUnits,
-    getRecordedUnitKeys,
-    isUnitRecorded,
-    recordUnit,
-    unrecordUnit
-} from "./state/tracker-units.js";
+
 import {
     applyUndo,
     createChangeLog,
@@ -62,9 +57,8 @@ import {
 } from "./trackers/registry.js";
 import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
-import { escapeText, patchTrackerRow, renderTracker } from "./ui/render-tracker.js";
-import { renderRecordLanding } from "./ui/render-record-landing.js";
-import { renderTrackerUnit } from "./ui/render-tracker-unit.js";
+import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
+
 import { renderPasteBox, renderTransferReview } from "./ui/render-transfer-review.js";
 import { closeQuickAdd, isQuickAddOpen, openQuickAdd } from "./ui/render-quick-add.js";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
@@ -117,6 +111,7 @@ const elements = {
     sidebarScrim: document.getElementById("sidebarScrim"),
     sidebarSearchButton: document.getElementById("sidebarSearchButton"),
     sidebarRecordButton: document.getElementById("sidebarRecordButton"),
+    sectionHeading: document.querySelector("#analysisSection .section-heading"),
     recentChangesButton: document.getElementById("recentChangesButton"),
     srStatus: document.getElementById("srStatus"),
     undoBar: document.getElementById("undoBar"),
@@ -180,8 +175,7 @@ const state = {
     // Tracker progress is user data and IS persisted, keyed by tracker id. Sort,
     // filters and paging are view state and are deliberately not.
     trackerProgress: {},
-    // Which bounded units have been read, and the undo trail. Both persisted.
-    trackerUnits: {},
+    // The undo trail, persisted with the record.
     changeLog: [],
     trackerItems: {},
     activeTrackerId: TRACKERS[0].id,
@@ -195,9 +189,7 @@ const state = {
     trackerSelectionAnchor: "",
     trackerCursorKey: "",
     pendingUndoId: "",
-    // The unit currently being transcribed: { trackerId, key, stage, page, checksum }.
-    activeUnit: null,
-    // "landing" shows what needs recording across all seven trackers.
+    // "changes" shows the revert history. Empty means a tracker page.
     recordView: "",
     // A pending paste or import, held until the player accepts the review.
     transfer: null,
@@ -266,7 +258,6 @@ function getWorkspaceSnapshot() {
         mode: state.mode,
         activeHuntId: state.activeHuntId,
         trackerProgress: state.trackerProgress,
-        trackerUnits: state.trackerUnits,
         changeLog: state.changeLog,
         bestiaryView: state.bestiaryView,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
@@ -727,8 +718,7 @@ function renderHuntView() {
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
     applySessionInput(hunt, hunt.matchedMonsters.length);
-    elements.resultsTitle.textContent = `${huntLabel} Analysis`;
-    elements.resultsCopy.textContent = VIEW_CONTENT.session.resultsCopy;
+    showSectionHeading(`${huntLabel} Analysis`, VIEW_CONTENT.session.resultsCopy);
 
     if (hunt.matchedMonsters.length || hunt.hasProcessedLog) {
         renderBestiaryMode(hunt);
@@ -744,8 +734,7 @@ function renderAllTabsView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
-    elements.resultsTitle.textContent = VIEW_CONTENT.allSessions.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.allSessions.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.allSessions.resultsTitle, VIEW_CONTENT.allSessions.resultsCopy);
 
     renderAllTabs(elements.output, analysis, summary);
     attachAllTabsActions();
@@ -755,8 +744,7 @@ function renderCharmPlanView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
-    elements.resultsTitle.textContent = VIEW_CONTENT.charmPlan.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.charmPlan.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.charmPlan.resultsTitle, VIEW_CONTENT.charmPlan.resultsCopy);
 
     renderCharmPlan(elements.output, getCharmPlanView());
     attachCharmPlanActions();
@@ -786,8 +774,7 @@ function renderTaskSessionView() {
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
     applySessionInput(hunt, hunt.taskMonsters.length);
-    elements.resultsTitle.textContent = `${huntLabel} Task Estimate`;
-    elements.resultsCopy.textContent = VIEW_CONTENT.tasks.resultsCopy;
+    showSectionHeading(`${huntLabel} Task Estimate`, VIEW_CONTENT.tasks.resultsCopy);
 
     if (!hasTaskAnalysis(hunt) && !hunt.hasProcessedLog) {
         setEmptyOutput();
@@ -851,14 +838,10 @@ function getExternalDoneKeys(trackerId) {
 }
 
 /** Drops out of the record landing or a unit screen back to plain browsing. */
-/** The player-facing name of a unit key: "Bird#1" is bookkeeping, "Bird" is not. */
-function groupNameOf(unitKey) {
-    return String(unitKey).split("#")[0];
-}
 
+/** Any navigation leaves a transient surface — the change list, a pending import. */
 function leaveRecordFlow() {
     state.recordView = "";
-    state.activeUnit = null;
     state.transfer = null;
 }
 
@@ -882,7 +865,10 @@ function getActiveTracker() {
 /** Sort and filter state is created per tracker on first use, from its facets. */
 function getTrackerSort(tracker) {
     if (!state.trackerSort[tracker.id]) {
-        state.trackerSort[tracker.id] = { key: tracker.defaultSortKey ?? tracker.columns[1].key, direction: "asc" };
+        state.trackerSort[tracker.id] = {
+            key: tracker.defaultSortKey ?? tracker.sortOptions?.[0]?.key ?? "name",
+            direction: "asc"
+        };
     }
 
     return state.trackerSort[tracker.id];
@@ -933,123 +919,17 @@ function getTrackerBudget(providerId) {
  */
 function buildTrackerRows(tracker, context) {
     const resolved = context ?? getTrackerContext(tracker);
-    const recordedUnits = getRecordedUnitKeys(state.trackerUnits, tracker.id);
 
     return getTrackerItems(tracker).map((item) => {
         const entry = entryFor(tracker, item);
         const row = tracker.derive(item, entry, resolved);
-        const answered = row.answered ?? isAnsweredEntry(tracker.entryDefaults, entry);
 
-        row.answered = answered;
-        row.known = answered || recordedUnits.has(row.unit ?? "");
+        row.answered = row.answered ?? isAnsweredEntry(tracker.entryDefaults, entry);
+        row.known = row.answered || isKnownEntry(tracker.entryDefaults, entry);
+        row.reviewed = Boolean(entry[REVIEWED_FIELD]);
 
         return row;
     });
-}
-
-/**
- * The bounded pieces of this tracker, in the order the player should read them.
- *
- * A unit is never bigger than one screenful. Where the source grouping is already
- * that size — a Bestiary class of 11, a map area of 9 — the group is the unit.
- * Where it is not, the group is chunked, because recording a unit is what converts
- * its untouched items into confirmed zeros: marking all 135 Quest achievements read
- * when the player only saw the first 20 would fabricate 115 facts.
- *
- * Trackers whose grouping is unusable say so with `alphabetical` and are chunked
- * straight from the sorted list instead. Quests is the case that forces it: 104 of
- * the 237 have no questlog and 86 questlogs hold exactly one quest.
- */
-function buildTrackerUnits(tracker) {
-    if (!tracker.unit) {
-        return [];
-    }
-
-    const rows = buildTrackerRows(tracker);
-    const size = tracker.unit.pageSize ?? 20;
-    const groups = new Map();
-
-    if (tracker.unit.alphabetical) {
-        groups.set("", { key: "", label: "", rows: [...rows].sort((left, right) => left.name.localeCompare(right.name)) });
-    } else {
-        rows.forEach((row) => {
-            const key = row.unit ?? "Ungrouped";
-            const group = groups.get(key) ?? {
-                key,
-                label: tracker.unit.labelOf ? tracker.unit.labelOf(row) : key,
-                rows: []
-            };
-
-            group.rows.push(row);
-            groups.set(key, group);
-        });
-    }
-
-    return [...groups.values()]
-        .flatMap((group) => chunkUnit(group, size))
-        .map((unit) => {
-            const record = getTrackerUnitRecord(tracker.id, unit.key);
-            const answered = unit.rows.filter((row) => row.answered).length;
-
-            return {
-                ...unit,
-                total: unit.rows.length,
-                answered,
-                recorded: Boolean(record),
-                recordedAt: record?.recordedAt ?? "",
-                status: record ? "recorded" : (answered ? "inProgress" : "notStarted")
-            };
-        })
-        .sort((left, right) => left.total - right.total || left.label.localeCompare(right.label, undefined, { numeric: true }));
-}
-
-/**
- * One group becomes one unit, or several page-sized ones that name their range.
- *
- * The chunks are balanced rather than filled to the brim: 21 items at a page size of
- * 20 would otherwise leave a unit of one, which reads as a bug and makes the "next
- * up" suggestion useless. 11 and 10 is the same work and looks deliberate.
- */
-function chunkUnit(group, size) {
-    const ordered = [...group.rows].sort((left, right) => left.name.localeCompare(right.name));
-
-    if (ordered.length <= size) {
-        return [{
-            key: group.key || "all",
-            label: group.label || `${initial(ordered[0])}–${initial(ordered[ordered.length - 1])}`,
-            rows: ordered
-        }];
-    }
-
-    const chunkCount = Math.ceil(ordered.length / size);
-    const perChunk = Math.ceil(ordered.length / chunkCount);
-    const chunks = [];
-
-    for (let index = 0; index < chunkCount; index += 1) {
-        const slice = ordered.slice(index * perChunk, (index + 1) * perChunk);
-
-        if (!slice.length) {
-            continue;
-        }
-
-        const range = `${initial(slice[0])}–${initial(slice[slice.length - 1])}`;
-
-        chunks.push({
-            key: `${group.key}#${index}`,
-            label: group.label ? `${group.label} ${range}` : range,
-            rows: slice
-        });
-    }
-
-    return chunks;
-}
-
-function initial(row) {
-    return (row?.name ?? "").slice(0, 1).toUpperCase();
-}
-
-function getTrackerUnitRecord(trackerId, unitKey) {
-    return (state.trackerUnits[trackerId] ?? {})[unitKey] ?? null;
 }
 
 function filterTrackerRows(tracker, rows) {
@@ -1072,7 +952,9 @@ function filterTrackerRows(tracker, rows) {
 
 function sortTrackerRows(tracker, rows) {
     const { key, direction } = getTrackerSort(tracker);
-    const column = tracker.columns.find((candidate) => candidate.key === key) ?? tracker.columns[1];
+    const column = (tracker.sortOptions ?? []).find((candidate) => candidate.key === key)
+        ?? (tracker.sortOptions ?? [])[0]
+        ?? { key: "name" };
     const factor = direction === "desc" ? -1 : 1;
     // Booleans and counters both sort numerically; only labels sort as text.
     const numeric = column.isNumeric || typeof rows[0]?.[key] === "number" || typeof rows[0]?.[key] === "boolean";
@@ -1124,7 +1006,6 @@ function getTrackerView(tracker) {
         tracker,
         rows,
         page,
-        columns: tracker.columns,
         sort: getTrackerSort(tracker),
         filters: getTrackerFilters(tracker),
         items: getTrackerItems(tracker),
@@ -1260,123 +1141,6 @@ function syncTrackerTabMeta(tracker) {
    the game item, which is what makes it resumable.
    ========================================================================== */
 
-/** "1 class" / "21 classes" — spelled out per tracker rather than guessed at. */
-function pluralUnitNoun(tracker, count) {
-    const one = tracker.unit?.alphabetical ? "page" : (tracker.unit?.label ?? "unit").toLowerCase();
-    const many = { class: "classes", category: "categories", type: "types", area: "areas", group: "groups", questlog: "questlogs" }[one] ?? `${one}s`;
-
-    return count === 1 ? one : many;
-}
-
-/**
- * Groups the internal page-sized units back into the thing the player knows: a
- * Bestiary class, an achievement category, a map area.
- *
- * Pages exist so that recording a screenful cannot zero items on a screen nobody
- * opened. They are bookkeeping, not vocabulary — the player is told "Human, 3 of 7
- * pages read", never "Human I-S".
- */
-function buildTrackerGroups(tracker) {
-    const groups = new Map();
-    // Where the source grouping is unusable — Quests, whose questlogs are 104 blanks
-    // and 86 singletons — the page IS the unit the player works through, so each one
-    // stands on its own and keeps its A–B range as its name.
-    const pagesAreGroups = Boolean(tracker.unit.alphabetical);
-
-    buildTrackerUnits(tracker).forEach((unit) => {
-        const key = pagesAreGroups ? unit.key : unit.key.split("#")[0];
-        const group = groups.get(key) ?? {
-            key,
-            label: pagesAreGroups || key === "all" ? unit.label : key,
-            pages: [],
-            total: 0,
-            answered: 0
-        };
-
-        group.pages.push(unit);
-        group.total += unit.total;
-        group.answered += unit.answered;
-        groups.set(key, group);
-    });
-
-    return [...groups.values()].map((group) => {
-        // Pages are read front to back, so they are ordered by name here rather than
-        // inheriting the size ordering the unit list uses for its suggestions.
-        group.pages.sort((left, right) => left.label.localeCompare(right.label, undefined, { numeric: true }));
-
-        const read = group.pages.filter((page) => page.recorded).length;
-
-        return {
-            ...group,
-            pageCount: group.pages.length,
-            read,
-            recorded: read === group.pages.length,
-            status: read === group.pages.length
-                ? "recorded"
-                : (read || group.answered ? "inProgress" : "notStarted"),
-            nextPage: group.pages.find((page) => !page.recorded) ?? group.pages[0]
-        };
-    }).sort((left, right) => left.total - right.total || left.label.localeCompare(right.label));
-}
-
-function buildTrackerSummary(tracker) {
-    const rows = buildTrackerRows(tracker);
-    const units = buildTrackerGroups(tracker);
-    const unknown = rows.filter((row) => !row.known).length;
-    // Resume what is half-done first; otherwise start the smallest group, at its
-    // first unit rather than whichever chunk happens to be shortest.
-    const fresh = units.filter((unit) => unit.status === "notStarted");
-    // A one-item group is real but a poor invitation, so it is only suggested when
-    // nothing more substantial is left.
-    const next = units.find((unit) => unit.status === "inProgress")
-        ?? fresh.find((unit) => unit.total >= 3)
-        ?? fresh[0]
-        ?? null;
-
-    return {
-        trackerId: tracker.id,
-        label: tracker.label,
-        unitNoun: pluralUnitNoun(tracker, units.length),
-        unitTotal: units.length,
-        unitsRecorded: units.filter((unit) => unit.recorded).length,
-        itemTotal: rows.length,
-        unknown,
-        next
-    };
-}
-
-/**
- * Creature names from stored sessions, as things to look up. Names only: a
- * session's kill count measures that hunt and is never the character's total, so it
- * cannot be written here — but it does tell the player which entries have moved.
- */
-function buildLookupWorklist() {
-    const recorded = new Set();
-    const worklist = [];
-
-    state.hunts.forEach((hunt) => {
-        hunt.matchedMonsters.forEach((monster) => {
-            if (recorded.has(monster.name)) {
-                return;
-            }
-
-            recorded.add(monster.name);
-
-            const row = buildTrackerRows(bestiaryTracker).find((candidate) => candidate.key === monster.name);
-
-            if (!row || row.isComplete) {
-                return;
-            }
-
-            worklist.push({
-                name: monster.name,
-                note: row.known ? `recorded as ${row.isFloor ? "at least " : ""}${formatNumber(row.kills)}` : "not recorded yet"
-            });
-        });
-    });
-
-    return worklist.slice(0, 12);
-}
 
 /**
  * Every change that is still revertable, newest first.
@@ -1385,13 +1149,20 @@ function buildLookupWorklist() {
  * one you notice tomorrow — an undo affordance that has scrolled away is not a
  * recovery path, and the app should not be the only thing that remembers.
  */
+/** The section heading, used by every surface except the tracker pages — there the
+ * page title already names the tracker, so a second heading repeated it. */
+function showSectionHeading(title, copy) {
+    elements.sectionHeading.hidden = false;
+    elements.resultsTitle.textContent = title;
+    elements.resultsCopy.textContent = copy;
+}
+
 function renderRecentChangesView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = "Recent changes";
-    elements.resultsCopy.textContent = "The last 50 changes to your progress. Any of them can be reverted.";
+    showSectionHeading("Recent changes", "The last 50 changes to your progress. Any of them can be reverted.");
 
     const rows = state.changeLog.map((change) => `
         <li class="change-row">
@@ -1432,108 +1203,6 @@ function formatChangeTime(iso) {
         : when.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function renderRecordLandingView() {
-    elements.comparisonSection.hidden = true;
-    elements.inputSection.hidden = true;
-    elements.analysisSection.hidden = false;
-    elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = "Record progress";
-    elements.resultsCopy.textContent = "One bounded screen at a time, in the order the client shows them.";
-
-    renderRecordLanding(elements.output, {
-        summaries: TRACKERS.map(buildTrackerSummary),
-        worklists: buildLookupWorklist()
-    });
-    attachRecordLandingActions();
-}
-
-function attachRecordLandingActions() {
-    elements.output.querySelectorAll("[data-record-unit]").forEach((button) => {
-        button.addEventListener("click", () => {
-            openTrackerUnit(button.dataset.recordTracker, button.dataset.recordUnit);
-        });
-    });
-
-    elements.output.querySelectorAll("[data-record-tracker]:not([data-record-unit])").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.recordView = "";
-            state.activeUnit = null;
-            selectTracker(button.dataset.recordTracker);
-        });
-    });
-
-    elements.output.querySelectorAll("[data-record-lookup]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const name = button.dataset.recordLookup;
-            const row = buildTrackerRows(bestiaryTracker).find((candidate) => candidate.key === name);
-
-            if (row) {
-                openTrackerUnit("bestiary", row.unit);
-            }
-        });
-    });
-}
-
-function openTrackerUnit(trackerId, unitKey) {
-    state.recordView = "";
-    state.activeTrackerId = trackerId;
-    state.activeUnit = { trackerId, key: unitKey, stage: "entry", page: 0, checksum: "" };
-    renderApp();
-    persistState();
-}
-
-function closeTrackerUnit() {
-    state.activeUnit = null;
-    state.recordView = "landing";
-    renderApp();
-    persistState();
-}
-
-function getActiveUnitView() {
-    const tracker = getTracker(state.activeUnit.trackerId);
-    const units = buildTrackerUnits(tracker);
-    const unit = units.find((candidate) => candidate.key === state.activeUnit.key) ?? units[0];
-    const rows = unit.rows;
-    const entered = unit.answered;
-    const checksumCount = tracker.unit.checksum
-        ? unit.rows.filter((row) => row.answered && tracker.unit.checksum.countsRow(row)).length
-        : 0;
-
-    return {
-        tracker,
-        unit,
-        rows,
-        entered,
-        checksumValue: state.activeUnit.checksum,
-        checksumCount,
-        stage: state.activeUnit.stage,
-        notWord: { done: "not earned", completed: "not completed", earned: "not earned", discovered: "not discovered" }[tracker.tickField] ?? "not done",
-        // A unit is one screenful by construction, so there is nothing left to page.
-        page: { index: 0, lastIndex: 0 },
-        review: buildUnitReview(tracker, unit, checksumCount)
-    };
-}
-
-function buildUnitReview(tracker, unit, checksumCount) {
-    const answered = unit.rows.filter((row) => row.answered);
-    const zeroWord = tracker.id === "bestiary" || tracker.id === "bosstiary" || tracker.id === "charms"
-        ? "zero"
-        : "not earned";
-    const warnings = unit.rows
-        .filter((row) => row.unlockTarget > 0 && row.hasTypedKills && row.typedKills > row.unlockTarget * 4)
-        .map((row) => `${row.name} ${formatNumber(row.typedKills)} looks high for a ${formatNumber(row.unlockTarget)} target`);
-    const typed = Number(state.activeUnit.checksum);
-    const hasChecksum = Boolean(tracker.unit.checksum) && state.activeUnit.checksum !== "" && Number.isFinite(typed);
-
-    return {
-        entered: answered.map((row) => ({ name: row.name, value: unitValueLabel(tracker, row) })),
-        untouched: unit.rows.length - answered.length,
-        zeroWord,
-        warnings,
-        checksumMismatch: hasChecksum && typed !== checksumCount
-    };
-}
-
 function unitValueLabel(tracker, row) {
     if (tracker.id === "bestiary") {
         return BESTIARY_STAGES.find((stage) => stage.value === row.stage)?.label ?? String(row.kills);
@@ -1550,173 +1219,6 @@ function unitValueLabel(tracker, row) {
     return "yes";
 }
 
-function renderTrackerUnitView() {
-    const view = getActiveUnitView();
-
-    elements.comparisonSection.hidden = true;
-    elements.inputSection.hidden = true;
-    elements.analysisSection.hidden = false;
-    elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = `${view.tracker.label} · ${view.unit.label}`;
-    elements.resultsCopy.textContent = view.stage === "review"
-        ? "Nothing is saved until you confirm."
-        : "Copy what the client screen shows. Untouched items stay unrecorded.";
-
-    renderTrackerUnit(elements.output, view);
-    attachTrackerUnitActions(view);
-}
-
-function attachTrackerUnitActions(view) {
-    const { tracker } = view;
-
-    elements.output.querySelectorAll("[data-tracker-stage-value]").forEach((button) => {
-        button.addEventListener("click", () => {
-            commitUnitStage(tracker, button);
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-flag]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const { trackerItem: itemKey, trackerFlag: field } = button.dataset;
-            const current = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults)[field];
-
-            writeTrackerEntries(tracker, [itemKey], () => ({ [field]: !current }), {
-                kind: "entry",
-                label: `${itemKey} ${current ? "cleared" : "marked"}`
-            });
-            renderTrackerUnitView();
-        });
-    });
-
-    elements.output.querySelectorAll(".tracker-count").forEach((input) => {
-        input.addEventListener("focusout", () => {
-            const { trackerItem: itemKey, trackerField: field } = input.dataset;
-            const previous = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults)[field];
-
-            if ((Number.parseInt(input.value, 10) || 0) === previous) {
-                return;
-            }
-
-            writeTrackerEntries(tracker, [itemKey], () => ({ [field]: input.value }), {
-                kind: "entry",
-                label: `${itemKey} set to ${input.value || 0}`
-            });
-            renderTrackerUnitView();
-        });
-    });
-
-    const checksum = document.getElementById("unitChecksum");
-
-    if (checksum) {
-        checksum.addEventListener("input", () => {
-            state.activeUnit.checksum = checksum.value;
-            const note = elements.output.querySelector(".unit-checksum-note");
-            const typed = Number(checksum.value);
-
-            if (!note) {
-                return;
-            }
-
-            if (checksum.value === "" || !Number.isFinite(typed)) {
-                note.className = "unit-checksum-note";
-                note.textContent = tracker.unit.checksum.hint;
-                return;
-            }
-
-            const matches = typed === view.checksumCount;
-
-            note.className = `unit-checksum-note ${matches ? "is-match" : "is-mismatch"}`;
-            note.textContent = matches
-                ? `matches your ${view.checksumCount}`
-                : `you marked ${view.checksumCount} — check before recording`;
-        });
-    }
-
-    elements.output.querySelectorAll("[data-unit-page]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.activeUnit.page = Math.max(0, state.activeUnit.page + (button.dataset.unitPage === "next" ? 1 : -1));
-            renderTrackerUnitView();
-        });
-    });
-
-    // "Confirm remaining" is the one place a negative can be asserted: the player is
-    // looking at a bounded client screen and everything they did not tick is absent
-    // from it. It goes straight to the review so the claim is stated before it is
-    // stored.
-    document.getElementById("unitConfirmRest")?.addEventListener("click", () => {
-        state.activeUnit.stage = "review";
-        renderTrackerUnitView();
-    });
-
-    document.getElementById("unitBack")?.addEventListener("click", closeTrackerUnit);
-    document.getElementById("unitReview")?.addEventListener("click", () => {
-        state.activeUnit.stage = "review";
-        renderTrackerUnitView();
-    });
-    document.getElementById("unitEdit")?.addEventListener("click", () => {
-        state.activeUnit.stage = "entry";
-        renderTrackerUnitView();
-    });
-    document.getElementById("unitCommit")?.addEventListener("click", () => commitTrackerUnit(view));
-}
-
-function commitUnitStage(tracker, button) {
-    const { trackerItem: itemKey, trackerStage: field, trackerStageValue: rawValue } = button.dataset;
-    const value = Number(rawValue) || 0;
-    const entry = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults);
-    const next = entry[field] === value ? 0 : value;
-
-    writeTrackerEntries(tracker, [itemKey], () => ({
-        [field]: next,
-        ...(tracker.id === "bestiary" && entry.kills > 0 ? { kills: 0 } : {})
-    }), {
-        kind: "entry",
-        label: `${itemKey} set to ${button.textContent.trim()}`
-    });
-    renderTrackerUnitView();
-}
-
-/**
- * Recording a unit is the moment untouched items stop being unknown. Both the unit
- * record and every entry it writes go into one change, so the whole screenful
- * undoes as a single action.
- */
-function commitTrackerUnit(view) {
-    const { tracker, unit } = view;
-
-    // The disabled button already prevents this, but the guard belongs with the
-    // write: a mismatched source count means the transcription is wrong, and this
-    // is the step that turns untouched items into asserted zeros.
-    if (view.review.checksumMismatch) {
-        announce("Recording blocked: the count from Tibia does not match what you marked.");
-        return;
-    }
-
-    const before = {};
-
-    unit.rows.forEach((row) => {
-        if (!row.answered) {
-            before[row.key] = getStoredEntry(state.trackerProgress, tracker.id, row.key);
-        }
-    });
-
-    const change = {
-        kind: "unit",
-        trackerId: tracker.id,
-        label: `${tracker.label} ${unit.label} recorded`,
-        entries: before,
-        units: { [unit.key]: getTrackerUnitRecord(tracker.id, unit.key) }
-    };
-
-    recordUnit(state.trackerUnits, tracker.id, unit.key, view.entered);
-    pushChange(state.changeLog, change);
-    onTrackerProgressChanged();
-
-    state.activeUnit = null;
-    state.recordView = "landing";
-    renderApp();
-    showUndo(peekChange(state.changeLog));
-}
 
 function renderTrackerView() {
     const tracker = getActiveTracker();
@@ -1725,8 +1227,7 @@ function renderTrackerView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = tracker.resultsTitle;
-    elements.resultsCopy.textContent = tracker.resultsCopy;
+    elements.sectionHeading.hidden = true;
 
     renderTracker(elements.output, getTrackerView(tracker));
     attachTrackerActions();
@@ -1771,8 +1272,7 @@ function renderOpportunitiesView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = VIEW_CONTENT.opportunities.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.opportunities.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.opportunities.resultsTitle, VIEW_CONTENT.opportunities.resultsCopy);
 
     renderOpportunities(elements.output, getOpportunityAnalysis());
     attachOpportunityActions();
@@ -1850,8 +1350,7 @@ function renderSessionLibraryView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = VIEW_CONTENT.library.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.library.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.library.resultsTitle, VIEW_CONTENT.library.resultsCopy);
 
     renderSessionLibrary(
         elements.output,
@@ -1878,8 +1377,7 @@ function renderTaskSessionsView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = "All Sessions Task Estimates";
-    elements.resultsCopy.textContent = "Every processed session with the creature and task target you chose for it, estimated from that session's own kill rate.";
+    showSectionHeading("All Sessions Task Estimates", "Every processed session with the creature and task target you chose for it, estimated from that session's own kill rate.");
 
     renderTaskSessions(elements.output, sessions);
     attachTaskSessionLinks();
@@ -1895,23 +1393,11 @@ function applyPrimaryMode() {
 function getPageContent() {
     const view = getModeView();
 
-    if (state.mode === "trackers" && state.recordView === "landing") {
+    if (state.mode === "trackers" && state.recordView === "changes") {
         return {
-            eyebrow: "Record",
-            title: "Record progress",
-            description: "One bounded screen at a time, in the order the Tibia client shows them."
-        };
-    }
-
-    if (state.mode === "trackers" && state.activeUnit) {
-        const tracker = getTracker(state.activeUnit.trackerId);
-
-        return {
-            eyebrow: "Recording",
-            title: `${tracker.label} · ${groupNameOf(state.activeUnit.key)}`,
-            description: state.activeUnit.stage === "review"
-                ? "Check what will be saved. Nothing is stored until you confirm."
-                : "Copy what the client screen shows. Untouched items stay unrecorded."
+            eyebrow: "Data",
+            title: "Recent changes",
+            description: "Everything you have recorded lately, newest first. Any of it can be reverted."
         };
     }
 
@@ -1967,9 +1453,7 @@ function applyWorkspaceChrome() {
     elements.newSessionButton.hidden = state.mode === "trackers";
     // The page's primary action follows the mode: record progress in a tracker,
     // start a session in the session views.
-    elements.recordProgressButton.hidden = state.mode !== "trackers"
-        || state.recordView === "landing"
-        || Boolean(state.activeUnit);
+    elements.recordProgressButton.hidden = state.mode !== "trackers";
     elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
 
     document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
@@ -1994,8 +1478,9 @@ function renderApp() {
     applyWorkspaceChrome();
 
     if (state.mode === "trackers") {
+        // The sidebar already lists the seven trackers; a second strip of the same
+        // links was two navigations for one thing.
         elements.huntWorkspace.hidden = true;
-        renderHuntTabStrip();
         renderUndoBar();
 
         if (state.recordView === "changes") {
@@ -2005,16 +1490,6 @@ function renderApp() {
 
         if (state.transfer) {
             renderTransferReviewView();
-            return;
-        }
-
-        if (state.recordView === "landing") {
-            renderRecordLandingView();
-            return;
-        }
-
-        if (state.activeUnit) {
-            renderTrackerUnitView();
             return;
         }
 
@@ -2443,8 +1918,7 @@ function refreshTrackerRow(tracker, itemKey) {
     }
 
     const focusedSelector = describeFocusedControl();
-    const patched = patchTrackerRow(elements.output, row, tracker.columns, {
-        selectedKey: state.selectedTrackerKey,
+    const patched = patchTrackerCard(elements.output, tracker, row, {
         isSelected: state.trackerSelection.has(itemKey),
         selectable: Boolean(getBulkActions(tracker).length)
     });
@@ -2630,7 +2104,7 @@ function undoChange(changeId) {
         return;
     }
 
-    applyUndo(change, state.trackerProgress, state.trackerUnits);
+    applyUndo(change, state.trackerProgress, {});
     state.pendingUndoId = "";
     onTrackerProgressChanged();
     announce(`Undone: ${change.label}`);
@@ -2696,107 +2170,6 @@ function applyBulkAction(tracker, action, visibleRows) {
     showUndo(change);
 }
 
-/**
- * One keyboard model for the whole grid, per the W3C grid pattern: the table is a
- * single tab stop and the arrows move inside it. Before this, every mark
- * re-rendered the table and dropped focus on <body>, so marking twenty items meant
- * twenty trips back down the page.
- */
-function attachTrackerKeyboard(tracker) {
-    const table = elements.output.querySelector(".progress-table table");
-
-    if (!table) {
-        return;
-    }
-
-    const rows = () => [...table.querySelectorAll("tbody tr")];
-    const focusRow = (tr) => {
-        if (!tr) {
-            return;
-        }
-
-        rows().forEach((candidate) => candidate.setAttribute("tabindex", "-1"));
-        tr.setAttribute("tabindex", "0");
-        tr.focus();
-        state.trackerCursorKey = tr.dataset.trackerRow;
-    };
-
-    // Roving tabindex: exactly one row is in the page's tab order.
-    const all = rows();
-    const cursor = all.find((tr) => tr.dataset.trackerRow === state.trackerCursorKey) ?? all[0];
-
-    all.forEach((tr) => tr.setAttribute("tabindex", tr === cursor ? "0" : "-1"));
-
-    table.addEventListener("keydown", (event) => {
-        const tr = event.target.closest("tr[data-tracker-row]");
-
-        if (!tr) {
-            return;
-        }
-
-        const list = rows();
-        const index = list.indexOf(tr);
-        const itemKey = tr.dataset.trackerRow;
-        const inField = event.target.matches("input[type=number], input[type=text]");
-
-        if (event.key === "ArrowDown" || (event.key === "j" && !inField)) {
-            event.preventDefault();
-            focusRow(list[Math.min(list.length - 1, index + 1)]);
-            return;
-        }
-
-        if (event.key === "ArrowUp" || (event.key === "k" && !inField)) {
-            event.preventDefault();
-            focusRow(list[Math.max(0, index - 1)]);
-            return;
-        }
-
-        if (event.key === "x" && !inField) {
-            event.preventDefault();
-            toggleRowSelection(itemKey, event.shiftKey, list);
-            return;
-        }
-
-        if ((event.key === "ArrowRight" || event.key === "ArrowLeft") && !inField) {
-            const options = [...tr.querySelectorAll("[data-tracker-stage-value]")];
-
-            if (options.length) {
-                event.preventDefault();
-                const current = options.findIndex((option) => option.classList.contains("is-on"));
-                const next = event.key === "ArrowRight"
-                    ? Math.min(options.length - 1, current + 1)
-                    : Math.max(0, current - 1);
-
-                options[next].click();
-                focusRow(elements.output.querySelector(`tr[data-tracker-row="${CSS.escape(itemKey)}"]`));
-            }
-
-            return;
-        }
-
-        if (event.key === " " && !inField) {
-            const tick = tr.querySelector('[data-tracker-flag]:not([data-tracker-flag="bookmark"])');
-
-            if (tick) {
-                event.preventDefault();
-                tick.click();
-                focusRow(elements.output.querySelector(`tr[data-tracker-row="${CSS.escape(itemKey)}"]`));
-            }
-
-            return;
-        }
-
-        if (event.key === "Enter" && !inField) {
-            const field = tr.querySelector(".tracker-count");
-
-            if (field) {
-                event.preventDefault();
-                field.focus();
-                field.select();
-            }
-        }
-    });
-}
 
 function toggleRowSelection(itemKey, extend, list) {
     if (extend && state.trackerSelectionAnchor) {
@@ -2822,50 +2195,110 @@ function toggleRowSelection(itemKey, extend, list) {
     renderTrackerView();
 }
 
-function attachTrackerActions() {
-    const tracker = getActiveTracker();
-    const bulkActions = getBulkActions(tracker);
+/**
+ * One delegated listener per surface, bound once.
+ *
+ * Per-element listeners looked fine until a card repainted itself: replacing its
+ * innerHTML throws away every listener inside it, so the second interaction with the
+ * same card silently did nothing. Delegation survives repainting by construction,
+ * which is the whole reason the app can patch a single card instead of the page.
+ */
+let trackerDelegationBound = false;
 
-    elements.output.querySelectorAll("[data-tracker-row]").forEach((row) => {
-        row.addEventListener("click", (event) => {
-            if (event.target.closest("a, button, input, select, label")) {
-                return;
+function bindTrackerDelegation() {
+    if (trackerDelegationBound) {
+        return;
+    }
+
+    trackerDelegationBound = true;
+
+    elements.output.addEventListener("click", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+
+        if (!target || state.mode !== "trackers") {
+            return;
+        }
+
+        const tracker = getActiveTracker();
+        const stage = target.closest("[data-tracker-stage-value]");
+
+        if (stage) {
+            commitTrackerStage(stage);
+            return;
+        }
+
+        const set = target.closest("[data-tracker-set]");
+
+        if (set) {
+            commitTrackerSet(set);
+            return;
+        }
+
+        const flag = target.closest("[data-tracker-flag]");
+
+        if (flag) {
+            commitTrackerFlag(flag);
+            return;
+        }
+
+        const bulk = target.closest("[data-tracker-bulk]");
+
+        if (bulk) {
+            const action = getBulkActions(tracker).find((candidate) => candidate.key === bulk.dataset.trackerBulk);
+
+            if (action) {
+                applyBulkAction(tracker, action);
             }
 
-            state.selectedTrackerKey = row.dataset.trackerRow;
+            return;
+        }
+
+        const pageSize = target.closest("[data-tracker-page-size]");
+
+        if (pageSize) {
+            state.trackerPageSize = Number(pageSize.dataset.trackerPageSize) || 0;
+            state.trackerPageIndex = 0;
             renderTrackerView();
-        });
+            return;
+        }
+
+        const page = target.closest("[data-tracker-page]");
+
+        if (page) {
+            state.trackerPageIndex = Math.max(0, state.trackerPageIndex + (page.dataset.trackerPage === "next" ? 1 : -1));
+            renderTrackerView();
+            return;
+        }
+
+        const facetButton = target.closest("[data-tracker-facet-value]");
+
+        if (facetButton) {
+            getTrackerFilters(tracker)[facetButton.dataset.trackerFacet] = facetButton.dataset.trackerFacetValue;
+            state.trackerPageIndex = 0;
+            renderTrackerView();
+            return;
+        }
+
+        if (target.closest("#trackerClearSelection")) {
+            state.trackerSelection.clear();
+            renderTrackerView();
+        }
     });
 
-    elements.output.querySelectorAll(".tracker-count").forEach((input) => {
-        input.addEventListener("focusout", () => commitTrackerCount(input));
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                input.blur();
-            }
+    elements.output.addEventListener("change", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
 
-            if (event.key === "Escape") {
-                event.preventDefault();
-                input.value = "";
-                input.blur();
-            }
-        });
-    });
+        if (!target || state.mode !== "trackers") {
+            return;
+        }
 
-    elements.output.querySelectorAll("[data-tracker-stage-value]").forEach((button) => {
-        button.addEventListener("click", () => commitTrackerStage(button));
-    });
+        const tracker = getActiveTracker();
+        const select = target.closest("[data-tracker-select]");
 
-    elements.output.querySelectorAll("[data-tracker-flag]").forEach((button) => {
-        button.addEventListener("click", () => commitTrackerFlag(button));
-    });
+        if (select) {
+            const key = select.dataset.trackerSelect;
 
-    elements.output.querySelectorAll("[data-tracker-select]").forEach((box) => {
-        box.addEventListener("change", () => {
-            const key = box.dataset.trackerSelect;
-
-            if (box.checked) {
+            if (select.checked) {
                 state.trackerSelection.add(key);
                 state.trackerSelectionAnchor = key;
             } else {
@@ -2873,117 +2306,124 @@ function attachTrackerActions() {
             }
 
             renderTrackerView();
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-bulk]").forEach((button) => {
-        const action = bulkActions.find((candidate) => candidate.key === button.dataset.trackerBulk);
-
-        if (action) {
-            button.addEventListener("click", () => applyBulkAction(tracker, action));
-        }
-    });
-
-    const selectAll = document.getElementById("trackerSelectAll");
-
-    if (selectAll) {
-        selectAll.addEventListener("change", () => {
-            const visible = getTrackerView(tracker).rows;
-
-            if (selectAll.checked) {
-                visible.forEach((row) => state.trackerSelection.add(row.key));
-            } else {
-                visible.forEach((row) => state.trackerSelection.delete(row.key));
-            }
-
-            renderTrackerView();
-        });
-    }
-
-    const clearSelection = document.getElementById("trackerClearSelection");
-
-    if (clearSelection) {
-        clearSelection.addEventListener("click", () => {
-            state.trackerSelection.clear();
-            renderTrackerView();
-        });
-    }
-
-    elements.output.querySelectorAll("[data-tracker-sort]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.trackerSort[tracker.id] = {
-                key: button.dataset.trackerSort,
-                direction: button.dataset.trackerDirection === "desc" ? "desc" : "asc"
-            };
-            renderTrackerView();
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-page-size]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.trackerPageSize = Number(button.dataset.trackerPageSize) || 0;
-            state.trackerPageIndex = 0;
-            renderTrackerView();
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-page]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.trackerPageIndex = Math.max(0, state.trackerPageIndex + (button.dataset.trackerPage === "next" ? 1 : -1));
-            renderTrackerView();
-        });
-    });
-
-    attachTrackerKeyboard(tracker);
-    attachTrackerFacets(tracker);
-    attachTrackerTransfer(tracker);
-}
-
-function attachTrackerFacets(tracker) {
-    const filters = getTrackerFilters(tracker);
-
-    tracker.facets.forEach((facet) => {
-        const setFilter = (value) => {
-            filters[facet.key] = value;
-            state.trackerPageIndex = 0;
-        };
-
-        if (facet.kind === "segmented") {
-            elements.output.querySelectorAll(`[data-tracker-facet="${facet.key}"][data-tracker-facet-value]`)
-                .forEach((button) => button.addEventListener("click", () => {
-                    setFilter(button.dataset.trackerFacetValue);
-                    renderTrackerView();
-                }));
             return;
         }
 
-        const field = document.getElementById(`trackerFacet-${facet.key}`);
-
-        if (!field) {
-            return;
-        }
-
-        if (facet.kind === "search") {
-            field.addEventListener("input", () => {
-                setFilter(field.value);
-                renderTrackerView();
-
-                // Re-rendering replaces the field, so focus and caret are restored.
-                const restored = document.getElementById(`trackerFacet-${facet.key}`);
-
-                if (restored) {
-                    restored.focus();
-                    restored.setSelectionRange(restored.value.length, restored.value.length);
+        if (target.id === "trackerSelectAll") {
+            getTrackerView(tracker).rows.forEach((row) => {
+                if (target.checked) {
+                    state.trackerSelection.add(row.key);
+                } else {
+                    state.trackerSelection.delete(row.key);
                 }
             });
+            renderTrackerView();
             return;
         }
 
-        field.addEventListener("change", () => {
-            setFilter(facet.kind === "check" ? field.checked : field.value);
+        if (target.id === "trackerSort") {
+            state.trackerSort[tracker.id] = { key: target.value, direction: "asc" };
             renderTrackerView();
-        });
+            return;
+        }
+
+        const facet = target.closest("[data-tracker-facet]");
+
+        if (facet) {
+            const definition = tracker.facets.find((candidate) => candidate.key === facet.dataset.trackerFacet);
+
+            if (definition) {
+                getTrackerFilters(tracker)[definition.key] = definition.kind === "check" ? facet.checked : facet.value;
+                state.trackerPageIndex = 0;
+                renderTrackerView();
+            }
+        }
     });
+
+    // Search filters as you type, so it re-renders and restores its own caret.
+    elements.output.addEventListener("input", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+
+        if (!target || state.mode !== "trackers") {
+            return;
+        }
+
+        const search = target.closest('[data-tracker-facet="search"]');
+
+        if (!search) {
+            return;
+        }
+
+        const tracker = getActiveTracker();
+
+        getTrackerFilters(tracker).search = search.value;
+        state.trackerPageIndex = 0;
+        renderTrackerView();
+
+        const restored = document.getElementById("trackerFacet-search");
+
+        if (restored) {
+            restored.focus();
+            restored.setSelectionRange(restored.value.length, restored.value.length);
+        }
+    });
+
+    elements.output.addEventListener("focusout", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const count = target?.closest(".tracker-count");
+
+        if (count && state.mode === "trackers") {
+            commitTrackerCount(count);
+        }
+    });
+
+    elements.output.addEventListener("keydown", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const count = target?.closest(".tracker-count");
+
+        if (!count) {
+            return;
+        }
+
+        if (event.key === "Enter") {
+            event.preventDefault();
+            count.blur();
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            count.value = "";
+            count.blur();
+        }
+    });
+}
+
+/** Yes / no as an explicit choice: the same button again clears back to unknown. */
+function commitTrackerSet(button) {
+    const tracker = getActiveTracker();
+    const { trackerItem: itemKey, trackerSet: field, trackerSetValue: rawValue } = button.dataset;
+    const wantsYes = rawValue === "1";
+    const entry = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults);
+    const isYes = Boolean(entry[field]);
+    const isNo = !isYes && Boolean(entry[REVIEWED_FIELD]);
+    const alreadyThere = wantsYes ? isYes : isNo;
+
+    const changes = alreadyThere
+        ? { [field]: false, [REVIEWED_FIELD]: false }
+        : { [field]: wantsYes, [REVIEWED_FIELD]: true };
+
+    const change = writeTrackerEntries(tracker, [itemKey], () => changes, {
+        kind: "entry",
+        label: `${itemKey} — ${alreadyThere ? "cleared" : (wantsYes ? "yes" : "no")}`
+    });
+
+    refreshTrackerRow(tracker, itemKey);
+    showUndo(change);
+}
+
+function attachTrackerActions() {
+    bindTrackerDelegation();
+    attachTrackerTransfer(getActiveTracker());
 }
 
 function attachTrackerTransfer(tracker) {
@@ -3456,11 +2896,9 @@ function processLog() {
 function applyWorkspace(workspace) {
     state.mode = workspace.mode;
     state.trackerProgress = workspace.trackerProgress ?? createTrackerProgress();
-    state.trackerUnits = workspace.trackerUnits ?? createTrackerUnits();
     state.changeLog = workspace.changeLog ?? createChangeLog();
     state.trackerSelection = new Set();
     state.pendingUndoId = "";
-    state.activeUnit = null;
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
@@ -3642,7 +3080,6 @@ document.querySelectorAll(".sidebar-section-title").forEach((button) => {
  */
 function buildQuickAddItems() {
     return TRACKERS.flatMap((tracker) => {
-        const stageColumn = tracker.columns.find((column) => column.isInput);
         const rows = buildTrackerRows(tracker);
 
         return rows.map((row) => {
@@ -3655,8 +3092,7 @@ function buildQuickAddItems() {
                 name: row.name,
                 valueLabel: quickValueLabel(tracker, row),
                 controls,
-                countField: Object.keys(tracker.entryDefaults).includes("kills") ? "kills" : "",
-                hasStage: Boolean(stageColumn)
+                countField: Object.keys(tracker.entryDefaults).includes("kills") ? "kills" : ""
             };
         });
     });
@@ -3757,27 +3193,33 @@ function focusWorkspaceSearch() {
 }
 
 elements.sidebarSearchButton.addEventListener("click", focusWorkspaceSearch);
+/**
+ * "Record progress" is not a mode any more — the tracker page is the editor. The
+ * button jumps to the first thing not recorded yet, which is the only thing the old
+ * landing screen was really for.
+ */
 elements.recordProgressButton.addEventListener("click", () => {
-    state.recordView = "landing";
-    state.activeUnit = null;
+    const tracker = getActiveTracker();
+    const filters = getTrackerFilters(tracker);
+
+    filters.status = "unknown";
+    state.trackerPageIndex = 0;
+    state.recordView = "";
     state.transfer = null;
     renderApp();
+    persistState();
+    announce(`Showing ${tracker.label} entries that are not recorded yet.`);
 });
 
 elements.recentChangesButton.addEventListener("click", () => {
     state.mode = "trackers";
     state.recordView = "changes";
-    state.activeUnit = null;
     state.transfer = null;
     renderApp();
 });
 
 elements.sidebarRecordButton.addEventListener("click", () => {
-    state.mode = "trackers";
-    state.recordView = "landing";
-    state.activeUnit = null;
-    renderApp();
-    persistState();
+    elements.recordProgressButton.click();
 });
 document.addEventListener("keydown", (event) => {
     // The event target can be the document itself, which has no closest().

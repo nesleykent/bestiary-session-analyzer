@@ -1,6 +1,6 @@
 import { loadMeasuringTibiaData } from "../services/measuring-tibia-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { escapeText, starControl, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -54,7 +54,7 @@ export const measuringTibiaTracker = {
     resultsTitle: "Measuring Tibia",
     resultsCopy: "The Cyclopedia Map discovery quest. Tick each subarea you have fully discovered; completing every subarea of an area earns that area's achievement, which is filled in for you under Achievements.",
     progress: "grouped-boolean",
-    entryDefaults: { discovered: false, bookmark: false },
+    entryDefaults: { discovered: false, bookmark: false, reviewed: false },
     tickField: "discovered",
     loadItems: (loaded) => loadMeasuringTibiaData(loaded.bestiary ?? []),
     itemKey: (item) => item.Name,
@@ -75,40 +75,22 @@ export const measuringTibiaTracker = {
         .filter((area) => area.isComplete)
         .map((area) => area.achievement),
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "area",
-            label: "Area",
-            isNumeric: false,
-            cell: (row) => `<td class="cell-muted">${escapeText(row.area)}</td>`
-        },
-        {
-            key: "name",
-            label: "Subarea",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>`
-        },
-        {
-            key: "creatureCount",
-            label: "Bestiary Creatures",
-            isNumeric: true,
-            // 25 subareas are cities and interiors with no spawns listed, so they
-            // read as unknown rather than as zero.
-            cell: (row) => `<td class="is-num">${
-                row.creatureCount === null
-                    ? '<span class="cell-muted">&mdash;</span>'
-                    : formatNumber(row.creatureCount)
-            }</td>`
-        },
-        {
-            key: "discovered",
-            label: "Discovered",
-            isNumeric: true,
-            isInput: true,
-            cell: (row) => trackerTickCell(row, "discovered", { label: "Discovered" })
-        }
+    sortOptions: [
+        { key: "area", label: "Area" },
+        { key: "name", label: "Subarea" },
+        { key: "creatureCount", label: "Bestiary creatures", isNumeric: true, descending: true }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: `
+            <span>${escapeText(row.area)}</span>
+            ${row.creatureCount === null ? "" : `<span><strong>${formatNumber(row.creatureCount)}</strong> creatures</span>`}
+        `,
+        control: tickControl(row, "discovered", { yesLabel: "Discovered", noLabel: "Not yet" }),
+        extras: starControl(row)
+    }),
+
 
     facets: [
         {

@@ -43,15 +43,32 @@ export function isDefaultEntry(entryDefaults, entry) {
 const UNANSWERED_FIELDS = new Set(["bookmark"]);
 
 /**
- * Has the player actually told us something about this item?
+ * Every tracker carries this. It is what makes "I checked, and the answer is no"
+ * storable per item: an entry holding only `reviewed: true` differs from the
+ * defaults, so it survives, while an untouched item still stores nothing at all.
  *
- * This is the first half of the three-state model: an answered item holds a value,
- * an unanswered one is either a confirmed zero (its unit was recorded) or unknown.
- * See state/tracker-units.js for the other half.
+ * This replaced a whole layer of units, pages and confirmation screens whose only
+ * job was to express the same fact one screenful at a time.
+ */
+export const REVIEWED_FIELD = "reviewed";
+
+/**
+ * Has the player told us anything about this item?
+ *
+ * Three states, all derived from the entry alone:
+ *
+ *   a value        answered — 412 kills, earned, stage 2
+ *   reviewed only  checked, and the answer is no
+ *   nothing        not recorded yet
  */
 export function isAnsweredEntry(entryDefaults, entry) {
     return Object.entries(entryDefaults)
-        .some(([field, fallback]) => !UNANSWERED_FIELDS.has(field) && entry[field] !== fallback);
+        .some(([field, fallback]) => !UNANSWERED_FIELDS.has(field) && field !== REVIEWED_FIELD && entry[field] !== fallback);
+}
+
+/** Answered, or explicitly checked and found absent. */
+export function isKnownEntry(entryDefaults, entry) {
+    return isAnsweredEntry(entryDefaults, entry) || Boolean(entry[REVIEWED_FIELD]);
 }
 
 export function hasStoredEntry(progress, trackerId, itemKey) {
