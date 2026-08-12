@@ -4,7 +4,7 @@ import {
     RARITY_ORDER
 } from "../services/achievements-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
+import { bookmarkControl, escapeText, plainText, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -78,7 +78,7 @@ export const achievementsTracker = {
             <span>${escapeText(row.categoryLabel)}</span>
             <span><strong>${formatNumber(row.points)}</strong> points</span>
             ${row.rarityLabel ? `<span>${escapeText(row.rarityLabel)}</span>` : ""}
-            <span>${"\u2605".repeat(row.grade)}</span>
+            <span class="achievement-grade" title="Grade ${row.grade}" aria-label="Grade ${row.grade}">Grade ${"\u2605".repeat(row.grade)}</span>
         `,
         body: plainText(row.spoiler),
         control: tickControl(row, "done", {
@@ -88,7 +88,7 @@ export const achievementsTracker = {
             title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
         }),
         status: row.isObtainable ? "" : "No longer obtainable",
-        extras: starControl(row)
+        action: bookmarkControl(row)
     }),
 
 

@@ -187,6 +187,7 @@ const state = {
     // Selection, the keyboard cursor and the pending undo are all view state.
     trackerSelection: new Set(),
     trackerSelectionAnchor: "",
+    trackerSelectionMode: false,
     trackerCursorKey: "",
     pendingUndoId: "",
     // "changes" shows the revert history. Empty means a tracker page.
@@ -843,6 +844,9 @@ function getExternalDoneKeys(trackerId) {
 function leaveRecordFlow() {
     state.recordView = "";
     state.transfer = null;
+    state.trackerSelection.clear();
+    state.trackerSelectionAnchor = "";
+    state.trackerSelectionMode = false;
 }
 
 function selectTracker(trackerId) {
@@ -852,7 +856,6 @@ function selectTracker(trackerId) {
 
     state.activeTrackerId = trackerId;
     state.trackerPageIndex = 0;
-    state.trackerSelection.clear();
     leaveRecordFlow();
     renderApp();
     persistState();
@@ -1012,6 +1015,7 @@ function getTrackerView(tracker) {
         totals: tracker.totals(allRows, context),
         selectedKey: state.selectedTrackerKey,
         selection: state.trackerSelection,
+        selectionMode: state.trackerSelectionMode,
         bulkActions: getBulkActions(tracker)
     };
 }
@@ -1920,7 +1924,7 @@ function refreshTrackerRow(tracker, itemKey) {
     const focusedSelector = describeFocusedControl();
     const patched = patchTrackerCard(elements.output, tracker, row, {
         isSelected: state.trackerSelection.has(itemKey),
-        selectable: Boolean(getBulkActions(tracker).length)
+        selectable: state.trackerSelectionMode && Boolean(getBulkActions(tracker).length)
     });
 
     syncTrackerTotals(tracker);
@@ -2168,6 +2172,7 @@ function applyBulkAction(tracker, action, visibleRows) {
     });
 
     state.trackerSelection.clear();
+    state.trackerSelectionMode = false;
     renderTrackerView();
     showUndo(change);
 }
@@ -2222,6 +2227,21 @@ function bindTrackerDelegation() {
         }
 
         const tracker = getActiveTracker();
+
+        const selectionMode = target.closest("[data-tracker-selection-mode]");
+
+        if (selectionMode) {
+            state.trackerSelectionMode = !state.trackerSelectionMode;
+
+            if (!state.trackerSelectionMode) {
+                state.trackerSelection.clear();
+                state.trackerSelectionAnchor = "";
+            }
+
+            renderTrackerView();
+            return;
+        }
+
         const stage = target.closest("[data-tracker-stage-value]");
 
         if (stage) {
@@ -2289,6 +2309,11 @@ function bindTrackerDelegation() {
 
         // Clicking the card itself — not one of its controls — opens the detail panel.
         const card = target.closest("[data-tracker-row]");
+
+        if (card && state.trackerSelectionMode && !target.closest("a, button, input, select, label, summary")) {
+            toggleRowSelection(card.dataset.trackerRow, event.shiftKey, [...elements.output.querySelectorAll("[data-tracker-row]")]);
+            return;
+        }
 
         if (card && !target.closest("a, button, input, select, label, summary")) {
             state.selectedTrackerKey = card.dataset.trackerRow;
@@ -2489,12 +2514,10 @@ function bindGridKeyboard() {
         }
 
         if (event.key === "x") {
-            const select = card.querySelector("[data-tracker-select]");
-
-            if (select) {
+            if (getBulkActions(getActiveTracker()).length) {
                 event.preventDefault();
-                select.checked = !select.checked;
-                select.dispatchEvent(new Event("change", { bubbles: true }));
+                state.trackerSelectionMode = true;
+                toggleRowSelection(card.dataset.trackerRow, event.shiftKey, cards);
             }
 
             return;
@@ -3029,6 +3052,7 @@ function applyWorkspace(workspace) {
     state.trackerProgress = workspace.trackerProgress ?? createTrackerProgress();
     state.changeLog = workspace.changeLog ?? createChangeLog();
     state.trackerSelection = new Set();
+    state.trackerSelectionMode = false;
     state.pendingUndoId = "";
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
@@ -3335,8 +3359,7 @@ elements.recordProgressButton.addEventListener("click", () => {
 
     filters.status = "unknown";
     state.trackerPageIndex = 0;
-    state.recordView = "";
-    state.transfer = null;
+    leaveRecordFlow();
     renderApp();
     persistState();
     announce(`Showing ${tracker.label} entries that are not recorded yet.`);
@@ -3344,8 +3367,8 @@ elements.recordProgressButton.addEventListener("click", () => {
 
 elements.recentChangesButton.addEventListener("click", () => {
     state.mode = "trackers";
+    leaveRecordFlow();
     state.recordView = "changes";
-    state.transfer = null;
     renderApp();
 });
 

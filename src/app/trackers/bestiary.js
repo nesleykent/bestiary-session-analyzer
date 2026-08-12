@@ -1,7 +1,7 @@
 import { loadBestiaryData } from "../services/bestiary-repository.js";
 import { formatNumber } from "../utils/formatters.js";
 import { escapeAttribute } from "../ui/render-blocks.js";
-import { chipControl, escapeText, stageControl, starControl } from "../ui/render-controls.js";
+import { bookmarkControl, chipControl, escapeText, stageControl } from "../ui/render-controls.js";
 import { STATUS_LABELS } from "./status.js";
 
 /**
@@ -177,6 +177,7 @@ export const bestiaryTracker = {
             <span>${escapeText(row.className)}</span>
             <span><strong>${formatNumber(row.charms)}</strong> charm points</span>
         `,
+        action: bookmarkControl(row),
         control: stageControl(row, "stage", BESTIARY_STAGES, { label: "Stage" }),
         status: row.known
             ? (row.isComplete
@@ -190,7 +191,6 @@ export const bestiaryTracker = {
                 title: "Echo Warden points claimed"
             })}
             ${chipControl(row, "animusMastery", { label: "Animus", title: "Animus Mastery" })}
-            ${starControl(row)}
         `
     }),
 

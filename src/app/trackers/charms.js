@@ -1,6 +1,6 @@
 import { loadCharmsData } from "../services/charms-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, stageControl, starControl } from "../ui/render-controls.js";
+import { bookmarkControl, escapeText, plainText, stageControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -133,10 +133,10 @@ export const charmsTracker = {
             <span>${escapeText(row.currencyLabel)}</span>
             <span><strong>${formatNumber(row.spent)}</strong> of ${formatNumber(row.totalCost)} spent</span>
         `,
+        action: bookmarkControl(row),
         body: plainText(row.effect),
         control: stageControl(row, "stage", CHARM_STAGES, { label: "Stage" }),
-        status: row.isComplete ? "Maxed" : `Next stage ${formatNumber(row.nextCost)}`,
-        extras: starControl(row)
+        status: row.isComplete ? "Maxed" : `Next stage ${formatNumber(row.nextCost)}`
     }),
 
 

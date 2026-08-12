@@ -563,9 +563,11 @@ input[type="checkbox"] {
 }
 
 .filter-disclosure > summary,
-.transfer-disclosure > summary {
+.transfer-disclosure > summary,
+.toolbar-button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: var(--u2);
     min-height: var(--control-height);
     height: var(--control-height);
@@ -574,9 +576,12 @@ input[type="checkbox"] {
     border-radius: var(--radius-control);
     background: var(--surface);
     box-shadow: var(--elevation-1);
+    color: var(--ink-900);
+    font-family: inherit;
     font-size: var(--t-200);
     cursor: pointer;
     list-style: none;
+    white-space: nowrap;
 }
 
 .filter-disclosure > summary::-webkit-details-marker,
@@ -586,6 +591,12 @@ input[type="checkbox"] {
 
 .filter-disclosure[open] > summary {
     border-color: var(--ink-900);
+}
+
+.toolbar-button.is-on {
+    border-color: var(--ink-900);
+    background: var(--ink-900);
+    color: var(--surface);
 }
 
 .filter-count {
@@ -781,6 +792,17 @@ input[type="checkbox"] {
     box-shadow: none;
 }
 
+.card-content,
+.card-actions {
+    display: grid;
+    gap: var(--u2);
+    min-width: 0;
+}
+
+.card-actions {
+    margin-top: auto;
+}
+
 .card-head {
     display: flex;
     align-items: flex-start;
@@ -830,7 +852,8 @@ input[type="checkbox"] {
 }
 
 .card-control {
-    margin-top: var(--u1);
+    margin-top: 0;
+    min-width: 0;
 }
 
 .card-foot {
@@ -857,6 +880,12 @@ input[type="checkbox"] {
 }
 
 @media (min-width: 901px) {
+    .card-body {
+        height: var(--u12);
+        line-height: var(--u6);
+        -webkit-line-clamp: 2;
+    }
+
     .card-foot {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -879,7 +908,7 @@ input[type="checkbox"] {
         padding-inline: var(--u1);
     }
 
-    .card-extras .star {
+    .card-extras .bookmark-toggle {
         width: calc(var(--u6) - var(--u1));
         height: var(--u6);
     }
@@ -991,7 +1020,7 @@ input[type="checkbox"] {
     font-variant-numeric: tabular-nums;
 }
 
-.star {
+.bookmark-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1004,11 +1033,11 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 
-.star:hover {
+.bookmark-toggle:hover {
     background: rgb(var(--shadow-rgb) / 0.06);
 }
 
-.star.is-on {
+.bookmark-toggle.is-on {
     color: var(--accent);
 }
 

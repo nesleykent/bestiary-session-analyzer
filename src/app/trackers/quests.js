@@ -1,6 +1,6 @@
 import { loadQuestsData } from "../services/quests-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
+import { bookmarkControl, escapeText, plainText, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Quests: boolean progress, grouped by the questlog entry they appear under. */
@@ -42,9 +42,9 @@ export const questsTracker = {
     card: (row) => ({
         title: escapeText(row.name),
         meta: row.questlog ? `<span>${escapeText(row.questlog)}</span>` : "",
+        action: bookmarkControl(row),
         body: plainText(row.rewards),
-        control: tickControl(row, "completed", { yesLabel: "Done", noLabel: "Not done" }),
-        extras: starControl(row)
+        control: tickControl(row, "completed", { yesLabel: "Done", noLabel: "Not done" })
     }),
 
 

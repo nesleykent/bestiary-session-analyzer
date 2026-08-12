@@ -1,6 +1,6 @@
 import { loadTitlesData } from "../services/titles-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
+import { bookmarkControl, escapeText, plainText, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Titles: boolean progress, no points — the title itself is the reward. */
@@ -42,9 +42,9 @@ export const titlesTracker = {
     card: (row) => ({
         title: escapeText(row.name),
         meta: `<span>${row.isPermanent ? "Permanent" : "Can be lost"}</span>`,
+        action: bookmarkControl(row),
         body: plainText(row.requirement),
-        control: tickControl(row, "earned", { yesLabel: "Earned", noLabel: "Not earned" }),
-        extras: starControl(row)
+        control: tickControl(row, "earned", { yesLabel: "Earned", noLabel: "Not earned" })
     }),
 
 

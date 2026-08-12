@@ -141,17 +141,21 @@ export function countControl(row, field, options = {}) {
     `;
 }
 
-export function starControl(row, field = "bookmark") {
+export function bookmarkControl(row, field = "bookmark") {
+    const isBookmarked = Boolean(row[field]);
+
     return `
         <button
-            class="star${row[field] ? " is-on" : ""}"
+            class="bookmark-toggle${isBookmarked ? " is-on" : ""}"
             type="button"
             data-tracker-item="${escapeAttribute(row.key)}"
             data-tracker-flag="${escapeAttribute(field)}"
-            aria-pressed="${row[field] ? "true" : "false"}"
-            title="${row[field] ? "Tracked in your client" : "Mark as tracked in your client"}"
-            aria-label="Track ${escapeAttribute(row.name)}"
-        ><span class="material-symbols-outlined" aria-hidden="true">${row[field] ? "star" : "star_border"}</span></button>
+            aria-pressed="${isBookmarked ? "true" : "false"}"
+            title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
+            aria-label="${isBookmarked ? "Remove bookmark from" : "Bookmark"} ${escapeAttribute(row.name)}"
+        >
+            <span class="material-symbols-outlined" aria-hidden="true">${isBookmarked ? "bookmark" : "bookmark_border"}</span>
+        </button>
     `;
 }
 

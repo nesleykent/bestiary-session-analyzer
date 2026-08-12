@@ -1,7 +1,7 @@
 import { loadBosstiaryData } from "../services/bosstiary-repository.js";
 import { formatNumber } from "../utils/formatters.js";
 import { escapeAttribute } from "../ui/render-blocks.js";
-import { escapeText, stageControl, starControl } from "../ui/render-controls.js";
+import { bookmarkControl, escapeText, stageControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -108,11 +108,11 @@ export const bosstiaryTracker = {
             <span>${escapeText(row.category)}</span>
             <span><strong>${formatNumber(row.pointsEarned)}</strong> of ${formatNumber(row.totalPoints)} points</span>
         `,
-        control: stageControl(row, "stage", row.stageOptions, { label: "Level" }),
+        action: bookmarkControl(row),
+        control: stageControl(row, "stage", row.stageOptions, { label: "Level", size: "compact" }),
         status: row.known
             ? (row.isComplete ? "Mastery" : `${row.isFloor ? "at most " : ""}${formatNumber(row.killsLeft)} to next level`)
-            : "Not recorded yet",
-        extras: starControl(row)
+            : "Not recorded yet"
     }),
 
 

@@ -1,6 +1,6 @@
 import { loadMeasuringTibiaData } from "../services/measuring-tibia-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, starControl, tickControl } from "../ui/render-controls.js";
+import { bookmarkControl, escapeText, tickControl } from "../ui/render-controls.js";
 import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
@@ -80,8 +80,8 @@ export const measuringTibiaTracker = {
             <span>${escapeText(row.area)}</span>
             ${row.creatureCount === null ? "" : `<span><strong>${formatNumber(row.creatureCount)}</strong> creatures</span>`}
         `,
-        control: tickControl(row, "discovered", { yesLabel: "Discovered", noLabel: "Not yet" }),
-        extras: starControl(row)
+        action: bookmarkControl(row),
+        control: tickControl(row, "discovered", { yesLabel: "Discovered", noLabel: "Not yet" })
     }),
 
 

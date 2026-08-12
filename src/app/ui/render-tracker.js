@@ -102,7 +102,8 @@ function buildChecks(checks, filters) {
  * Search and sort stay in the open because they are what people reach for; the rest
  * fold behind one control that says how many are active. Folded, never removed.
  */
-function buildToolbar(tracker, filters, items, sort) {
+function buildToolbar(tracker, filters, items, sort, options = {}) {
+    const { canSelect = false, selectionMode = false } = options;
     const statusFacet = tracker.facets.find((facet) => facet.kind === "segmented" && facet.isStatus);
     const searchFacet = tracker.facets.find((facet) => facet.kind === "search");
     const checks = tracker.facets.filter((facet) => facet.kind === "check");
@@ -139,6 +140,18 @@ function buildToolbar(tracker, filters, items, sort) {
                         ${buildChecks(checks, filters)}
                     </div>
                 </details>
+            ` : ""}
+
+            ${canSelect ? `
+                <button
+                    class="toolbar-button${selectionMode ? " is-on" : ""}"
+                    type="button"
+                    data-tracker-selection-mode
+                    aria-pressed="${selectionMode ? "true" : "false"}"
+                >
+                    <span class="material-symbols-outlined" aria-hidden="true">${selectionMode ? "done" : "checklist"}</span>
+                    ${selectionMode ? "Done selecting" : "Select items"}
+                </button>
             ` : ""}
         </div>
     `;
@@ -193,22 +206,27 @@ function cardClassName(row, isSelected) {
 export function buildCardHtml(tracker, row, options = {}) {
     const { selectable = false, isSelected = false } = options;
     const card = tracker.card(row);
+    const hasFooter = Boolean(card.status || card.extras);
 
     return `
-        <div class="card-head">
-            ${selectable ? selectControl(row, isSelected) : ""}
-            <div class="card-title">${card.title}</div>
-            ${card.action ?? ""}
+        <div class="card-content">
+            <div class="card-head">
+                ${selectable ? selectControl(row, isSelected) : ""}
+                <div class="card-title">${card.title}</div>
+                ${card.action ?? ""}
+            </div>
+
+            ${card.meta ? `<div class="card-meta">${card.meta}</div>` : ""}
+            ${card.body ? `<p class="card-body">${card.body}</p>` : ""}
         </div>
 
-        ${card.meta ? `<div class="card-meta">${card.meta}</div>` : ""}
-        ${card.body ? `<p class="card-body">${card.body}</p>` : ""}
+        <div class="card-actions">
+            <div class="card-control">${card.control}</div>
 
-        <div class="card-control">${card.control}</div>
-
-        <div class="card-foot">
-            ${cardStatus(card)}
-            ${card.extras ? `<span class="card-extras">${card.extras}</span>` : ""}
+            ${hasFooter ? `<div class="card-foot">
+                ${cardStatus(card)}
+                ${card.extras ? `<span class="card-extras">${card.extras}</span>` : ""}
+            </div>` : ""}
         </div>
 
         ${typeof row.progress === "number" ? `
@@ -271,9 +289,10 @@ export function renderTracker(container, view) {
         items,
         totals,
         selection = new Set(),
-        bulkActions = []
+        bulkActions = [],
+        selectionMode = false
     } = view;
-    const selectable = bulkActions.length > 0;
+    const selectable = selectionMode && bulkActions.length > 0;
 
     container.className = "results-shell";
     container.innerHTML = `
@@ -283,7 +302,10 @@ export function renderTracker(container, view) {
         <section class="results-section" aria-labelledby="trackerGridTitle">
             <h2 class="sr-only" id="trackerGridTitle">${escapeText(tracker.tableTitle ?? tracker.label)}</h2>
 
-            ${buildToolbar(tracker, filters, items, sort)}
+            ${buildToolbar(tracker, filters, items, sort, {
+                canSelect: bulkActions.length > 0,
+                selectionMode
+            })}
             ${buildBulkBar({ selection, bulkActions, rows })}
 
             ${rows.length ? `
