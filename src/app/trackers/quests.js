@@ -44,7 +44,7 @@ export const questsTracker = {
         meta: row.questlog ? `<span>${escapeText(row.questlog)}</span>` : "",
         action: bookmarkControl(row),
         body: plainText(row.rewards),
-        control: tickControl(row, "completed", { yesLabel: "Done", noLabel: "Not done" })
+        control: tickControl(row, "completed", { yesLabel: "Done" })
     }),
 
 

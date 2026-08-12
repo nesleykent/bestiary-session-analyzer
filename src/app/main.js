@@ -2435,23 +2435,17 @@ function bindTrackerDelegation() {
     });
 }
 
-/** Yes / no as an explicit choice: the same button again clears back to unknown. */
+/** A persistent boolean uses one affirmative control; activating it again reverses it. */
 function commitTrackerSet(button) {
     const tracker = getActiveTracker();
-    const { trackerItem: itemKey, trackerSet: field, trackerSetValue: rawValue } = button.dataset;
-    const wantsYes = rawValue === "1";
+    const { trackerItem: itemKey, trackerSet: field } = button.dataset;
     const entry = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults);
-    const isYes = Boolean(entry[field]);
-    const isNo = !isYes && Boolean(entry[REVIEWED_FIELD]);
-    const alreadyThere = wantsYes ? isYes : isNo;
-
-    const changes = alreadyThere
-        ? { [field]: false, [REVIEWED_FIELD]: false }
-        : { [field]: wantsYes, [REVIEWED_FIELD]: true };
+    const nextValue = !Boolean(entry[field]);
+    const changes = { [field]: nextValue, [REVIEWED_FIELD]: true };
 
     const change = writeTrackerEntries(tracker, [itemKey], () => changes, {
         kind: "entry",
-        label: `${itemKey} — ${alreadyThere ? "cleared" : (wantsYes ? "yes" : "no")}`
+        label: `${itemKey} — ${nextValue ? "yes" : "no"}`
     });
 
     refreshTrackerRow(tracker, itemKey);

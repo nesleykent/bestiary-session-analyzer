@@ -73,12 +73,12 @@ export function stageControl(row, field, stages, options = {}) {
 }
 
 /**
- * Yes / not yet, as two explicit choices rather than a box you have to interpret.
- * An untouched item shows neither selected, which is what "not recorded" looks like —
- * an empty checkbox would be a claim that you do not have it.
+ * A persistent boolean is one state control, not a two-button decision. The label
+ * names the affirmative state; pressed means complete and unpressed means the
+ * status quo. Activating it again reverses the state.
  */
 export function tickControl(row, field, options = {}) {
-    const { yesLabel = "Yes", noLabel = "No", locked = false, title = "" } = options;
+    const { yesLabel = "Yes", locked = false, title = "" } = options;
 
     if (locked) {
         return `
@@ -92,28 +92,19 @@ export function tickControl(row, field, options = {}) {
     }
 
     const isYes = Boolean(row[field]);
-    const isNo = row.known && !isYes;
+    const actionLabel = `${isYes ? "Clear" : "Mark"} ${yesLabel.toLowerCase()} for ${row.name}`;
 
     return `
-        <div class="ticks" role="radiogroup" aria-label="${escapeAttribute(field)} for ${escapeAttribute(row.name)}">
+        <div class="ticks is-single">
             <button
                 class="tick-option${isYes ? " is-on" : ""}"
                 type="button"
-                role="radio"
-                aria-checked="${isYes ? "true" : "false"}"
+                aria-pressed="${isYes ? "true" : "false"}"
+                aria-label="${escapeAttribute(actionLabel)}"
                 data-tracker-item="${escapeAttribute(row.key)}"
                 data-tracker-set="${escapeAttribute(field)}"
                 data-tracker-set-value="1"
             >${escapeText(yesLabel)}</button>
-            <button
-                class="tick-option${isNo ? " is-on" : ""}"
-                type="button"
-                role="radio"
-                aria-checked="${isNo ? "true" : "false"}"
-                data-tracker-item="${escapeAttribute(row.key)}"
-                data-tracker-set="${escapeAttribute(field)}"
-                data-tracker-set-value="0"
-            >${escapeText(noLabel)}</button>
         </div>
     `;
 }

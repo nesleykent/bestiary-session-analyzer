@@ -990,6 +990,14 @@ input[type="checkbox"] {
     background: var(--surface);
 }
 
+.ticks.is-single {
+    grid-template-columns: 1fr;
+}
+
+.ticks.is-single .tick-option {
+    border-left: 0;
+}
+
 .tick-option {
     min-height: var(--control-height);
     border: 0;

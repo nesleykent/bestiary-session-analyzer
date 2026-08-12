@@ -44,7 +44,7 @@ export const titlesTracker = {
         meta: `<span>${row.isPermanent ? "Permanent" : "Can be lost"}</span>`,
         action: bookmarkControl(row),
         body: plainText(row.requirement),
-        control: tickControl(row, "earned", { yesLabel: "Earned", noLabel: "Not earned" })
+        control: tickControl(row, "earned", { yesLabel: "Earned" })
     }),
 
 

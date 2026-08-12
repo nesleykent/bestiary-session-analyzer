@@ -83,7 +83,6 @@ export const achievementsTracker = {
         body: plainText(row.spoiler),
         control: tickControl(row, "done", {
             yesLabel: "Earned",
-            noLabel: "Not earned",
             locked: row.isDerived,
             title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
         }),

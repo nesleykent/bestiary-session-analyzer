@@ -81,7 +81,7 @@ export const measuringTibiaTracker = {
             ${row.creatureCount === null ? "" : `<span><strong>${formatNumber(row.creatureCount)}</strong> creatures</span>`}
         `,
         action: bookmarkControl(row),
-        control: tickControl(row, "discovered", { yesLabel: "Discovered", noLabel: "Not yet" })
+        control: tickControl(row, "discovered", { yesLabel: "Discovered" })
     }),
 
 
