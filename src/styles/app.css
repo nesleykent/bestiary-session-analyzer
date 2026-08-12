@@ -645,11 +645,24 @@ input[type="checkbox"] {
 
 /* --- 5  progress cards ------------------------------------------------ */
 
+/*
+ * The figure leads and the label sits above it. Before this the label was inline to
+ * its left, which read as a caption for a number that had not arrived yet — and on
+ * Charm Plan, where the value is an em-dash until you enter your play time, the whole
+ * line read as broken.
+ */
 .answer {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-    flex-wrap: wrap;
+    display: grid;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.answer .summary-label {
+    order: -1;
+}
+
+.answer-note {
+    max-width: 66ch;
 }
 
 .answer-value {
@@ -1612,37 +1625,54 @@ input[type="checkbox"] {
     color: rgba(255, 255, 255, 0.75);
 }
 
+/*
+ * The column count lives on the list, not the row — getting that wrong collapsed
+ * every ranked list in Opportunities and Charm Plan into a vertical stack.
+ */
 .row-list {
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--line-2);
 }
 
 .row {
     display: grid;
-    align-items: center;
-    gap: var(--space-3);
+    align-items: baseline;
+    gap: var(--space-4);
     padding: var(--space-3) 0;
     border-bottom: 1px solid var(--line);
     font-size: var(--type-sm);
 }
 
-.row.cols-3 {
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+.row-list.cols-2 .row {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
 }
 
-.row.cols-4 {
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+.row-list.cols-3 .row {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.row-list.cols-4 .row {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.row-list.cols-5 .row {
+    grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr));
 }
 
 .row.is-head {
+    padding-bottom: var(--space-2);
     border-bottom: 1px solid var(--line-2);
 }
 
 .row.is-head span {
     font-size: var(--type-xs);
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-3);
+}
+
+.row:hover:not(.is-head) {
+    background: var(--card);
 }
 
 .row-name {
@@ -1814,4 +1844,330 @@ input[type="checkbox"] {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ==========================================================================
+   Session surfaces, finished in the same language
+
+   These pages were left on a compatibility layer while the trackers were rebuilt.
+   Same tokens, same controls, same hierarchy — a figure leads, hairlines separate,
+   and numbers are tabular and right-aligned so a column reads as a column.
+   ========================================================================== */
+
+/* --- the session strip: real tabs, not boxes with loose × ------------- */
+
+.hunt-workspace {
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-5);
+    border-bottom: 1px solid var(--line);
+}
+
+.hunt-tab-strip {
+    gap: var(--space-2);
+}
+
+.hunt-tab {
+    position: relative;
+}
+
+.hunt-tab-button {
+    gap: 1px;
+    min-width: 104px;
+    padding: var(--space-2) var(--space-4) var(--space-2) var(--space-3);
+    border-color: var(--line);
+    box-shadow: var(--shadow-card);
+}
+
+.hunt-tab-button:hover {
+    border-color: var(--line-2);
+}
+
+.hunt-tab-label {
+    font-weight: 500;
+}
+
+.hunt-tab.is-active .hunt-tab-button {
+    border-color: var(--ink);
+    box-shadow: inset 0 -2px 0 var(--ink), var(--shadow-card);
+}
+
+/* The close control belongs inside its own tab, not floating between two. */
+.hunt-tab-close {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: var(--type-xs);
+    line-height: 1;
+    color: var(--ink-3);
+}
+
+.hunt-tab-close:hover {
+    background: rgba(22, 21, 15, 0.08);
+    color: var(--ink);
+}
+
+.hunt-tab-add {
+    min-width: var(--control);
+    font-size: var(--type-md);
+}
+
+.hunt-workspace-actions {
+    margin-left: auto;
+}
+
+/* --- the session itself ---------------------------------------------- */
+
+.session-summary {
+    justify-content: space-between;
+    box-shadow: var(--shadow-card);
+}
+
+.session-summary::after {
+    content: "expand_more";
+    font-family: "Material Symbols Outlined";
+    color: var(--ink-3);
+}
+
+.session-summary[aria-expanded="true"]::after {
+    content: "expand_less";
+}
+
+.session-input-section textarea {
+    min-height: 180px;
+    font-family: var(--font-mono);
+    font-size: var(--type-sm);
+}
+
+.session-input-section .input-label {
+    margin-bottom: var(--space-2);
+}
+
+/* Creature chips: an outline until chosen, filled when chosen. Every chip looking
+   selected told the player nothing. */
+.chip {
+    gap: 2px;
+    border-color: var(--line);
+    box-shadow: var(--shadow-card);
+}
+
+.chip:hover {
+    border-color: var(--line-2);
+}
+
+.chip-name {
+    font-weight: 500;
+}
+
+.chip.is-selected {
+    border-color: var(--ink);
+}
+
+/* --- estimate and comparison tables --------------------------------- */
+
+.table-container {
+    box-shadow: var(--shadow-card);
+}
+
+.table-container tbody tr:nth-child(even) td {
+    background: var(--paper);
+}
+
+.table-container tbody tr:hover td {
+    background: var(--accent-soft);
+}
+
+.table-container td:not(:first-child),
+.table-container th:not(:first-child) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.table-container td.editable-cell,
+.table-container th.editable-cell {
+    text-align: right;
+}
+
+.editable-cell input {
+    width: 5.5rem;
+}
+
+.table-container a {
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.table-container a:hover {
+    text-decoration: underline;
+}
+
+/* --- ranked lists: the figures line up ------------------------------- */
+
+.row-num,
+.row-charm {
+    justify-self: end;
+}
+
+.row-name {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.row-name.is-verbatim {
+    text-transform: none;
+}
+
+.link-button {
+    padding: 1px var(--space-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink-2);
+}
+
+.link-button:hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
+}
+
+/* --- plan and library controls -------------------------------------- */
+
+.plan-controls,
+.library-controls,
+.respawn-mode-block,
+.task-target-block,
+.plan-sessions-block {
+    padding: var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+}
+
+.plan-sessions-block .row-list,
+.library-controls .row-list {
+    width: 100%;
+}
+
+.route-step {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: var(--space-3);
+    counter-increment: step;
+}
+
+.route-step::before {
+    content: counter(step);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-pill);
+    background: var(--ink);
+    color: #fff;
+    font-size: var(--type-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.summary-label {
+    margin-bottom: 0;
+}
+
+.detail-panel .btn {
+    width: 100%;
+}
+
+/* --- sortable table headers and inline library fields ----------------- */
+
+/*
+ * A sort control is a header, not a button on a shelf. Giving every button a border
+ * and a background turned the header row into a row of loose chips.
+ */
+.column-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    font: inherit;
+    font-size: var(--type-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    cursor: pointer;
+}
+
+.column-sort:hover {
+    color: var(--ink);
+}
+
+.column-sort .sort-mark,
+.column-sort .material-symbols-outlined {
+    font-size: 14px;
+}
+
+th.is-sorted .column-sort {
+    color: var(--ink);
+}
+
+/* The library edits in place, so its fields read as text until you touch them. */
+.library-name,
+.library-date,
+.library-notes {
+    width: 100%;
+    min-height: 34px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    font-size: var(--type-sm);
+}
+
+.library-name {
+    font-weight: 500;
+}
+
+.library-name:hover,
+.library-date:hover,
+.library-notes:hover {
+    border-color: var(--line);
+    background: var(--paper);
+}
+
+.library-name:focus,
+.library-date:focus,
+.library-notes:focus {
+    border-color: var(--accent);
+    background: var(--card);
+}
+
+.library-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    white-space: nowrap;
+}
+
+.library-table td {
+    vertical-align: middle;
+}
+
+/* Two figures in one cell need to read as two figures. */
+.library-table .row-aside,
+.table-container .row-aside {
+    display: inline;
+    margin-left: var(--space-1);
 }

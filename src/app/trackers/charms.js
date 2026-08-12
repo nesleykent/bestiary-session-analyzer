@@ -116,13 +116,6 @@ export const charmsTracker = {
     derive: deriveCharmRow,
     defaultSortKey: "name",
 
-    /** Major and Minor, 14 and 11 charms — one screenful each. */
-    unit: {
-        key: "type",
-        label: "Type",
-        pageSize: 25,
-        instruction: (unitKey) => `Cyclopedia → Charms (${unitKey.toLowerCase()})`
-    },
 
     /** Major charms spend what the Bestiary earns. */
     consumesBudgetFrom: "bestiary",

@@ -95,13 +95,6 @@ export const bosstiaryTracker = {
     derive: deriveBossRow,
     defaultSortKey: "name",
 
-    /** The client groups bosses in three categories; 83–124 each, so paged at 20. */
-    unit: {
-        key: "category",
-        label: "Category",
-        pageSize: 20,
-        instruction: (unitKey) => `Cyclopedia → Bosstiary → ${unitKey}`
-    },
 
     sortOptions: [
         { key: "name", label: "Name" },

@@ -33,19 +33,6 @@ export const questsTracker = {
     derive: deriveQuestRow,
     defaultSortKey: "name",
 
-    /**
-     * Grouping by questlog does not work as a unit: 104 of the 237 quests carry no
-     * questlog at all and 86 questlogs hold exactly one quest. So the unit is an
-     * alphabetical page of 20 until the client's own Quest Log structure is checked
-     * in game — bounded and verifiable either way.
-     */
-    unit: {
-        key: "unit",
-        label: "Questlog",
-        pageSize: 20,
-        alphabetical: true,
-        instruction: () => "Quest Log"
-    },
 
     sortOptions: [
         { key: "name", label: "Name" },

@@ -33,16 +33,6 @@ export const titlesTracker = {
     derive: deriveTitleRow,
     defaultSortKey: "name",
 
-    /**
-     * Two groups, because only one of them can regress: a losable title needs
-     * re-checking, a permanent one never does. 56 and 57 titles, so paged at 20.
-     */
-    unit: {
-        key: "unit",
-        label: "Group",
-        pageSize: 20,
-        instruction: (unitKey) => `Cyclopedia → Character → Titles (${unitKey.toLowerCase()})`
-    },
 
     sortOptions: [
         { key: "name", label: "Name" },

@@ -1203,7 +1203,7 @@ function formatChangeTime(iso) {
         : when.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function unitValueLabel(tracker, row) {
+function describeValue(tracker, row) {
     if (tracker.id === "bestiary") {
         return BESTIARY_STAGES.find((stage) => stage.value === row.stage)?.label ?? String(row.kills);
     }
@@ -2282,6 +2282,15 @@ function bindTrackerDelegation() {
         if (target.closest("#trackerClearSelection")) {
             state.trackerSelection.clear();
             renderTrackerView();
+            return;
+        }
+
+        // Clicking the card itself — not one of its controls — opens the detail panel.
+        const card = target.closest("[data-tracker-row]");
+
+        if (card && !target.closest("a, button, input, select, label, summary")) {
+            state.selectedTrackerKey = card.dataset.trackerRow;
+            renderTrackerView();
         }
     });
 
@@ -2421,8 +2430,128 @@ function commitTrackerSet(button) {
     showUndo(change);
 }
 
+/**
+ * Keyboard model for the grid, rebuilt for cards.
+ *
+ * The grid is one tab stop, like the ARIA grid pattern: Tab reaches the card you were
+ * last on, arrows move between cards, and the number keys pick a state without
+ * reaching for the mouse. Marking a hundred items should never require a hundred
+ * pointer trips.
+ */
+function bindGridKeyboard() {
+    if (gridKeyboardBound) {
+        return;
+    }
+
+    gridKeyboardBound = true;
+
+    elements.output.addEventListener("keydown", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const card = target?.closest("[data-tracker-row]");
+
+        if (!card || target.closest("input, textarea, select")) {
+            return;
+        }
+
+        const cards = [...elements.output.querySelectorAll("[data-tracker-row]")];
+        const index = cards.indexOf(card);
+        const columns = countGridColumns();
+        const move = {
+            ArrowRight: 1,
+            ArrowLeft: -1,
+            ArrowDown: columns,
+            ArrowUp: -columns,
+            j: columns,
+            k: -columns
+        }[event.key];
+
+        if (move !== undefined) {
+            event.preventDefault();
+            focusCard(cards[Math.min(cards.length - 1, Math.max(0, index + move))]);
+            return;
+        }
+
+        // Digits pick a state directly: 1 is the leftmost option, and 0 clears.
+        if (/^[0-9]$/.test(event.key)) {
+            const options = [...card.querySelectorAll("[data-tracker-stage-value], [data-tracker-set-value]")];
+            const wanted = Number(event.key);
+            const option = wanted === 0 ? options.find((o) => o.classList.contains("is-on")) : options[wanted - 1];
+
+            if (option) {
+                event.preventDefault();
+                option.click();
+                focusCard(elements.output.querySelector(`[data-tracker-row="${CSS.escape(card.dataset.trackerRow)}"]`));
+            }
+
+            return;
+        }
+
+        if (event.key === "x") {
+            const select = card.querySelector("[data-tracker-select]");
+
+            if (select) {
+                event.preventDefault();
+                select.checked = !select.checked;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+            return;
+        }
+
+        if (event.key === "Enter") {
+            const count = card.querySelector(".tracker-count");
+
+            if (count) {
+                event.preventDefault();
+                count.focus();
+                count.select();
+            }
+        }
+    });
+}
+
+let gridKeyboardBound = false;
+
+function countGridColumns() {
+    const grid = elements.output.querySelector(".card-grid");
+
+    if (!grid) {
+        return 1;
+    }
+
+    return Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length);
+}
+
+function focusCard(card) {
+    if (!card) {
+        return;
+    }
+
+    elements.output.querySelectorAll("[data-tracker-row]").forEach((candidate) => {
+        candidate.setAttribute("tabindex", "-1");
+    });
+    card.setAttribute("tabindex", "0");
+    card.focus();
+    state.trackerCursorKey = card.dataset.trackerRow;
+}
+
+/** Exactly one card is in the page tab order, so Tab lands where you left off. */
+function applyGridTabStop() {
+    const cards = [...elements.output.querySelectorAll("[data-tracker-row]")];
+
+    if (!cards.length) {
+        return;
+    }
+
+    const cursor = cards.find((card) => card.dataset.trackerRow === state.trackerCursorKey) ?? cards[0];
+
+    cards.forEach((card) => card.setAttribute("tabindex", card === cursor ? "0" : "-1"));
+}
+
 function attachTrackerActions() {
     bindTrackerDelegation();
+    bindGridKeyboard();
+    applyGridTabStop();
     attachTrackerTransfer(getActiveTracker());
 }
 
@@ -2528,7 +2657,7 @@ function describeEntry(tracker, itemKey, entry) {
         return `${formatNumber(row.typedKills)} kills`;
     }
 
-    return unitValueLabel(tracker, row);
+    return describeValue(tracker, row);
 }
 
 function openTransferReview(review) {

@@ -64,19 +64,6 @@ export const achievementsTracker = {
     derive: deriveAchievementRow,
     defaultSortKey: "name",
 
-    /**
-     * The client lists achievements by category. Two of our 17 are oversized —
-     * Quest (135) and Misc. (134) — and Misc. is an artefact of the upstream data
-     * rather than a client screen, so every category is paged at 20 and the page,
-     * not the category, is what gets recorded.
-     */
-    unit: {
-        key: "category",
-        labelOf: (row) => row.categoryLabel,
-        label: "Category",
-        pageSize: 20,
-        instruction: (unitKey) => `Cyclopedia → Achievements → ${unitKey}`
-    },
 
     sortOptions: [
         { key: "name", label: "Name" },

@@ -61,13 +61,6 @@ export const measuringTibiaTracker = {
     derive: deriveMeasuringTibiaRow,
     defaultSortKey: "area",
 
-    /** One map area at a time — 3 to 16 subareas, already the right size. */
-    unit: {
-        key: "area",
-        label: "Area",
-        pageSize: 20,
-        instruction: (unitKey) => `Cyclopedia → Map → ${unitKey}`
-    },
 
     /** Completing an area satisfies its achievement in the Achievements tracker. */
     derivesFor: "achievements",

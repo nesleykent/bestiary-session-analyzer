@@ -163,23 +163,6 @@ export const bestiaryTracker = {
     itemKey: (creature) => creature.Name,
     derive: deriveBestiaryRow,
 
-    /**
-     * The unit the player transcribes: a creature class, the way the client groups
-     * them. Paged at 15 to match the client's own class page exactly, so the eye
-     * can pattern-match instead of hunting.
-     */
-    unit: {
-        key: "className",
-        label: "Class",
-        pageSize: 15,
-        instruction: (unitKey) => `Cyclopedia → Bestiary → ${unitKey}`,
-        // The class card shows Total and Known, which is a check no other tracker has.
-        checksum: {
-            label: "Known",
-            hint: "the Known count on the class card",
-            countsRow: (row) => row.stage > STAGE_NEVER_KILLED
-        }
-    },
 
     sortOptions: [
         { key: "name", label: "Name" },
