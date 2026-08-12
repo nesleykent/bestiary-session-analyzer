@@ -852,6 +852,39 @@ input[type="checkbox"] {
     margin-left: auto;
 }
 
+.card-status {
+    min-width: 0;
+}
+
+@media (min-width: 901px) {
+    .card-foot {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--u1);
+        min-height: var(--u8);
+    }
+
+    .card-status {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .card-extras {
+        gap: calc(var(--u1) / 2);
+        margin-left: 0;
+    }
+
+    .card-extras .chip-toggle {
+        padding-inline: var(--u1);
+    }
+
+    .card-extras .star {
+        width: calc(var(--u6) - var(--u1));
+        height: var(--u6);
+    }
+}
+
 .card-select {
     display: inline-flex;
 }

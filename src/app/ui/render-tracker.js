@@ -173,6 +173,12 @@ function buildBulkBar(view) {
     `;
 }
 
+function cardStatus(card) {
+    const status = card.status ?? "";
+
+    return `<span class="card-status" title="${plainText(status)}">${status}</span>`;
+}
+
 function cardClassName(row, isSelected) {
     return [
         "progress-card",
@@ -201,7 +207,7 @@ export function buildCardHtml(tracker, row, options = {}) {
         <div class="card-control">${card.control}</div>
 
         <div class="card-foot">
-            <span>${card.status ?? ""}</span>
+            ${cardStatus(card)}
             ${card.extras ? `<span class="card-extras">${card.extras}</span>` : ""}
         </div>
 
