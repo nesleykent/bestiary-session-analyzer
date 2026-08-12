@@ -1,0 +1,548 @@
+/* ==========================================================================
+   Composition layer
+
+   A synthesis, applied in this order of priority:
+
+   International Typographic Style — one grid, everything aligned to it; flush-left
+   ragged-right text; hairline rules instead of boxes; a small set of type sizes with
+   strong contrast between them; micro-labels in tracked capitals; numerals as the
+   visual anchor.
+
+   Apple HIG — content over chrome, hierarchy that makes function obvious, one
+   primary action per screen, consistent controls, visible feedback, nothing removed
+   that a person needs. Deference, not austerity.
+
+   Instagram — a content-forward canvas: uniform cells, monochrome iconography, the
+   chrome receding until touched, detail on demand rather than up front.
+
+   Minimalism — every element earns its place, and the ones that survive get room.
+
+   This layer loads last and only composes. It adds no behaviour and removes no
+   control: an earlier attempt at this brief stripped the containers and took the
+   affordances with them, which made the app look tidy and impossible to use.
+   ========================================================================== */
+
+:root {
+    /* One accent. Everything else is ink on paper. */
+    --ink: #111111;
+    --ink-2: #4a4a48;
+    --ink-3: #8a8a86;
+    --paper: #ffffff;
+    --paper-2: #fafaf9;
+    --rule: #e6e6e3;
+    --rule-strong: #cfcfcb;
+    --accent: #1d4ed8;
+    --accent-wash: #f2f5fd;
+
+    /* Six sizes, no more. The jump between them is what creates hierarchy. */
+    --type-micro: 0.6875rem;
+    --type-small: 0.8125rem;
+    --type-body: 0.9375rem;
+    --type-lead: 1.25rem;
+    --type-figure: 2.25rem;
+    --type-display: 3rem;
+
+    --grid-gutter: 24px;
+}
+
+/* --- type ---------------------------------------------------------------- */
+
+body {
+    color: var(--ink);
+    background: var(--paper);
+    font-feature-settings: "cv05" 1, "cv08" 1;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.subsection-title,
+.page-eyebrow {
+    font-weight: 500;
+    letter-spacing: -0.012em;
+}
+
+#pageTitle {
+    font-size: var(--type-display);
+    line-height: 1.04;
+    letter-spacing: -0.028em;
+    margin: 0 0 var(--space-2);
+}
+
+/* Tracked capitals are the ITS caption idiom. They label; they never shout, so they
+   are only ever used at micro size and in the quietest ink. */
+.page-eyebrow,
+.input-label,
+.sidebar-group-label,
+.progress-table thead th,
+.review-line dt,
+.unit-checksum .input-label {
+    font-size: var(--type-micro);
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+.description,
+.section-copy,
+.unit-instruction,
+.helper-text {
+    max-width: 62ch;
+    font-size: var(--type-small);
+    line-height: 1.6;
+    color: var(--ink-2);
+}
+
+/* Figures carry the page. Tabular so columns of numbers line up as a block, which is
+   half of why Swiss data pages read as calm. */
+.answer-value,
+.landing-units,
+.progress-table td.is-num,
+.count-cell .tracker-count,
+.change-when {
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-main.is-trackers .answer-value {
+    font-size: var(--type-figure);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+/* --- the page: rules, not boxes ---------------------------------------- */
+
+.workspace-content {
+    padding-left: var(--space-7);
+    padding-right: var(--space-7);
+}
+
+.workspace-main.is-trackers .content-section,
+.workspace-main.is-trackers .results-section {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.workspace-main.is-trackers .results-section + .results-section {
+    margin-top: var(--space-7);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--rule);
+}
+
+.workspace-main.is-trackers .subsection-title {
+    margin: 0 0 var(--space-4);
+}
+
+.page-heading-row {
+    align-items: flex-end;
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: var(--space-5);
+}
+
+/* --- the status strip: an underline, not a pill ------------------------- */
+
+.progress-view-tabs .segmented,
+.progress-view-tabs {
+    border: 0;
+    background: none;
+    padding: 0;
+    gap: 0;
+}
+
+.progress-view-tabs .segmented {
+    display: flex;
+    gap: var(--space-5);
+    border-bottom: 1px solid var(--rule);
+}
+
+.progress-view-tabs .segmented-button {
+    position: relative;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: 0 0 var(--space-3);
+    font-size: var(--type-small);
+    color: var(--ink-3);
+}
+
+.progress-view-tabs .segmented-button.is-selected {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+.progress-view-tabs .segmented-button.is-selected::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--ink);
+}
+
+/* --- the table: hairlines, air, right-aligned figures ------------------ */
+
+.workspace-main.is-trackers .table-container {
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+
+.progress-table thead th {
+    border-bottom: 1px solid var(--rule-strong);
+    padding: var(--space-2) var(--space-3);
+    background: none;
+}
+
+.progress-table tbody td {
+    border-bottom: 1px solid var(--rule);
+    padding: var(--space-3);
+    font-size: var(--type-body);
+    background: none;
+}
+
+.progress-table tbody tr:hover td {
+    background: var(--paper-2);
+}
+
+.progress-table .creature-cell a {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.progress-table .creature-cell a:hover {
+    text-decoration: underline;
+}
+
+.row-aside {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--type-micro);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+/* --- controls: quiet until they carry state ---------------------------- */
+
+.stage-set {
+    border-color: var(--rule-strong);
+    border-radius: 2px;
+}
+
+.stage-option {
+    font-size: var(--type-small);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3);
+    padding: 5px 9px;
+}
+
+.stage-option.is-on {
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 500;
+}
+
+.tick {
+    border-color: var(--rule-strong);
+    border-radius: 2px;
+}
+
+.tick.is-on {
+    background: var(--ink);
+    border-color: var(--ink);
+}
+
+.tracker-count {
+    border: 0;
+    border-bottom: 1px solid var(--rule-strong);
+    border-radius: 0;
+    background: none;
+    padding: 4px 2px;
+    font-size: var(--type-body);
+}
+
+.tracker-count:focus {
+    outline: none;
+    border-bottom: 2px solid var(--accent);
+}
+
+.btn,
+.row-action,
+.landing-next,
+.worklist-item,
+.undo-action {
+    border-radius: 2px;
+    font-size: var(--type-small);
+    letter-spacing: 0;
+}
+
+/* One primary action per screen, in ink rather than colour, so colour stays
+   available to mean "selected". */
+.workspace-main .btn-primary,
+.workspace-main .btn-primary-context {
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    color: var(--paper);
+    box-shadow: none;
+    animation: none;
+}
+
+.workspace-main .btn-secondary {
+    background: none;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink);
+    box-shadow: none;
+    animation: none;
+}
+
+/* --- the sidebar recedes ---------------------------------------------- */
+
+.sidebar {
+    background: var(--paper-2);
+    border-right: 1px solid var(--rule);
+}
+
+.sidebar-link {
+    border-radius: 2px;
+    font-size: var(--type-small);
+    color: var(--ink-2);
+}
+
+.sidebar-link.is-selected {
+    background: none;
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.sidebar-brand {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+/* --- the landing: a ruled index, aligned to one grid ------------------- */
+
+.landing-list {
+    border-top: 1px solid var(--rule-strong);
+}
+
+.landing-row {
+    grid-template-columns: minmax(160px, 1.4fr) minmax(120px, 0.9fr) 88px minmax(140px, 1fr) minmax(160px, auto);
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--rule);
+}
+
+.landing-name {
+    font-size: var(--type-lead);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+}
+
+.landing-units,
+.landing-unknown {
+    font-size: var(--type-small);
+    color: var(--ink-2);
+}
+
+.landing-progress {
+    height: 2px;
+    border-radius: 0;
+    background: var(--rule);
+}
+
+.landing-bar {
+    background: var(--ink);
+}
+
+.landing-next {
+    justify-content: space-between;
+    border-color: var(--rule-strong);
+}
+
+/* --- the unit screen: uniform cells, content forward ------------------- */
+
+.unit-grid {
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+}
+
+.unit-tile {
+    border: 0;
+    border-radius: 0;
+    background: var(--paper);
+    padding: var(--space-4) var(--space-3);
+    gap: var(--space-3);
+}
+
+.unit-tile.is-answered {
+    background: var(--accent-wash);
+    border: 0;
+}
+
+.unit-tile-name {
+    font-size: var(--type-small);
+    font-weight: 500;
+}
+
+.unit-checksum {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: 0;
+    margin: var(--space-5) 0;
+    gap: var(--space-3);
+}
+
+.unit-checksum input {
+    border: 0;
+    border-bottom: 1px solid var(--rule-strong);
+    border-radius: 0;
+    background: none;
+    text-align: right;
+}
+
+.unit-foot,
+.unit-head {
+    border-color: var(--rule);
+}
+
+.review-line {
+    border-bottom: 1px solid var(--rule);
+}
+
+.review-chip {
+    border-radius: 2px;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    font-size: var(--type-small);
+}
+
+/* --- feedback: present, not loud ------------------------------------- */
+
+.undo-bar {
+    border-radius: 2px;
+    border-color: var(--rule-strong);
+    background: var(--paper-2);
+    font-size: var(--type-small);
+}
+
+.bulk-bar {
+    border-radius: 2px;
+    border-color: var(--ink);
+    background: var(--paper-2);
+}
+
+.bulk-select {
+    color: var(--ink);
+}
+
+/* --- filters: available, not in the way ------------------------------ */
+
+.filter-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin: var(--space-4) 0;
+}
+
+.filter-bar .library-search {
+    border: 0;
+    border-bottom: 1px solid var(--rule-strong);
+    border-radius: 0;
+    background: none;
+    min-width: 220px;
+}
+
+.filter-disclosure summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: var(--type-small);
+    color: var(--ink-2);
+    padding: 6px 0;
+}
+
+.filter-disclosure summary::-webkit-details-marker {
+    display: none;
+}
+
+.filter-disclosure[open] summary {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+.filter-count {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--type-micro);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 860px) {
+    #pageTitle {
+        font-size: var(--type-figure);
+    }
+
+    .workspace-main.is-trackers .answer-value {
+        font-size: var(--type-lead);
+    }
+}
+
+/* --- the headline: one figure, then a quiet line ---------------------- */
+
+/* The figure and its supporting facts were sharing a baseline, which read as one
+   run-on sentence of numbers. Stacking them restores the hierarchy: the figure is
+   the answer, the line beneath is the detail. */
+.workspace-main.is-trackers .results-shell {
+    display: block;
+}
+
+.workspace-main.is-trackers .answer {
+    display: block;
+    margin-bottom: var(--space-2);
+}
+
+.workspace-main.is-trackers .stat-line {
+    margin: 0 0 var(--space-6);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--rule);
+}
+
+/* The page title already names the tracker, so the section repeating it is the
+   clearest example of an element that has not earned its place. */
+.workspace-main.is-trackers #trackerTableTitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* Column heads sit over their own data: figures right, controls centred. */
+.progress-table th.is-num {
+    text-align: right;
+}
+
+.progress-table thead th:has(+ th) {
+    white-space: nowrap;
+}
+
+.progress-table td.stage-cell,
+.progress-table td.tick-cell,
+.progress-table td.count-cell {
+    width: 1%;
+}

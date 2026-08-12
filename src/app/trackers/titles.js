@@ -1,6 +1,7 @@
 import { loadTitlesData } from "../services/titles-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerFlagCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Titles: boolean progress, no points — the title itself is the reward. */
 
@@ -8,6 +9,7 @@ export function deriveTitleRow(title, entry) {
     return {
         key: title.Name,
         name: title.Name,
+        unit: title.isPermanent ? "Permanent" : "Losable",
         requirement: title.requirement,
         isPermanent: title.isPermanent,
         earned: entry.earned,
@@ -25,10 +27,22 @@ export const titlesTracker = {
     resultsCopy: "Every title in the game and what it takes to earn one. Permanent titles stay once earned; the rest can be lost again.",
     progress: "boolean",
     entryDefaults: { earned: false, bookmark: false },
+    tickField: "earned",
     loadItems: loadTitlesData,
     itemKey: (title) => title.Name,
     derive: deriveTitleRow,
     defaultSortKey: "name",
+
+    /**
+     * Two groups, because only one of them can regress: a losable title needs
+     * re-checking, a permanent one never does. 56 and 57 titles, so paged at 20.
+     */
+    unit: {
+        key: "unit",
+        label: "Group",
+        pageSize: 20,
+        instruction: (unitKey) => `Cyclopedia → Character → Titles (${unitKey.toLowerCase()})`
+    },
 
     columns: [
         { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
@@ -54,29 +68,20 @@ export const titlesTracker = {
             key: "earned",
             label: "Earned",
             isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "earned", { label: row.earned ? "Yes" : "No" })
+            isInput: true,
+            cell: (row) => trackerTickCell(row, "earned", { label: "Earned" })
         }
     ],
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Title or requirement", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Missing" },
-                { value: "done", label: "Earned" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Earned", hasInProgress: false }),
         {
             key: "permanence",
-            kind: "segmented",
+            kind: "select",
             label: "Permanence",
+            allLabel: "Any",
             options: () => [
-                { value: "all", label: "Any" },
                 { value: "permanent", label: "Permanent" },
                 { value: "losable", label: "Losable" }
             ],
@@ -100,7 +105,8 @@ export const titlesTracker = {
                 note: `of ${formatNumber(rows.length)} in the game &mdash; ${percent.toFixed(1)}% earned.`
             },
             stats: [
-                `${formatNumber(rows.length - earned)} still missing`,
+                `${formatNumber(rows.filter((row) => row.known && !row.earned).length)} not earned`,
+                `${formatNumber(rows.filter((row) => !row.known).length)} not recorded yet`,
                 `Permanent ${formatNumber(rows.filter((row) => row.earned && row.isPermanent).length)} of ${formatNumber(rows.filter((row) => row.isPermanent).length)}`
             ]
         };

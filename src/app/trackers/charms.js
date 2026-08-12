@@ -1,6 +1,18 @@
 import { loadCharmsData } from "../services/charms-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerCountCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, trackerStageCell, trackerStarCell } from "../ui/render-tracker.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
+
+/**
+ * A charm is locked or at level 1, 2 or 3 — four values, so it gets four buttons
+ * rather than a number field that looks like it would accept 250.
+ */
+const CHARM_STAGES = [
+    { value: 0, label: "—", title: "Locked" },
+    { value: 1, label: "1", title: "Stage 1" },
+    { value: 2, label: "2", title: "Stage 2" },
+    { value: 3, label: "3", title: "Stage 3" }
+];
 
 const MAX_STAGE = 3;
 
@@ -51,6 +63,7 @@ export function deriveCharmRow(charm, entry) {
         key: charm.Name,
         name: charm.Name,
         type: charm.type,
+        unit: charm.type,
         currency,
         currencyLabel: CURRENCY_LABELS[currency],
         stage,
@@ -74,7 +87,6 @@ export function deriveCharmRow(charm, entry) {
     };
 }
 
-const STATUS_LABELS = { notStarted: "Locked", inProgress: "Partial", done: "Maxed" };
 
 /** Splits the rows into the two budgets they actually draw on. */
 function summarizeCurrencies(rows) {
@@ -104,6 +116,14 @@ export const charmsTracker = {
     derive: deriveCharmRow,
     defaultSortKey: "name",
 
+    /** Major and Minor, 14 and 11 charms — one screenful each. */
+    unit: {
+        key: "type",
+        label: "Type",
+        pageSize: 25,
+        instruction: (unitKey) => `Cyclopedia → Charms (${unitKey.toLowerCase()})`
+    },
+
     /** Major charms spend what the Bestiary earns. */
     consumesBudgetFrom: "bestiary",
 
@@ -118,7 +138,13 @@ export const charmsTracker = {
             cell: (row) => `<td class="cell-muted">${escapeText(row.type)}<span class="row-aside">${escapeText(row.currencyLabel)}</span></td>`
         },
         { key: "effect", label: "Effect", isNumeric: false, cell: (row) => `<td class="spoiler-cell">${plainText(row.effect) || '<span class="cell-muted">&mdash;</span>'}</td>` },
-        { key: "stage", label: "Stage", isNumeric: false, cell: (row) => trackerCountCell(row, "stage", `/ ${MAX_STAGE}`) },
+        {
+            key: "stage",
+            label: "Stage",
+            isInput: true,
+            isNumeric: false,
+            cell: (row) => trackerStageCell(row, "stage", CHARM_STAGES, { label: "Stage" })
+        },
         {
             key: "spent",
             label: "Spent",
@@ -126,34 +152,28 @@ export const charmsTracker = {
             cell: (row) => `<td class="is-num">${formatNumber(row.spent)}<span class="row-aside">of ${formatNumber(row.totalCost)}</span></td>`
         },
         { key: "nextCost", label: "Next Stage", isNumeric: true, cell: (row) => `<td class="is-num">${row.isComplete ? "&mdash;" : formatNumber(row.nextCost)}</td>` },
-        { key: "status", label: "Status", isNumeric: false, cell: (row) => `<td><span class="status-mark">${STATUS_LABELS[row.status]}</span></td>` }
+        {
+            key: "status",
+            label: "Status",
+            isNumeric: false,
+            cell: (row) => `<td><span class="status-mark">${row.known ? STATUS_LABELS[row.status] : STATUS_LABELS.unknown}</span></td>`
+        }
     ],
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Charm name", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },
         {
             key: "type",
-            kind: "segmented",
+            kind: "select",
             label: "Type",
+            allLabel: "All types",
             options: () => [
-                { value: "all", label: "All" },
                 { value: "Major", label: "Major" },
                 { value: "Minor", label: "Minor" }
             ],
             matches: (row, value) => row.type === value
         },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Locked" },
-                { value: "inProgress", label: "Partial" },
-                { value: "done", label: "Maxed" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Maxed", startedWord: "Partial" }),
         { key: "bookmarkedOnly", kind: "check", label: "Bookmarked", matches: (row) => row.bookmark }
     ],
 

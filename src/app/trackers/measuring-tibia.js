@@ -1,6 +1,7 @@
 import { loadMeasuringTibiaData } from "../services/measuring-tibia-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, trackerFlagCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
  * The Measuring Tibia tracker — the Cyclopedia Map discovery quest.
@@ -35,6 +36,7 @@ export function deriveMeasuringTibiaRow(item, entry) {
         key: item.Name,
         name: item.Name,
         area: item.area,
+        unit: item.area,
         areaAchievement: item.areaAchievement,
         areaSubareaCount: item.areaSubareaCount,
         creatureCount: item.creatureCount,
@@ -53,10 +55,19 @@ export const measuringTibiaTracker = {
     resultsCopy: "The Cyclopedia Map discovery quest. Tick each subarea you have fully discovered; completing every subarea of an area earns that area's achievement, which is filled in for you under Achievements.",
     progress: "grouped-boolean",
     entryDefaults: { discovered: false, bookmark: false },
+    tickField: "discovered",
     loadItems: (loaded) => loadMeasuringTibiaData(loaded.bestiary ?? []),
     itemKey: (item) => item.Name,
     derive: deriveMeasuringTibiaRow,
     defaultSortKey: "area",
+
+    /** One map area at a time — 3 to 16 subareas, already the right size. */
+    unit: {
+        key: "area",
+        label: "Area",
+        pageSize: 20,
+        instruction: (unitKey) => `Cyclopedia → Map → ${unitKey}`
+    },
 
     /** Completing an area satisfies its achievement in the Achievements tracker. */
     derivesFor: "achievements",
@@ -94,7 +105,8 @@ export const measuringTibiaTracker = {
             key: "discovered",
             label: "Discovered",
             isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "discovered", { label: row.discovered ? "Yes" : "No" })
+            isInput: true,
+            cell: (row) => trackerTickCell(row, "discovered", { label: "Discovered" })
         }
     ],
 
@@ -114,17 +126,7 @@ export const measuringTibiaTracker = {
             options: (items) => [...new Set(items.map((item) => item.area))].sort().map((area) => ({ value: area, label: area })),
             matches: (row, value) => row.area === value
         },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Undiscovered" },
-                { value: "done", label: "Discovered" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Discovered", hasInProgress: false }),
         { key: "bookmarkedOnly", kind: "check", label: "Bookmarked", matches: (row) => row.bookmark }
     ],
 
@@ -152,7 +154,8 @@ export const measuringTibiaTracker = {
             },
             stats: [
                 `${formatNumber(discovered)} of ${formatNumber(rows.length)} subareas discovered`,
-                `${formatNumber(rows.length - discovered)} still to explore`,
+                `${formatNumber(rows.filter((row) => row.known && !row.discovered).length)} not discovered`,
+                `${formatNumber(rows.filter((row) => !row.known).length)} not recorded yet`,
                 `${formatNumber(complete)} area achievement${complete === 1 ? "" : "s"} earned`
             ]
         };

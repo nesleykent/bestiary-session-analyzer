@@ -4,7 +4,8 @@ import {
     RARITY_ORDER
 } from "../services/achievements-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerFlagCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, trackerFlagCell, trackerStarCell, trackerTickCell } from "../ui/render-tracker.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
  * The Achievements tracker: boolean progress, because an achievement is earned or
@@ -25,6 +26,7 @@ export function deriveAchievementRow(achievement, entry, context = {}) {
         isDerived,
         key: achievement.Name,
         name: achievement.Name,
+        unit: achievement.category,
         points: achievement.points,
         grade: achievement.grade,
         category: achievement.category,
@@ -54,10 +56,27 @@ export const achievementsTracker = {
     entryDefaults: { done: false, bookmark: false },
     // Cyclopedia Map area completion satisfies 20 of these.
     consumesDerived: true,
+    // The one field a bulk action may write. Echo Warden-style flags must never be
+    // swept in bulk, which is why this is declared rather than inferred.
+    tickField: "done",
     loadItems: loadAchievementsData,
     itemKey: (achievement) => achievement.Name,
     derive: deriveAchievementRow,
     defaultSortKey: "name",
+
+    /**
+     * The client lists achievements by category. Two of our 17 are oversized —
+     * Quest (135) and Misc. (134) — and Misc. is an artefact of the upstream data
+     * rather than a client screen, so every category is paged at 20 and the page,
+     * not the category, is what gets recorded.
+     */
+    unit: {
+        key: "category",
+        labelOf: (row) => row.categoryLabel,
+        label: "Category",
+        pageSize: 20,
+        instruction: (unitKey) => `Cyclopedia → Achievements → ${unitKey}`
+    },
 
     columns: [
         { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
@@ -103,10 +122,11 @@ export const achievementsTracker = {
         { key: "points", label: "Points", isNumeric: true, cell: (row) => `<td class="is-num">${row.points ? formatNumber(row.points) : '<span class="cell-muted">0</span>'}</td>` },
         {
             key: "done",
+            isInput: true,
             label: "Earned",
             isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "done", {
-                label: row.done ? "Yes" : "No",
+            cell: (row) => trackerTickCell(row, "done", {
+                label: "Earned",
                 locked: row.isDerived,
                 title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
             })
@@ -131,17 +151,7 @@ export const achievementsTracker = {
                 .map(([value, label]) => ({ value, label })),
             matches: (row, value) => row.category === value
         },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Missing" },
-                { value: "done", label: "Earned" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Earned", hasInProgress: false }),
         {
             key: "rarity",
             kind: "select",
@@ -193,7 +203,8 @@ export const achievementsTracker = {
             },
             stats: [
                 `${formatNumber(earnedCount)} of ${formatNumber(obtainable.length)} unlocked`,
-                `${formatNumber(obtainable.length - earnedCount)} still missing`,
+                `${formatNumber(obtainable.filter((row) => row.known && !row.done).length)} not earned`,
+                `${formatNumber(obtainable.filter((row) => !row.known).length)} not recorded yet`,
                 `Secret ${formatNumber(secretEarned)} of ${formatNumber(secretTotal)}`
             ]
         };

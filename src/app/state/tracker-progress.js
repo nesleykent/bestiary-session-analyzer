@@ -35,6 +35,36 @@ export function isDefaultEntry(entryDefaults, entry) {
     return Object.entries(entryDefaults).every(([field, fallback]) => entry[field] === fallback);
 }
 
+/**
+ * Fields that say nothing about the character's progress, so they must not make an
+ * item count as answered. Bookmarking a creature is a note to self, not a claim
+ * that you have killed it.
+ */
+const UNANSWERED_FIELDS = new Set(["bookmark"]);
+
+/**
+ * Has the player actually told us something about this item?
+ *
+ * This is the first half of the three-state model: an answered item holds a value,
+ * an unanswered one is either a confirmed zero (its unit was recorded) or unknown.
+ * See state/tracker-units.js for the other half.
+ */
+export function isAnsweredEntry(entryDefaults, entry) {
+    return Object.entries(entryDefaults)
+        .some(([field, fallback]) => !UNANSWERED_FIELDS.has(field) && entry[field] !== fallback);
+}
+
+export function hasStoredEntry(progress, trackerId, itemKey) {
+    return Object.prototype.hasOwnProperty.call(getTrackerRecord(progress, trackerId), itemKey);
+}
+
+/** The stored entry, or null — what an undo needs in order to restore exactly. */
+export function getStoredEntry(progress, trackerId, itemKey) {
+    const stored = getTrackerRecord(progress, trackerId)[itemKey];
+
+    return stored ? { ...stored } : null;
+}
+
 export function createTrackerProgress() {
     return {};
 }

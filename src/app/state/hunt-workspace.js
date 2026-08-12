@@ -1,5 +1,7 @@
 import { restoreTrackerProgress } from "./tracker-progress.js";
-import { getTrackerEntryDefaults } from "../trackers/registry.js";
+import { restoreTrackerUnits } from "./tracker-units.js";
+import { restoreChangeLog } from "./change-log.js";
+import { getTrackerEntryDefaults, getTrackerIds } from "../trackers/registry.js";
 
 let huntSequence = 0;
 
@@ -43,6 +45,10 @@ export function createWorkspace() {
     return {
         mode: "trackers",
         trackerProgress: {},
+        // Which bounded units have been read, and the undo trail. Both empty for a
+        // new workspace, which is what makes everything read "not recorded yet".
+        trackerUnits: {},
+        changeLog: [],
         hunts: [hunt],
         activeHuntId: hunt.id,
         bestiaryView: "session",
@@ -188,6 +194,8 @@ export function restoreWorkspace(savedState) {
             getTrackerEntryDefaults(),
             savedState?.bestiaryProgress
         ),
+        trackerUnits: restoreTrackerUnits(savedState?.trackerUnits, getTrackerIds()),
+        changeLog: restoreChangeLog(savedState?.changeLog, getTrackerIds()),
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
         bestiaryView: normalizeView(savedState?.bestiaryView, BESTIARY_VIEWS),

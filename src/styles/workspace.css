@@ -1193,3 +1193,687 @@ textarea:disabled {
         animation-iteration-count: 1 !important;
     }
 }
+
+/* ==========================================================================
+   Recording progress
+
+   The tile control, the unit screens, the bulk bar, the undo bar and quick add.
+   Everything here exists to make transcription from the Tibia client cheap: the
+   controls carry the client's own labels, and nothing that the player is aiming
+   at is ever allowed to move on its own.
+   ========================================================================== */
+
+.section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+/* --- the tile control: the client's own five states ---------------------- */
+
+.stage-cell {
+    white-space: nowrap;
+}
+
+.stage-set {
+    display: inline-flex;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.stage-option {
+    appearance: none;
+    border: 0;
+    border-left: 1px solid var(--color-border-soft);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 0.78rem;
+    line-height: 1;
+    padding: 6px 8px;
+    min-width: 30px;
+    cursor: pointer;
+}
+
+.stage-option:first-child {
+    border-left: 0;
+}
+
+.stage-option:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+}
+
+.stage-option.is-on {
+    background: var(--color-brand);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.stage-option:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: -2px;
+}
+
+/* --- the tick: yes, no, and not recorded are three different things ------ */
+
+.tick-cell {
+    text-align: center;
+}
+
+.tick {
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    padding: 0;
+}
+
+.tick .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.tick.is-on {
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+    color: #ffffff;
+}
+
+/* Not recorded reads as a dashed outline, never as an empty box: an empty box is
+   a claim that the player does not have it. */
+.tick.is-unknown {
+    border-style: dashed;
+    color: var(--color-text-subtle);
+}
+
+.tick.is-locked {
+    border-style: solid;
+    background: var(--color-brand-tint);
+    border-color: var(--color-brand-tint);
+    color: var(--color-brand-deep);
+    cursor: default;
+}
+
+.count-cell.is-unknown .tracker-count::placeholder {
+    color: var(--color-text-subtle);
+}
+
+tr.is-unrecorded .creature-cell,
+tr.is-unrecorded .row-name {
+    color: var(--color-text-muted);
+}
+
+/* --- selection and the bulk bar ----------------------------------------- */
+
+.select-cell {
+    width: 32px;
+    text-align: center;
+}
+
+.bulk-bar {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin: var(--space-3) 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-brand);
+    border-radius: var(--radius-md);
+    background: var(--color-brand-wash);
+}
+
+.bulk-select {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-brand-deep);
+}
+
+.bulk-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-right: auto;
+}
+
+tr.is-selected {
+    background: var(--color-brand-wash);
+}
+
+/* --- undo ---------------------------------------------------------------- */
+
+.undo-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-4);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+    font-size: 0.88rem;
+}
+
+.undo-text {
+    margin-right: auto;
+    color: var(--color-text-muted);
+}
+
+.undo-action {
+    appearance: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+    padding: 4px 10px;
+    cursor: pointer;
+}
+
+/* --- what needs recording ---------------------------------------------- */
+
+.landing-list {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.landing-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.1fr) minmax(120px, 1fr) 90px minmax(130px, 1fr) minmax(150px, auto);
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.landing-name {
+    appearance: none;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+}
+
+.landing-name:hover {
+    color: var(--color-brand);
+}
+
+.landing-units,
+.landing-unknown {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.landing-progress {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--color-border-soft);
+    overflow: hidden;
+}
+
+.landing-bar {
+    display: block;
+    height: 100%;
+    background: var(--color-brand);
+}
+
+.landing-done {
+    color: var(--color-brand-deep);
+}
+
+.landing-next {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.landing-next:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand-deep);
+}
+
+.landing-next-size {
+    color: var(--color-text-subtle);
+}
+
+.worklist {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+}
+
+.worklist-item {
+    appearance: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.worklist-note {
+    color: var(--color-text-subtle);
+    margin-left: var(--space-2);
+}
+
+/* --- recording one unit ------------------------------------------------- */
+
+.unit-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.unit-instruction {
+    margin: var(--space-1) 0 0;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.unit-checksum {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin: var(--space-4) 0;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+}
+
+.unit-checksum input {
+    width: 90px;
+}
+
+.unit-checksum-note {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.unit-checksum-note.is-match {
+    color: var(--color-brand-deep);
+    font-weight: 600;
+}
+
+.unit-checksum-note.is-mismatch {
+    color: #9a3412;
+    font-weight: 600;
+}
+
+/* Five across, fifteen to a page — the client's own class page, so the eye can
+   pattern-match instead of hunting line by line. */
+.unit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
+    margin: var(--space-4) 0;
+}
+
+.unit-tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.unit-tile.is-answered {
+    border-color: var(--color-brand);
+    background: var(--color-brand-wash);
+}
+
+.unit-tile-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.unit-tile-control table,
+.unit-tile-control td {
+    border: 0;
+    padding: 0;
+    background: none;
+}
+
+.unit-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.unit-progress {
+    margin-right: auto;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.unit-blocked {
+    font-size: 0.85rem;
+    color: #9a3412;
+}
+
+.review-list {
+    margin: var(--space-4) 0 0;
+}
+
+.review-line {
+    display: grid;
+    grid-template-columns: minmax(140px, 200px) 1fr;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.review-line dt {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.review-line dd {
+    margin: 0;
+}
+
+.review-line.is-warning dt {
+    color: #9a3412;
+}
+
+.review-chip {
+    display: inline-block;
+    margin: 0 var(--space-2) var(--space-2) 0;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-alt);
+    font-size: 0.85rem;
+}
+
+.review-chip.is-warning {
+    background: #fef3c7;
+}
+
+/* --- quick add: change one value from anywhere -------------------------- */
+
+.quick-add {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12vh var(--space-4) var(--space-4);
+    background: rgba(20, 20, 20, 0.32);
+}
+
+.quick-panel {
+    width: min(560px, 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 12px);
+    background: var(--color-surface);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+}
+
+.quick-input {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--color-border-soft);
+    padding: var(--space-4);
+    font: inherit;
+    font-size: 1rem;
+}
+
+.quick-input:focus {
+    outline: none;
+}
+
+.quick-results {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-2) 0;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.quick-option {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.quick-option.is-highlighted {
+    background: var(--color-brand-wash);
+}
+
+.quick-tracker,
+.quick-value,
+.quick-current {
+    font-size: 0.8rem;
+    color: var(--color-text-subtle);
+}
+
+.quick-empty {
+    padding: var(--space-3) var(--space-4);
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.quick-value-stage {
+    border-top: 1px solid var(--color-border-soft);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-alt);
+}
+
+.quick-chosen {
+    margin: 0 0 var(--space-2);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.quick-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.quick-controls input {
+    width: 120px;
+}
+
+.quick-hint {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--color-border-soft);
+    font-size: 0.78rem;
+    color: var(--color-text-subtle);
+}
+
+/* --- the entry control is the last thing allowed to scroll away --------- */
+
+@media (max-width: 1190px) {
+    .progress-table td.stage-cell,
+    .progress-table td.tick-cell,
+    .progress-table td.count-cell,
+    .progress-table th:last-child,
+    .progress-table td:last-child {
+        position: sticky;
+        right: 0;
+        background: var(--color-surface);
+        box-shadow: -1px 0 0 var(--color-border-soft);
+    }
+
+    tr.is-selected .progress-table td.stage-cell {
+        background: var(--color-brand-wash);
+    }
+}
+
+@media (max-width: 720px) {
+    .landing-row {
+        grid-template-columns: 1fr 1fr;
+        row-gap: var(--space-2);
+    }
+
+    .landing-progress {
+        display: none;
+    }
+
+    .review-line {
+        grid-template-columns: 1fr;
+    }
+}
+
+.paste-input {
+    width: 100%;
+    min-height: 180px;
+    margin: var(--space-4) 0 0;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+.change-list {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.change-row {
+    display: grid;
+    grid-template-columns: 70px 1fr auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border-soft);
+    font-size: 0.9rem;
+}
+
+.change-when,
+.change-scope {
+    color: var(--color-text-subtle);
+    font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   Giving the tracker tables room
+
+   A tracker page is a wide table, not an article. Holding it to the 1024px reading
+   column squeezed nine columns into 646px — the kills field wrapped under its own
+   suffix — while a third of the window sat empty on either side. Reading columns
+   are right for prose and wrong for data.
+   ========================================================================== */
+
+.workspace-main.is-trackers .workspace-content {
+    width: min(100%, 1440px);
+}
+
+/* One number leads; the supporting facts read as a quiet line beneath it, rather
+   than six equal-weight figures in a row. */
+.workspace-main.is-trackers .answer-value {
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.workspace-main.is-trackers .stat-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-3);
+    margin-top: var(--space-1);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.workspace-main.is-trackers .stat-line > span {
+    color: var(--color-border);
+}
+
+/* The kills field and its target belong on one line — the target is context for the
+   number, and wrapping it underneath read as a second field. */
+.count-cell {
+    white-space: nowrap;
+}
+
+.count-cell .tracker-count {
+    width: 5.5rem;
+    text-align: right;
+}
+
+.count-cell .cell-muted {
+    margin-left: 4px;
+}
+
+/* Flags are secondary to the entry controls, so they get the quiet end of the row
+   and stop competing with Stage and Kills for attention. */
+.progress-table td.is-num .flag-toggle {
+    min-width: 2.5rem;
+}
+
+.progress-table th,
+.progress-table td {
+    vertical-align: middle;
+}
+
+/* The table fills the room it was given; a data table that stops halfway across a
+   wide window looks broken, and the columns pay for it. */
+.workspace-main.is-trackers .progress-table table {
+    width: 100%;
+}
+
+.workspace-main.is-trackers .progress-filters {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) minmax(140px, 220px) auto;
+    align-items: end;
+    gap: var(--space-4);
+}

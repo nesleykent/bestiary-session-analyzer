@@ -84,14 +84,19 @@ function buildEstimateRow(entry) {
                     data-monster-name="${escapeAttribute(monster.name)}"
                     ${entry.huntId ? `data-hunt-id="${escapeAttribute(entry.huntId)}"` : ""}
                     min="0"
-                    value="${monster.totalKills || ""}"
-                    placeholder="Enter kills"
+                    value="${monster.typedKills || ""}"
+                    placeholder="${monster.isKillFloor ? `≥ ${formatNumber(monster.totalKills)}` : "Enter kills"}"
+                    title="${monster.isKillFloor ? "From the tile you picked in the Bestiary — type the exact count if you have it" : ""}"
                 >
             </td>
             <td>${formatNumber(monster.killsToUnlock)}</td>
             <td>${formatKillRate(monster.killRate)}</td>
-            <td>${formatNumber(monster.remainingKills)}</td>
-            <td>${formatTime(monster.timeRemainingMinutes)}</td>
+            <td>${monster.isKillFloor
+                ? `at most ${formatNumber(monster.remainingKills)}`
+                : formatNumber(monster.remainingKills)}</td>
+            <td>${monster.isKillFloor
+                ? `at most ${formatTime(monster.timeRemainingMinutes)}`
+                : formatTime(monster.timeRemainingMinutes)}</td>
             <td>${formatCharmsPerHour(monster.charmsPerHour)}</td>
         </tr>
     `;

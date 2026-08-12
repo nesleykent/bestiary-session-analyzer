@@ -51,9 +51,15 @@ export function plainText(value) {
     return escapeText(stripped);
 }
 
-export function trackerCountCell(row, field, suffix) {
+export function trackerCountCell(row, field, suffix, options = {}) {
+    const { placeholder = "0", title = "", valueField = field } = options;
+    // The field shows only what the player typed. Showing a derived floor here would
+    // let the capture-on-view-change path write that floor back as if it were an
+    // exact count, turning "at least 250" into a precise 250 nobody ever read.
+    const value = row[valueField] || "";
+
     return `
-        <td class="count-cell">
+        <td class="count-cell${row.known === false ? " is-unknown" : ""}">
             <input
                 class="tracker-count"
                 type="number"
@@ -61,11 +67,96 @@ export function trackerCountCell(row, field, suffix) {
                 inputmode="numeric"
                 data-tracker-item="${escapeAttribute(row.key)}"
                 data-tracker-field="${escapeAttribute(field)}"
-                value="${row[field] || ""}"
-                placeholder="0"
+                value="${value}"
+                placeholder="${escapeAttribute(placeholder)}"
+                title="${escapeAttribute(title)}"
                 aria-label="${escapeAttribute(field)} for ${escapeAttribute(row.name)}"
             >
             ${suffix ? `<span class="cell-muted">${escapeText(suffix)}</span>` : ""}
+        </td>
+    `;
+}
+
+/**
+ * The control that mirrors a client tile: a small segmented set showing exactly the
+ * states the game shows, so the player picks what they are looking at instead of
+ * translating it into a number the client never displayed.
+ *
+ * `stages` is ordered as the client orders them. An unset control shows nothing
+ * selected, which is how "not recorded yet" looks.
+ */
+export function trackerStageCell(row, field, stages, options = {}) {
+    const { label = "" } = options;
+    const current = row[field] ?? 0;
+
+    return `
+        <td class="stage-cell">
+            <div class="stage-set" role="radiogroup" aria-label="${escapeAttribute(label || field)} for ${escapeAttribute(row.name)}">
+                ${stages.map((stage) => `
+                    <button
+                        class="stage-option${current === stage.value ? " is-on" : ""}"
+                        type="button"
+                        role="radio"
+                        aria-checked="${current === stage.value ? "true" : "false"}"
+                        title="${escapeAttribute(stage.title ?? stage.label)}"
+                        data-tracker-item="${escapeAttribute(row.key)}"
+                        data-tracker-stage="${escapeAttribute(field)}"
+                        data-tracker-stage-value="${stage.value}"
+                    >${escapeText(stage.label)}</button>
+                `).join("")}
+            </div>
+        </td>
+    `;
+}
+
+/**
+ * The tick every boolean tracker uses. Three visual states, because an unmarked box
+ * that has never been reviewed is not the same claim as one confirmed empty.
+ */
+export function trackerTickCell(row, field, options = {}) {
+    const { label = "", locked = false, title = "" } = options;
+    const isOn = Boolean(row[field]);
+    const isUnknown = row.known === false;
+
+    if (locked) {
+        return `
+            <td class="tick-cell">
+                <span class="tick is-on is-locked" title="${escapeAttribute(title)}" aria-label="${escapeAttribute(label)}">
+                    <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                </span>
+            </td>
+        `;
+    }
+
+    return `
+        <td class="tick-cell">
+            <button
+                class="tick${isOn ? " is-on" : ""}${isUnknown ? " is-unknown" : ""}"
+                type="button"
+                role="checkbox"
+                aria-checked="${isOn ? "true" : (isUnknown ? "mixed" : "false")}"
+                data-tracker-item="${escapeAttribute(row.key)}"
+                data-tracker-flag="${escapeAttribute(field)}"
+                aria-label="${escapeAttribute(label || field)} for ${escapeAttribute(row.name)}"
+                title="${escapeAttribute(isUnknown ? "Not recorded yet" : (isOn ? "Yes" : "No"))}"
+            >${isOn
+                ? '<span class="material-symbols-outlined" aria-hidden="true">check</span>'
+                : (isUnknown ? "&mdash;" : "")}</button>
+        </td>
+    `;
+}
+
+/** The per-row select box that drives the bulk bar. */
+export function trackerSelectCell(row, isSelected) {
+    return `
+        <td class="select-cell">
+            <input
+                class="row-select"
+                type="checkbox"
+                data-tracker-select="${escapeAttribute(row.key)}"
+                ${isSelected ? "checked" : ""}
+                aria-label="Select ${escapeAttribute(row.name)}"
+            >
         </td>
     `;
 }
@@ -121,6 +212,10 @@ export function trackerFlagCell(row, field, options = {}) {
 
 function buildHead(columns, sort) {
     return `<tr>${columns.map((column) => {
+        if (column.noSort) {
+            return `<th class="select-cell"><span class="sr-only">${escapeText(column.srLabel ?? "")}</span></th>`;
+        }
+
         const isSorted = sort.key === column.key;
         const nextDirection = isSorted && sort.direction === "asc" ? "desc" : "asc";
         const indicator = isSorted
@@ -226,16 +321,51 @@ function buildChecks(checks, filters) {
     `;
 }
 
+/**
+ * Search stays out in the open because it is the control people reach for; the rest
+ * fold behind one disclosure that says how many are active.
+ *
+ * This is the "include just what's necessary" call, not a removal: every filter is
+ * still there, one click away, and an active one is announced rather than hidden. The
+ * status strip stays above the table because it is how the list is read, not a
+ * refinement of it.
+ */
+function countActiveFilters(facets, filters, statusFacet) {
+    return facets.filter((facet) => {
+        if (facet === statusFacet || facet.kind === "search") {
+            return false;
+        }
+
+        const value = filters[facet.key];
+
+        return facet.kind === "check" ? Boolean(value) : value !== undefined && value !== "all";
+    }).length;
+}
+
 function buildFilters(facets, filters, items) {
+    const statusFacet = facets.find((facet) => facet.kind === "segmented" && facet.isStatus);
+    const searchFacet = facets.find((facet) => facet.kind === "search");
     const checks = facets.filter((facet) => facet.kind === "check");
-    const viewFacets = facets.filter((facet) => facet.kind === "segmented");
-    const rest = facets.filter((facet) => facet.kind !== "check" && facet.kind !== "segmented");
+    const rest = facets.filter((facet) => facet !== statusFacet && facet !== searchFacet && facet.kind !== "check");
+    const active = countActiveFilters(facets, filters, statusFacet);
 
     return `
-        ${viewFacets.length ? `<div class="progress-view-tabs">${viewFacets.map((facet) => buildFacet(facet, filters, items)).join("")}</div>` : ""}
-        <div class="progress-filters">
-            ${rest.map((facet) => buildFacet(facet, filters, items)).join("")}
-            ${buildChecks(checks, filters)}
+        ${statusFacet ? `<div class="progress-view-tabs">${buildFacet(statusFacet, filters, items)}</div>` : ""}
+
+        <div class="filter-bar">
+            ${searchFacet ? buildFacet(searchFacet, filters, items) : ""}
+
+            ${rest.length || checks.length ? `
+                <details class="filter-disclosure"${active ? " open" : ""}>
+                    <summary>
+                        Filters${active ? `<span class="filter-count">${active}</span>` : ""}
+                    </summary>
+                    <div class="progress-filters">
+                        ${rest.map((facet) => buildFacet(facet, filters, items)).join("")}
+                        ${buildChecks(checks, filters)}
+                    </div>
+                </details>
+            ` : ""}
         </div>
     `;
 }
@@ -276,8 +406,93 @@ function buildTotals(totals) {
     `;
 }
 
+/**
+ * The row, as one string. Exported so a single change can repaint its own row
+ * instead of the whole table — which is what keeps focus, selection and scroll
+ * where the player left them while marking a long list.
+ */
+export function buildTrackerRowHtml(row, columns, options = {}) {
+    const { selectedKey = "", isSelected = false, selectable = false } = options;
+
+    return `${selectable ? trackerSelectCell(row, isSelected) : ""}${
+        columns.map((column) => column.cell(row)).join("")
+    }`;
+}
+
+export function patchTrackerRow(container, row, columns, options = {}) {
+    const tr = container.querySelector(`tr[data-tracker-row="${CSS.escape(row.key)}"]`);
+
+    if (!tr) {
+        return null;
+    }
+
+    tr.className = rowClassName(row, options);
+    tr.innerHTML = buildTrackerRowHtml(row, columns, options);
+
+    return tr;
+}
+
+function rowClassName(row, { selectedKey = "", isSelected = false } = {}) {
+    return [
+        `is-${row.status}`,
+        row.known === false ? "is-unrecorded" : "",
+        row.key === selectedKey ? "is-peek-selected" : "",
+        isSelected ? "is-selected" : ""
+    ].filter(Boolean).join(" ");
+}
+
+/**
+ * The bulk bar, shown only while rows are selected: selector and count on the
+ * left, verbs in the middle, dismiss on the right.
+ */
+function buildBulkBar(view) {
+    const { selection, bulkActions = [], rows } = view;
+    const count = selection.size;
+
+    if (!count || !bulkActions.length) {
+        return "";
+    }
+
+    const allShown = rows.length > 0 && rows.every((row) => selection.has(row.key));
+
+    return `
+        <div class="bulk-bar" role="region" aria-label="Bulk actions">
+            <label class="bulk-select">
+                <input type="checkbox" id="trackerSelectAll" ${allShown ? "checked" : ""}>
+                <span>${formatNumber(count)} selected</span>
+            </label>
+
+            <div class="bulk-actions">
+                ${bulkActions.map((action) => `
+                    <button class="row-action" type="button" data-tracker-bulk="${escapeAttribute(action.key)}">${escapeText(action.label)}</button>
+                `).join("")}
+            </div>
+
+            <button class="icon-button" type="button" id="trackerClearSelection" aria-label="Clear selection">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+        </div>
+    `;
+}
+
 export function renderTracker(container, view) {
-    const { tracker, rows, columns, page, sort, filters, items, totals, selectedKey = "" } = view;
+    const {
+        tracker,
+        rows,
+        columns,
+        page,
+        sort,
+        filters,
+        items,
+        totals,
+        selectedKey = "",
+        selection = new Set(),
+        bulkActions = []
+    } = view;
+    const selectable = bulkActions.length > 0;
+    const headColumns = selectable
+        ? [{ key: "select", label: "", srLabel: "Select", isNumeric: false, noSort: true }, ...columns]
+        : columns;
 
     container.className = "results-shell";
     container.innerHTML = `
@@ -287,13 +502,14 @@ export function renderTracker(container, view) {
             <h3 class="subsection-title" id="trackerTableTitle">${escapeText(tracker.tableTitle ?? tracker.label)}</h3>
 
             ${buildFilters(tracker.facets, filters, items)}
+            ${buildBulkBar({ selection, bulkActions, rows })}
 
             ${rows.length ? `
                 <div class="table-container progress-table">
-                    <table>
-                        <thead>${buildHead(columns, sort)}</thead>
-                        <tbody>${rows.map((row) => `<tr class="is-${escapeAttribute(row.status)}${row.key === selectedKey ? " is-peek-selected" : ""}" data-tracker-row="${escapeAttribute(row.key)}">${
-                            columns.map((column) => column.cell(row)).join("")
+                    <table role="grid" aria-rowcount="${page.total}">
+                        <thead>${buildHead(headColumns, sort)}</thead>
+                        <tbody>${rows.map((row) => `<tr class="${rowClassName(row, { selectedKey, isSelected: selection.has(row.key) })}" data-tracker-row="${escapeAttribute(row.key)}">${
+                            buildTrackerRowHtml(row, columns, { selectedKey, isSelected: selection.has(row.key), selectable })
                         }</tr>`).join("")}</tbody>
                     </table>
                 </div>
@@ -305,16 +521,22 @@ export function renderTracker(container, view) {
         </section>
 
         ${tracker.transfer ? `
-            <div class="action-row">
-                <button class="btn btn-secondary" id="trackerImportButton" type="button">Import Progress</button>
-                <button class="btn btn-secondary" id="trackerExportButton" type="button">Export CSV</button>
-                <input class="sr-only" id="trackerImportInput" type="file" accept=".csv,.json,text/csv,application/json" tabindex="-1" aria-hidden="true">
-            </div>
+            <details class="filter-disclosure transfer-disclosure">
+                <summary>Bring progress in, or take it out</summary>
 
-            <p class="helper-text">
-                Import accepts the CSV layout this tracker exports. Only your own progress is read &mdash; points,
-                thresholds and categories always come from the game data.
-            </p>
+                <div class="action-row">
+                    <button class="btn btn-secondary" id="trackerPasteButton" type="button">Paste a list</button>
+                    <button class="btn btn-secondary" id="trackerImportButton" type="button">Import file</button>
+                    <button class="btn btn-secondary" id="trackerExportButton" type="button">Export CSV</button>
+                    <input class="sr-only" id="trackerImportInput" type="file" accept=".csv,.json,text/csv,application/json" tabindex="-1" aria-hidden="true">
+                </div>
+
+                <p class="helper-text">
+                    Paste accepts a column of names copied from anywhere. Import accepts the CSV layout this tracker
+                    exports. Either way you see what will change before it is saved, and only your own progress is read
+                    &mdash; points, thresholds and categories always come from the game data.
+                </p>
+            </details>
         ` : ""}
     `;
 }
