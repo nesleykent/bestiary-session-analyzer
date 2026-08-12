@@ -1,6 +1,8 @@
 # Tracker Data Entry UX
 
-> Superseded on 2026-08-11 by the [source-screen pass re-audit](audits/tracker-entry-rethink-2026-08-11/README.md).
+> Superseded on 2026-08-11 by the [source-screen pass re-audit](audits/tracker-entry-rethink-2026-08-11/README.md),
+> which is extended by the [per-tracker journey maps, derivation ledger and concrete
+> flows](audits/tracker-entry-flows-2026-08-11/README.md).
 
 The previous proposal treated a row or field as the unit of work. That still required the player to process the app's catalog instead of transcribing a bounded surface from Tibia, and it incorrectly bundled Bestiary kills, Echo Warden, and Animus Mastery into one review task.
 

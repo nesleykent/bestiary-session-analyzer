@@ -40,7 +40,7 @@ function normalizeCreature(creature) {
 }
 
 export async function loadBestiaryData() {
-    const response = await fetch("./data/bestiary.json?v=3");
+    const response = await fetch("./data/bestiary.json");
 
     if (!response.ok) {
         throw new Error("Failed to load Bestiary data.");

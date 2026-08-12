@@ -1,5 +1,6 @@
 import { restoreTrackerProgress } from "./tracker-progress.js";
-import { getTrackerEntryDefaults } from "../trackers/registry.js";
+import { restoreChangeLog } from "./change-log.js";
+import { getTrackerEntryDefaults, getTrackerIds } from "../trackers/registry.js";
 
 let huntSequence = 0;
 
@@ -43,6 +44,8 @@ export function createWorkspace() {
     return {
         mode: "trackers",
         trackerProgress: {},
+        // The undo trail. Empty for a new workspace.
+        changeLog: [],
         hunts: [hunt],
         activeHuntId: hunt.id,
         bestiaryView: "session",
@@ -188,6 +191,7 @@ export function restoreWorkspace(savedState) {
             getTrackerEntryDefaults(),
             savedState?.bestiaryProgress
         ),
+        changeLog: restoreChangeLog(savedState?.changeLog, getTrackerIds()),
         hunts,
         activeHuntId: hunts[savedActiveIndex === -1 ? 0 : savedActiveIndex].id,
         bestiaryView: normalizeView(savedState?.bestiaryView, BESTIARY_VIEWS),

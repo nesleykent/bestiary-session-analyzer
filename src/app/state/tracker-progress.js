@@ -35,6 +35,53 @@ export function isDefaultEntry(entryDefaults, entry) {
     return Object.entries(entryDefaults).every(([field, fallback]) => entry[field] === fallback);
 }
 
+/**
+ * Fields that say nothing about the character's progress, so they must not make an
+ * item count as answered. Bookmarking a creature is a note to self, not a claim
+ * that you have killed it.
+ */
+const UNANSWERED_FIELDS = new Set(["bookmark"]);
+
+/**
+ * Every tracker carries this. It is what makes "I checked, and the answer is no"
+ * storable per item: an entry holding only `reviewed: true` differs from the
+ * defaults, so it survives, while an untouched item still stores nothing at all.
+ *
+ * This replaced a whole layer of units, pages and confirmation screens whose only
+ * job was to express the same fact one screenful at a time.
+ */
+export const REVIEWED_FIELD = "reviewed";
+
+/**
+ * Has the player told us anything about this item?
+ *
+ * Three states, all derived from the entry alone:
+ *
+ *   a value        answered — 412 kills, earned, stage 2
+ *   reviewed only  checked, and the answer is no
+ *   nothing        not recorded yet
+ */
+export function isAnsweredEntry(entryDefaults, entry) {
+    return Object.entries(entryDefaults)
+        .some(([field, fallback]) => !UNANSWERED_FIELDS.has(field) && field !== REVIEWED_FIELD && entry[field] !== fallback);
+}
+
+/** Answered, or explicitly checked and found absent. */
+export function isKnownEntry(entryDefaults, entry) {
+    return isAnsweredEntry(entryDefaults, entry) || Boolean(entry[REVIEWED_FIELD]);
+}
+
+export function hasStoredEntry(progress, trackerId, itemKey) {
+    return Object.prototype.hasOwnProperty.call(getTrackerRecord(progress, trackerId), itemKey);
+}
+
+/** The stored entry, or null — what an undo needs in order to restore exactly. */
+export function getStoredEntry(progress, trackerId, itemKey) {
+    const stored = getTrackerRecord(progress, trackerId)[itemKey];
+
+    return stored ? { ...stored } : null;
+}
+
 export function createTrackerProgress() {
     return {};
 }

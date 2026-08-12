@@ -1,6 +1,7 @@
 import { loadQuestsData } from "../services/quests-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerFlagCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Quests: boolean progress, grouped by the questlog entry they appear under. */
 
@@ -8,6 +9,7 @@ export function deriveQuestRow(quest, entry) {
     return {
         key: quest.Name,
         name: quest.Name,
+        unit: quest.questlog || "Ungrouped",
         rewards: quest.rewards,
         questlog: quest.questlog,
         completed: entry.completed,
@@ -24,39 +26,27 @@ export const questsTracker = {
     resultsTitle: "Quest Progress",
     resultsCopy: "Every quest in the game with what it rewards. Several quests can share one questlog entry, so the questlog is shown alongside.",
     progress: "boolean",
-    entryDefaults: { completed: false, bookmark: false },
+    entryDefaults: { completed: false, bookmark: false, reviewed: false },
+    tickField: "completed",
     loadItems: loadQuestsData,
     itemKey: (quest) => quest.Name,
     derive: deriveQuestRow,
     defaultSortKey: "name",
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "name",
-            label: "Quest",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>`
-        },
-        {
-            key: "rewards",
-            label: "Rewards",
-            isNumeric: false,
-            cell: (row) => `<td class="spoiler-cell">${plainText(row.rewards) || '<span class="cell-muted">&mdash;</span>'}</td>`
-        },
-        {
-            key: "questlog",
-            label: "Questlog",
-            isNumeric: false,
-            cell: (row) => `<td class="cell-muted">${escapeText(row.questlog) || "&mdash;"}</td>`
-        },
-        {
-            key: "completed",
-            label: "Completed",
-            isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "completed", { label: row.completed ? "Yes" : "No" })
-        }
+
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "questlog", label: "Questlog" }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: row.questlog ? `<span>${escapeText(row.questlog)}</span>` : "",
+        body: plainText(row.rewards),
+        control: tickControl(row, "completed", { yesLabel: "Done", noLabel: "Not done" }),
+        extras: starControl(row)
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Quest, questlog or reward", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },
@@ -68,17 +58,7 @@ export const questsTracker = {
             options: (items) => [...new Set(items.map((item) => item.questlog).filter(Boolean))].sort().map((name) => ({ value: name, label: name })),
             matches: (row, value) => row.questlog === value
         },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Open" },
-                { value: "done", label: "Completed" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Completed", hasInProgress: false }),
         { key: "bookmarkedOnly", kind: "check", label: "Bookmarked", matches: (row) => row.bookmark }
     ],
 
@@ -101,7 +81,8 @@ export const questsTracker = {
                 note: `of ${formatNumber(rows.length)} in the game &mdash; ${percent.toFixed(1)}% complete.`
             },
             stats: [
-                `${formatNumber(rows.length - done)} still open`,
+                `${formatNumber(rows.filter((row) => row.known && !row.completed).length)} not started`,
+                `${formatNumber(rows.filter((row) => !row.known).length)} not recorded yet`,
                 `${formatNumber(doneLogs)} of ${formatNumber(questlogs.size)} questlogs finished`
             ]
         };

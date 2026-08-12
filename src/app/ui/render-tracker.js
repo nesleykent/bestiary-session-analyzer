@@ -1,146 +1,23 @@
 import { formatNumber } from "../utils/formatters.js";
 import { buildAnswer, buildEmptyState, buildStatLine, escapeAttribute } from "./render-blocks.js";
+import { escapeText, plainText, selectControl } from "./render-controls.js";
 
 /**
- * One table for every tracker. A tracker definition supplies its columns, its
- * facets and its totals; everything structural — sorting, filtering, paging,
- * the headline treatment — lives here exactly once.
+ * One card grid for every tracker.
  *
- * The cell helpers below are the only way a definition should emit an
- * interactive control, because the generic controller binds on these data
- * attributes.
- */
-
-export const PAGE_SIZES = [30, 60, 120, 0];
-
-/**
- * Dataset text is third-party and, in the achievements data, contains real HTML
- * anchors. Everything user-visible goes through here before reaching innerHTML.
- */
-export function escapeText(value) {
-    return escapeAttribute(value);
-}
-
-const HTML_ENTITIES = {
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&quot;": '"',
-    "&#39;": "'",
-    "&apos;": "'",
-    "&nbsp;": " "
-};
-
-/**
- * Renders third-party prose that contains markup as readable text.
+ * It was a table for a long time, and a table was the wrong container: hundreds of
+ * rows of five 30px buttons is a spreadsheet, and the question a player actually
+ * arrives with — what is close, what is worth hunting — cannot be read off one. Every
+ * comparable Tibia tool uses cards, and they are right.
  *
- * Escaping alone is safe but shows the tags, and ten achievement spoilers carry
- * anchors — the reader wants "Defeat Scarlett Etzel in the Grave Danger Quest",
- * not the raw element. So tags are dropped, the link text kept, and the result is
- * still escaped, which is what makes this safe regardless of what the tag
- * stripping missed.
+ * A tracker definition supplies a `card(row)` descriptor: title, meta, optional body
+ * text, the primary control, a footer, and any secondary chips. Everything structural
+ * — filtering, sorting, paging, selection, the headline — lives here exactly once.
  */
-export function plainText(value) {
-    const stripped = String(value ?? "")
-        .replace(/<br\s*\/?>/gi, " ")
-        .replace(/<[^>]*>/g, "")
-        .replace(/&[a-z#0-9]+;/gi, (entity) => HTML_ENTITIES[entity.toLowerCase()] ?? entity)
-        .replace(/\s+/g, " ")
-        .trim();
 
-    return escapeText(stripped);
-}
+export { escapeText, plainText };
 
-export function trackerCountCell(row, field, suffix) {
-    return `
-        <td class="count-cell">
-            <input
-                class="tracker-count"
-                type="number"
-                min="0"
-                inputmode="numeric"
-                data-tracker-item="${escapeAttribute(row.key)}"
-                data-tracker-field="${escapeAttribute(field)}"
-                value="${row[field] || ""}"
-                placeholder="0"
-                aria-label="${escapeAttribute(field)} for ${escapeAttribute(row.name)}"
-            >
-            ${suffix ? `<span class="cell-muted">${escapeText(suffix)}</span>` : ""}
-        </td>
-    `;
-}
-
-export function trackerStarCell(row, field = "bookmark") {
-    return `
-        <td class="star-cell">
-            <button
-                class="star-toggle${row[field] ? " is-on" : ""}"
-                type="button"
-                data-tracker-item="${escapeAttribute(row.key)}"
-                data-tracker-flag="${escapeAttribute(field)}"
-                aria-pressed="${row[field] ? "true" : "false"}"
-                aria-label="Bookmark ${escapeAttribute(row.name)}"
-            ><span class="material-symbols-outlined" aria-hidden="true">${row[field] ? "star" : "star_border"}</span></button>
-        </td>
-    `;
-}
-
-/**
- * A claimable value — Echo Warden points, an achievement's own points. `locked`
- * renders it inert, which is how a value derived from another tracker is shown
- * without pretending it is editable here.
- */
-export function trackerFlagCell(row, field, options = {}) {
-    const { label = "", eligible = true, locked = false, title = "" } = options;
-
-    if (!eligible) {
-        return '<td class="is-num"><span class="cell-muted">&mdash;</span></td>';
-    }
-
-    if (locked) {
-        return `
-            <td class="is-num">
-                <span class="flag-toggle is-on is-locked" title="${escapeAttribute(title)}">${escapeText(label)}</span>
-            </td>
-        `;
-    }
-
-    return `
-        <td class="is-num">
-            <button
-                class="flag-toggle${row[field] ? " is-on" : ""}"
-                type="button"
-                data-tracker-item="${escapeAttribute(row.key)}"
-                data-tracker-flag="${escapeAttribute(field)}"
-                aria-pressed="${row[field] ? "true" : "false"}"
-                aria-label="${escapeAttribute(field)} for ${escapeAttribute(row.name)}"
-            >${escapeText(label)}</button>
-        </td>
-    `;
-}
-
-function buildHead(columns, sort) {
-    return `<tr>${columns.map((column) => {
-        const isSorted = sort.key === column.key;
-        const nextDirection = isSorted && sort.direction === "asc" ? "desc" : "asc";
-        const indicator = isSorted
-            ? `<span class="material-symbols-outlined" aria-hidden="true">${sort.direction === "asc" ? "arrow_upward" : "arrow_downward"}</span>`
-            : "";
-        const label = column.label || column.srLabel || "";
-
-        return `
-            <th class="${column.isNumeric ? "is-num" : ""}${isSorted ? " is-sorted" : ""}">
-                <button
-                    class="column-sort"
-                    type="button"
-                    data-tracker-sort="${escapeAttribute(column.key)}"
-                    data-tracker-direction="${nextDirection}"
-                    aria-label="Sort by ${escapeAttribute(label || column.key)}"
-                >${escapeText(column.label ?? "")}${column.mark ?? ""}<span class="sort-mark">${indicator}</span></button>
-            </th>
-        `;
-    }).join("")}</tr>`;
-}
+export const PAGE_SIZES = [24, 48, 96, 0];
 
 function buildFacet(facet, filters, items) {
     const value = filters[facet.key];
@@ -164,14 +41,12 @@ function buildFacet(facet, filters, items) {
     }
 
     if (facet.kind === "select") {
-        const options = facet.options(items);
-
         return `
             <div>
                 <label class="input-label" for="${id}">${escapeText(facet.label)}</label>
                 <select id="${id}" class="progress-select" data-tracker-facet="${escapeAttribute(facet.key)}">
                     <option value="all"${value === "all" ? " selected" : ""}>${escapeText(facet.allLabel ?? "All")}</option>
-                    ${options.map((option) => `
+                    ${facet.options(items).map((option) => `
                         <option value="${escapeAttribute(option.value)}"${String(value) === String(option.value) ? " selected" : ""}>${escapeText(option.label)}</option>
                     `).join("")}
                 </select>
@@ -181,19 +56,16 @@ function buildFacet(facet, filters, items) {
 
     if (facet.kind === "segmented") {
         return `
-            <div>
-                <span class="input-label" id="${id}Label">${escapeText(facet.label)}</span>
-                <div class="segmented" role="group" aria-labelledby="${id}Label">
-                    ${facet.options().map((option) => `
-                        <button
-                            class="segmented-button${String(value) === String(option.value) ? " is-selected" : ""}"
-                            type="button"
-                            data-tracker-facet="${escapeAttribute(facet.key)}"
-                            data-tracker-facet-value="${escapeAttribute(option.value)}"
-                            aria-pressed="${String(value) === String(option.value) ? "true" : "false"}"
-                        >${escapeText(option.label)}</button>
-                    `).join("")}
-                </div>
+            <div class="segmented" role="group" aria-label="${escapeAttribute(facet.label)}">
+                ${facet.options().map((option) => `
+                    <button
+                        class="segmented-button${String(value) === String(option.value) ? " is-selected" : ""}"
+                        type="button"
+                        data-tracker-facet="${escapeAttribute(facet.key)}"
+                        data-tracker-facet-value="${escapeAttribute(option.value)}"
+                        aria-pressed="${String(value) === String(option.value) ? "true" : "false"}"
+                    >${escapeText(option.label)}</button>
+                `).join("")}
             </div>
         `;
     }
@@ -226,18 +98,132 @@ function buildChecks(checks, filters) {
     `;
 }
 
-function buildFilters(facets, filters, items) {
-    const checks = facets.filter((facet) => facet.kind === "check");
-    const viewFacets = facets.filter((facet) => facet.kind === "segmented");
-    const rest = facets.filter((facet) => facet.kind !== "check" && facet.kind !== "segmented");
+/**
+ * Search and sort stay in the open because they are what people reach for; the rest
+ * fold behind one control that says how many are active. Folded, never removed.
+ */
+function buildToolbar(tracker, filters, items, sort) {
+    const statusFacet = tracker.facets.find((facet) => facet.kind === "segmented" && facet.isStatus);
+    const searchFacet = tracker.facets.find((facet) => facet.kind === "search");
+    const checks = tracker.facets.filter((facet) => facet.kind === "check");
+    const rest = tracker.facets.filter((facet) => facet !== statusFacet && facet !== searchFacet && facet.kind !== "check");
+    const active = rest.concat(checks).filter((facet) => {
+        const value = filters[facet.key];
+
+        return facet.kind === "check" ? Boolean(value) : value !== undefined && value !== "all";
+    }).length;
 
     return `
-        ${viewFacets.length ? `<div class="progress-view-tabs">${viewFacets.map((facet) => buildFacet(facet, filters, items)).join("")}</div>` : ""}
-        <div class="progress-filters">
-            ${rest.map((facet) => buildFacet(facet, filters, items)).join("")}
-            ${buildChecks(checks, filters)}
+        ${statusFacet ? buildFacet(statusFacet, filters, items) : ""}
+
+        <div class="toolbar">
+            ${searchFacet ? buildFacet(searchFacet, filters, items) : ""}
+
+            <div>
+                <label class="input-label" for="trackerSort">Sort by</label>
+                <select id="trackerSort" class="progress-select">
+                    ${(tracker.sortOptions ?? []).map((option) => `
+                        <option value="${escapeAttribute(option.key)}"${sort.key === option.key ? " selected" : ""}>${escapeText(option.label)}</option>
+                    `).join("")}
+                </select>
+            </div>
+
+            ${rest.length || checks.length ? `
+                <details class="filter-disclosure"${active ? " open" : ""}>
+                    <summary>
+                        <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+                        Filters${active ? `<span class="filter-count">${active}</span>` : ""}
+                    </summary>
+                    <div class="progress-filters">
+                        ${rest.map((facet) => buildFacet(facet, filters, items)).join("")}
+                        ${buildChecks(checks, filters)}
+                    </div>
+                </details>
+            ` : ""}
         </div>
     `;
+}
+
+function buildBulkBar(view) {
+    const { selection, bulkActions = [], rows } = view;
+
+    if (!selection.size || !bulkActions.length) {
+        return "";
+    }
+
+    const allShown = rows.length > 0 && rows.every((row) => selection.has(row.key));
+
+    return `
+        <div class="bulk-bar" role="region" aria-label="Bulk actions">
+            <label class="bulk-select">
+                <input type="checkbox" id="trackerSelectAll" ${allShown ? "checked" : ""}>
+                <span>${formatNumber(selection.size)} selected</span>
+            </label>
+
+            <div class="bulk-actions">
+                ${bulkActions.map((action) => `
+                    <button class="row-action" type="button" data-tracker-bulk="${escapeAttribute(action.key)}">${escapeText(action.label)}</button>
+                `).join("")}
+            </div>
+
+            <button class="icon-button" type="button" id="trackerClearSelection" aria-label="Clear selection">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+        </div>
+    `;
+}
+
+function cardClassName(row, isSelected) {
+    return [
+        "progress-card",
+        row.status ? `is-${row.status}` : "",
+        row.answered ? "is-answered" : "",
+        row.known === false ? "is-unrecorded" : "",
+        isSelected ? "is-selected" : ""
+    ].filter(Boolean).join(" ");
+}
+
+/** One card. Exported so a single change can repaint its own card in place. */
+export function buildCardHtml(tracker, row, options = {}) {
+    const { selectable = false, isSelected = false } = options;
+    const card = tracker.card(row);
+
+    return `
+        <div class="card-head">
+            ${selectable ? selectControl(row, isSelected) : ""}
+            <div class="card-title">${card.title}</div>
+            ${card.action ?? ""}
+        </div>
+
+        ${card.meta ? `<div class="card-meta">${card.meta}</div>` : ""}
+        ${card.body ? `<p class="card-body">${card.body}</p>` : ""}
+
+        <div class="card-control">${card.control}</div>
+
+        <div class="card-foot">
+            <span>${card.status ?? ""}</span>
+            ${card.extras ? `<span class="card-extras">${card.extras}</span>` : ""}
+        </div>
+
+        ${typeof row.progress === "number" ? `
+            <span class="card-bar" aria-hidden="true">
+                <span style="width: ${Math.round(Math.min(1, Math.max(0, row.progress)) * 100)}%"></span>
+            </span>
+        ` : ""}
+    `;
+}
+
+export function patchTrackerCard(container, tracker, row, options = {}) {
+    const card = container.querySelector(`[data-tracker-row="${CSS.escape(row.key)}"]`);
+
+    if (!card) {
+        return null;
+    }
+
+    card.className = cardClassName(row, options.isSelected);
+    card.innerHTML = buildCardHtml(tracker, row, options);
+
+    return card;
 }
 
 function buildPager(page) {
@@ -251,7 +237,7 @@ function buildPager(page) {
                 Showing ${formatNumber(page.from)}&ndash;${formatNumber(page.to)} of ${formatNumber(page.total)}
             </span>
 
-            <div class="pager-sizes" role="group" aria-label="Rows per page">
+            <div class="pager-sizes" role="group" aria-label="Cards per page">
                 ${PAGE_SIZES.map((size) => `
                     <button
                         class="row-action${page.size === size ? " is-on" : ""}"
@@ -269,33 +255,41 @@ function buildPager(page) {
     `;
 }
 
-function buildTotals(totals) {
-    return `
-        ${buildAnswer(totals.answer.label, totals.answer.value, totals.answer.note ?? "")}
-        ${buildStatLine(totals.stats ?? [])}
-    `;
-}
-
 export function renderTracker(container, view) {
-    const { tracker, rows, columns, page, sort, filters, items, totals, selectedKey = "" } = view;
+    const {
+        tracker,
+        rows,
+        page,
+        sort,
+        filters,
+        items,
+        totals,
+        selection = new Set(),
+        bulkActions = []
+    } = view;
+    const selectable = bulkActions.length > 0;
 
     container.className = "results-shell";
     container.innerHTML = `
-        ${buildTotals(totals)}
+        ${buildAnswer(totals.answer.label, totals.answer.value, totals.answer.note ?? "")}
+        ${buildStatLine(totals.stats ?? [])}
 
-        <section class="results-section" aria-labelledby="trackerTableTitle">
-            <h3 class="subsection-title" id="trackerTableTitle">${escapeText(tracker.tableTitle ?? tracker.label)}</h3>
+        <section class="results-section" aria-labelledby="trackerGridTitle">
+            <h2 class="sr-only" id="trackerGridTitle">${escapeText(tracker.tableTitle ?? tracker.label)}</h2>
 
-            ${buildFilters(tracker.facets, filters, items)}
+            ${buildToolbar(tracker, filters, items, sort)}
+            ${buildBulkBar({ selection, bulkActions, rows })}
 
             ${rows.length ? `
-                <div class="table-container progress-table">
-                    <table>
-                        <thead>${buildHead(columns, sort)}</thead>
-                        <tbody>${rows.map((row) => `<tr class="is-${escapeAttribute(row.status)}${row.key === selectedKey ? " is-peek-selected" : ""}" data-tracker-row="${escapeAttribute(row.key)}">${
-                            columns.map((column) => column.cell(row)).join("")
-                        }</tr>`).join("")}</tbody>
-                    </table>
+                <div class="card-grid" role="list">
+                    ${rows.map((row) => `
+                        <article
+                            class="${cardClassName(row, selection.has(row.key))}"
+                            role="listitem"
+                            tabindex="-1"
+                            data-tracker-row="${escapeAttribute(row.key)}"
+                        >${buildCardHtml(tracker, row, { selectable, isSelected: selection.has(row.key) })}</article>
+                    `).join("")}
                 </div>
                 ${buildPager(page)}
             ` : buildEmptyState(
@@ -305,16 +299,22 @@ export function renderTracker(container, view) {
         </section>
 
         ${tracker.transfer ? `
-            <div class="action-row">
-                <button class="btn btn-secondary" id="trackerImportButton" type="button">Import Progress</button>
-                <button class="btn btn-secondary" id="trackerExportButton" type="button">Export CSV</button>
-                <input class="sr-only" id="trackerImportInput" type="file" accept=".csv,.json,text/csv,application/json" tabindex="-1" aria-hidden="true">
-            </div>
+            <details class="transfer-disclosure">
+                <summary>Bring progress in, or take it out</summary>
 
-            <p class="helper-text">
-                Import accepts the CSV layout this tracker exports. Only your own progress is read &mdash; points,
-                thresholds and categories always come from the game data.
-            </p>
+                <div class="action-row">
+                    <button class="btn" id="trackerPasteButton" type="button">Paste a list</button>
+                    <button class="btn" id="trackerImportButton" type="button">Import file</button>
+                    <button class="btn" id="trackerExportButton" type="button">Export CSV</button>
+                    <input class="sr-only" id="trackerImportInput" type="file" accept=".csv,.json,text/csv,application/json" tabindex="-1" aria-hidden="true">
+                </div>
+
+                <p class="helper-text">
+                    Paste accepts a column of names copied from anywhere. Import accepts the CSV layout this tracker
+                    exports. Either way you see what will change before it is saved, and only your own progress is
+                    read &mdash; points, thresholds and categories always come from the game data.
+                </p>
+            </details>
         ` : ""}
     `;
 }

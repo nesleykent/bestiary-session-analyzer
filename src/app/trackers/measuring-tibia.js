@@ -1,6 +1,7 @@
 import { loadMeasuringTibiaData } from "../services/measuring-tibia-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, trackerFlagCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, starControl, tickControl } from "../ui/render-controls.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /**
  * The Measuring Tibia tracker — the Cyclopedia Map discovery quest.
@@ -35,6 +36,7 @@ export function deriveMeasuringTibiaRow(item, entry) {
         key: item.Name,
         name: item.Name,
         area: item.area,
+        unit: item.area,
         areaAchievement: item.areaAchievement,
         areaSubareaCount: item.areaSubareaCount,
         creatureCount: item.creatureCount,
@@ -52,11 +54,13 @@ export const measuringTibiaTracker = {
     resultsTitle: "Measuring Tibia",
     resultsCopy: "The Cyclopedia Map discovery quest. Tick each subarea you have fully discovered; completing every subarea of an area earns that area's achievement, which is filled in for you under Achievements.",
     progress: "grouped-boolean",
-    entryDefaults: { discovered: false, bookmark: false },
+    entryDefaults: { discovered: false, bookmark: false, reviewed: false },
+    tickField: "discovered",
     loadItems: (loaded) => loadMeasuringTibiaData(loaded.bestiary ?? []),
     itemKey: (item) => item.Name,
     derive: deriveMeasuringTibiaRow,
     defaultSortKey: "area",
+
 
     /** Completing an area satisfies its achievement in the Achievements tracker. */
     derivesFor: "achievements",
@@ -64,39 +68,22 @@ export const measuringTibiaTracker = {
         .filter((area) => area.isComplete)
         .map((area) => area.achievement),
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "area",
-            label: "Area",
-            isNumeric: false,
-            cell: (row) => `<td class="cell-muted">${escapeText(row.area)}</td>`
-        },
-        {
-            key: "name",
-            label: "Subarea",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>`
-        },
-        {
-            key: "creatureCount",
-            label: "Bestiary Creatures",
-            isNumeric: true,
-            // 25 subareas are cities and interiors with no spawns listed, so they
-            // read as unknown rather than as zero.
-            cell: (row) => `<td class="is-num">${
-                row.creatureCount === null
-                    ? '<span class="cell-muted">&mdash;</span>'
-                    : formatNumber(row.creatureCount)
-            }</td>`
-        },
-        {
-            key: "discovered",
-            label: "Discovered",
-            isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "discovered", { label: row.discovered ? "Yes" : "No" })
-        }
+    sortOptions: [
+        { key: "area", label: "Area" },
+        { key: "name", label: "Subarea" },
+        { key: "creatureCount", label: "Bestiary creatures", isNumeric: true, descending: true }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: `
+            <span>${escapeText(row.area)}</span>
+            ${row.creatureCount === null ? "" : `<span><strong>${formatNumber(row.creatureCount)}</strong> creatures</span>`}
+        `,
+        control: tickControl(row, "discovered", { yesLabel: "Discovered", noLabel: "Not yet" }),
+        extras: starControl(row)
+    }),
+
 
     facets: [
         {
@@ -114,17 +101,7 @@ export const measuringTibiaTracker = {
             options: (items) => [...new Set(items.map((item) => item.area))].sort().map((area) => ({ value: area, label: area })),
             matches: (row, value) => row.area === value
         },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Undiscovered" },
-                { value: "done", label: "Discovered" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Discovered", hasInProgress: false }),
         { key: "bookmarkedOnly", kind: "check", label: "Bookmarked", matches: (row) => row.bookmark }
     ],
 
@@ -152,7 +129,8 @@ export const measuringTibiaTracker = {
             },
             stats: [
                 `${formatNumber(discovered)} of ${formatNumber(rows.length)} subareas discovered`,
-                `${formatNumber(rows.length - discovered)} still to explore`,
+                `${formatNumber(rows.filter((row) => row.known && !row.discovered).length)} not discovered`,
+                `${formatNumber(rows.filter((row) => !row.known).length)} not recorded yet`,
                 `${formatNumber(complete)} area achievement${complete === 1 ? "" : "s"} earned`
             ]
         };

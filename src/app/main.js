@@ -1,4 +1,4 @@
-import { parsePlayTimeMinutes, planCharmTime } from "./features/charm-plan.js?v=2";
+import { parsePlayTimeMinutes, planCharmTime } from "./features/charm-plan.js";
 import {
     aggregateAllTabsSummary,
     buildAllTabsAnalysis,
@@ -6,9 +6,9 @@ import {
     isEntryKeyForHunt
 } from "./features/hunt-comparison.js";
 import { buildOpportunityAnalysis } from "./features/opportunity-analysis.js";
-import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js?v=2";
+import { analyzeSession, recalculateProgress, summarizeBestiaryMonsters } from "./features/session-analysis.js";
 import { analyzeTaskSession, calculateTaskEstimate } from "./features/task-analysis.js";
-import { loadBestiaryData } from "./services/bestiary-repository.js?v=3";
+import { loadBestiaryData } from "./services/bestiary-repository.js";
 import {
     addHunt,
     createWorkspace,
@@ -19,33 +19,48 @@ import {
     removeHunt,
     resetHunt,
     restoreWorkspace
-} from "./state/hunt-workspace.js?v=2";
+} from "./state/hunt-workspace.js";
 import { loadWorkspaceState, saveWorkspaceState } from "./state/local-store.js";
 import {
     countTrackedEntries,
     createTrackerProgress,
     getEntry,
+    getStoredEntry,
     getTrackerRecord,
+    isAnsweredEntry,
+    isKnownEntry,
+    REVIEWED_FIELD,
     setEntry,
     toggleEntryFlag
 } from "./state/tracker-progress.js";
+
+import {
+    applyUndo,
+    createChangeLog,
+    dropChange,
+    peekChange,
+    pushChange
+} from "./state/change-log.js";
 import {
     buildTrackerExportFileName,
     exportTrackerCsv,
     importTrackerCsv,
     importTrackerJson
 } from "./state/tracker-transfer.js";
-import { bestiaryTracker } from "./trackers/bestiary.js?v=5";
+import { BESTIARY_STAGES, STAGE_COMPLETE, bestiaryTracker } from "./trackers/bestiary.js";
 import {
     buildInitialFilters,
     getTracker,
     getTrackerEntryDefaults,
     getTrackerIds,
     TRACKERS
-} from "./trackers/registry.js?v=5";
+} from "./trackers/registry.js";
 import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
-import { escapeText, renderTracker } from "./ui/render-tracker.js?v=5";
+import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
+
+import { renderPasteBox, renderTransferReview } from "./ui/render-transfer-review.js";
+import { closeQuickAdd, isQuickAddOpen, openQuickAdd } from "./ui/render-quick-add.js";
 import { buildCharmPlanResultMarkup, renderCharmPlan } from "./ui/render-charm-plan.js";
 import { renderComparison } from "./ui/render-comparison.js";
 import { renderHuntTabs } from "./ui/render-hunt-tabs.js";
@@ -74,14 +89,12 @@ const elements = {
     huntWorkspaceActions: document.getElementById("huntWorkspaceActions"),
     appAlert: document.getElementById("appAlert"),
     inputSection: document.getElementById("inputSection"),
-    modeBestiaryButton: document.getElementById("modeBestiaryButton"),
-    modeProgressButton: document.getElementById("modeProgressButton"),
     respawnModeBlock: document.getElementById("respawnModeBlock"),
     respawnModeHint: document.getElementById("respawnModeHint"),
     sessionRapidButton: document.getElementById("sessionRapidButton"),
     sessionRegularButton: document.getElementById("sessionRegularButton"),
-    modeTasksButton: document.getElementById("modeTasksButton"),
     newSessionButton: document.getElementById("newSessionButton"),
+    recordProgressButton: document.getElementById("recordProgressButton"),
     output: document.getElementById("output"),
     pasteLogButton: document.getElementById("pasteLogButton"),
     processLogButton: document.getElementById("processLogButton"),
@@ -97,7 +110,11 @@ const elements = {
     sidebarOpenButton: document.getElementById("sidebarOpenButton"),
     sidebarScrim: document.getElementById("sidebarScrim"),
     sidebarSearchButton: document.getElementById("sidebarSearchButton"),
+    sidebarRecordButton: document.getElementById("sidebarRecordButton"),
+    sectionHeading: document.querySelector("#analysisSection .section-heading"),
+    recentChangesButton: document.getElementById("recentChangesButton"),
     srStatus: document.getElementById("srStatus"),
+    undoBar: document.getElementById("undoBar"),
     workspaceMain: document.getElementById("workspaceMain")
 };
 
@@ -158,6 +175,8 @@ const state = {
     // Tracker progress is user data and IS persisted, keyed by tracker id. Sort,
     // filters and paging are view state and are deliberately not.
     trackerProgress: {},
+    // The undo trail, persisted with the record.
+    changeLog: [],
     trackerItems: {},
     activeTrackerId: TRACKERS[0].id,
     trackerSort: {},
@@ -165,6 +184,15 @@ const state = {
     trackerPageSize: 60,
     trackerPageIndex: 0,
     selectedTrackerKey: "",
+    // Selection, the keyboard cursor and the pending undo are all view state.
+    trackerSelection: new Set(),
+    trackerSelectionAnchor: "",
+    trackerCursorKey: "",
+    pendingUndoId: "",
+    // "changes" shows the revert history. Empty means a tracker page.
+    recordView: "",
+    // A pending paste or import, held until the player accepts the review.
+    transfer: null,
     excludedAllTabsEntries: [],
     hunts: [],
     ignoredPlanHuntIds: [],
@@ -230,6 +258,7 @@ function getWorkspaceSnapshot() {
         mode: state.mode,
         activeHuntId: state.activeHuntId,
         trackerProgress: state.trackerProgress,
+        changeLog: state.changeLog,
         bestiaryView: state.bestiaryView,
         excludedAllTabsEntries: state.excludedAllTabsEntries,
         hunts: state.hunts,
@@ -271,7 +300,17 @@ function commitVisibleTotalKills() {
  * is untouched — only the source of its totalKills argument.
  */
 function getBestiaryKills(creatureName) {
-    return getEntry(state.trackerProgress, "bestiary", creatureName, bestiaryTracker.entryDefaults).kills;
+    const creature = getTrackerItems(bestiaryTracker).find((item) => item.Name === creatureName);
+    const entry = getEntry(state.trackerProgress, "bestiary", creatureName, bestiaryTracker.entryDefaults);
+
+    if (!creature) {
+        return entry.kills;
+    }
+
+    // A tile the player picked implies a kill floor, and that floor is a better
+    // input than zero. deriveBestiaryRow owns the mapping, so there is one place
+    // where a stage becomes a number.
+    return bestiaryTracker.derive(creature, entry).kills;
 }
 
 function buildBestiaryTotalKills(creatureNames) {
@@ -358,6 +397,24 @@ function captureVisibleInputs() {
  * The arithmetic in recalculateProgress is untouched — only the source of its
  * totalKills argument changed.
  */
+/**
+ * Which creatures' totals come from a tile rather than a typed count. The session
+ * table qualifies those readings with "at most", because a tile says the entry sits
+ * between two thresholds and claiming a precise remaining count would overstate what
+ * the player actually read.
+ */
+function markKillFloors(monsters) {
+    monsters.forEach((monster) => {
+        const entry = getEntry(state.trackerProgress, "bestiary", monster.name, bestiaryTracker.entryDefaults);
+        const creature = getTrackerItems(bestiaryTracker).find((item) => item.Name === monster.name);
+
+        monster.typedKills = entry.kills || "";
+        monster.isKillFloor = Boolean(creature) && bestiaryTracker.derive(creature, entry).isFloor;
+    });
+
+    return monsters;
+}
+
 function calculateBestiaryResult(hunt) {
     const monsters = recalculateProgress(
         hunt.matchedMonsters,
@@ -365,6 +422,9 @@ function calculateBestiaryResult(hunt) {
         hunt.sessionDuration,
         buildBestiaryTotalKills(hunt.matchedMonsters.map((monster) => monster.name))
     );
+
+    markKillFloors(monsters);
+
     const availableMonsterNames = new Set(monsters.map((monster) => monster.name));
     const selectedMonsterNames = hunt.selectedBestiaryMonsterNames
         .filter((monsterName) => availableMonsterNames.has(monsterName));
@@ -658,8 +718,7 @@ function renderHuntView() {
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
     applySessionInput(hunt, hunt.matchedMonsters.length);
-    elements.resultsTitle.textContent = `${huntLabel} Analysis`;
-    elements.resultsCopy.textContent = VIEW_CONTENT.session.resultsCopy;
+    showSectionHeading(`${huntLabel} Analysis`, VIEW_CONTENT.session.resultsCopy);
 
     if (hunt.matchedMonsters.length || hunt.hasProcessedLog) {
         renderBestiaryMode(hunt);
@@ -675,8 +734,7 @@ function renderAllTabsView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
-    elements.resultsTitle.textContent = VIEW_CONTENT.allSessions.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.allSessions.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.allSessions.resultsTitle, VIEW_CONTENT.allSessions.resultsCopy);
 
     renderAllTabs(elements.output, analysis, summary);
     attachAllTabsActions();
@@ -686,8 +744,7 @@ function renderCharmPlanView() {
     elements.comparisonSection.hidden = true;
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
-    elements.resultsTitle.textContent = VIEW_CONTENT.charmPlan.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.charmPlan.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.charmPlan.resultsTitle, VIEW_CONTENT.charmPlan.resultsCopy);
 
     renderCharmPlan(elements.output, getCharmPlanView());
     attachCharmPlanActions();
@@ -717,8 +774,7 @@ function renderTaskSessionView() {
     elements.inputSection.hidden = false;
     elements.analysisSection.hidden = false;
     applySessionInput(hunt, hunt.taskMonsters.length);
-    elements.resultsTitle.textContent = `${huntLabel} Task Estimate`;
-    elements.resultsCopy.textContent = VIEW_CONTENT.tasks.resultsCopy;
+    showSectionHeading(`${huntLabel} Task Estimate`, VIEW_CONTENT.tasks.resultsCopy);
 
     if (!hasTaskAnalysis(hunt) && !hunt.hasProcessedLog) {
         setEmptyOutput();
@@ -781,6 +837,27 @@ function getExternalDoneKeys(trackerId) {
     }, new Set());
 }
 
+/** Drops out of the record landing or a unit screen back to plain browsing. */
+
+/** Any navigation leaves a transient surface — the change list, a pending import. */
+function leaveRecordFlow() {
+    state.recordView = "";
+    state.transfer = null;
+}
+
+function selectTracker(trackerId) {
+    if (!getTracker(trackerId)) {
+        return;
+    }
+
+    state.activeTrackerId = trackerId;
+    state.trackerPageIndex = 0;
+    state.trackerSelection.clear();
+    leaveRecordFlow();
+    renderApp();
+    persistState();
+}
+
 function getActiveTracker() {
     return getTracker(state.activeTrackerId);
 }
@@ -788,7 +865,10 @@ function getActiveTracker() {
 /** Sort and filter state is created per tracker on first use, from its facets. */
 function getTrackerSort(tracker) {
     if (!state.trackerSort[tracker.id]) {
-        state.trackerSort[tracker.id] = { key: tracker.defaultSortKey ?? tracker.columns[1].key, direction: "asc" };
+        state.trackerSort[tracker.id] = {
+            key: tracker.defaultSortKey ?? tracker.sortOptions?.[0]?.key ?? "name",
+            direction: "asc"
+        };
     }
 
     return state.trackerSort[tracker.id];
@@ -832,10 +912,24 @@ function getTrackerBudget(providerId) {
     return provider?.providesBudget ? provider.providesBudget(buildTrackerRows(provider, {})) : null;
 }
 
+/**
+ * Every row is answered, a confirmed zero, or unknown — the three-state model.
+ * `answered` comes from the entry, `known` adds the unit the player has read, and
+ * the tracker's own derive never has to think about either.
+ */
 function buildTrackerRows(tracker, context) {
     const resolved = context ?? getTrackerContext(tracker);
 
-    return getTrackerItems(tracker).map((item) => tracker.derive(item, entryFor(tracker, item), resolved));
+    return getTrackerItems(tracker).map((item) => {
+        const entry = entryFor(tracker, item);
+        const row = tracker.derive(item, entry, resolved);
+
+        row.answered = row.answered ?? isAnsweredEntry(tracker.entryDefaults, entry);
+        row.known = row.answered || isKnownEntry(tracker.entryDefaults, entry);
+        row.reviewed = Boolean(entry[REVIEWED_FIELD]);
+
+        return row;
+    });
 }
 
 function filterTrackerRows(tracker, rows) {
@@ -858,7 +952,9 @@ function filterTrackerRows(tracker, rows) {
 
 function sortTrackerRows(tracker, rows) {
     const { key, direction } = getTrackerSort(tracker);
-    const column = tracker.columns.find((candidate) => candidate.key === key) ?? tracker.columns[1];
+    const column = (tracker.sortOptions ?? []).find((candidate) => candidate.key === key)
+        ?? (tracker.sortOptions ?? [])[0]
+        ?? { key: "name" };
     const factor = direction === "desc" ? -1 : 1;
     // Booleans and counters both sort numerically; only labels sort as text.
     const numeric = column.isNumeric || typeof rows[0]?.[key] === "number" || typeof rows[0]?.[key] === "boolean";
@@ -910,12 +1006,13 @@ function getTrackerView(tracker) {
         tracker,
         rows,
         page,
-        columns: tracker.columns,
         sort: getTrackerSort(tracker),
         filters: getTrackerFilters(tracker),
         items: getTrackerItems(tracker),
         totals: tracker.totals(allRows, context),
-        selectedKey: state.selectedTrackerKey
+        selectedKey: state.selectedTrackerKey,
+        selection: state.trackerSelection,
+        bulkActions: getBulkActions(tracker)
     };
 }
 
@@ -1035,6 +1132,94 @@ function syncTrackerTabMeta(tracker) {
     }
 }
 
+/* ==========================================================================
+   Recording: the landing, one unit at a time, then the review
+
+   The landing is the screen the app never had — what is missing across all seven
+   trackers, ranked, with the cheapest unit to read next. A unit is one bounded
+   client screen, and its four states describe the transcription task rather than
+   the game item, which is what makes it resumable.
+   ========================================================================== */
+
+
+/**
+ * Every change that is still revertable, newest first.
+ *
+ * Undo in the moment covers the mistake you notice straight away. This covers the
+ * one you notice tomorrow — an undo affordance that has scrolled away is not a
+ * recovery path, and the app should not be the only thing that remembers.
+ */
+/** The section heading, used by every surface except the tracker pages — there the
+ * page title already names the tracker, so a second heading repeated it. */
+function showSectionHeading(title, copy) {
+    elements.sectionHeading.hidden = false;
+    elements.resultsTitle.textContent = title;
+    elements.resultsCopy.textContent = copy;
+}
+
+function renderRecentChangesView() {
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
+    showSectionHeading("Recent changes", "The last 50 changes to your progress. Any of them can be reverted.");
+
+    const rows = state.changeLog.map((change) => `
+        <li class="change-row">
+            <span class="change-when">${escapeText(formatChangeTime(change.at))}</span>
+            <span class="change-label">${escapeText(change.label)}</span>
+            <span class="change-scope">${escapeText(getTracker(change.trackerId)?.label ?? change.trackerId)}</span>
+            <button class="row-action" type="button" data-revert-change="${escapeText(change.id)}">Revert</button>
+        </li>
+    `).join("");
+
+    elements.output.className = "results-shell";
+    elements.output.innerHTML = `
+        <section class="results-section" aria-labelledby="changesTitle">
+            <h3 class="subsection-title" id="changesTitle">Recent changes</h3>
+            ${state.changeLog.length
+                ? `<ul class="change-list">${rows}</ul>`
+                : '<p class="section-copy">Nothing recorded yet, so there is nothing to revert.</p>'}
+        </section>
+    `;
+
+    elements.output.querySelectorAll("[data-revert-change]").forEach((button) => {
+        button.addEventListener("click", () => undoChange(button.dataset.revertChange));
+    });
+}
+
+function formatChangeTime(iso) {
+    const when = new Date(iso);
+
+    if (Number.isNaN(when.getTime())) {
+        return "";
+    }
+
+    const today = new Date();
+    const sameDay = when.toDateString() === today.toDateString();
+
+    return sameDay
+        ? when.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+        : when.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function describeValue(tracker, row) {
+    if (tracker.id === "bestiary") {
+        return BESTIARY_STAGES.find((stage) => stage.value === row.stage)?.label ?? String(row.kills);
+    }
+
+    if (tracker.id === "bosstiary") {
+        return row.stageOptions?.find((stage) => stage.value === row.stage)?.label ?? String(row.kills);
+    }
+
+    if (tracker.id === "charms") {
+        return row.stage ? `stage ${row.stage}` : "locked";
+    }
+
+    return "yes";
+}
+
+
 function renderTrackerView() {
     const tracker = getActiveTracker();
 
@@ -1042,8 +1227,7 @@ function renderTrackerView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = tracker.resultsTitle;
-    elements.resultsCopy.textContent = tracker.resultsCopy;
+    elements.sectionHeading.hidden = true;
 
     renderTracker(elements.output, getTrackerView(tracker));
     attachTrackerActions();
@@ -1088,8 +1272,7 @@ function renderOpportunitiesView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = VIEW_CONTENT.opportunities.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.opportunities.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.opportunities.resultsTitle, VIEW_CONTENT.opportunities.resultsCopy);
 
     renderOpportunities(elements.output, getOpportunityAnalysis());
     attachOpportunityActions();
@@ -1167,8 +1350,7 @@ function renderSessionLibraryView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = VIEW_CONTENT.library.resultsTitle;
-    elements.resultsCopy.textContent = VIEW_CONTENT.library.resultsCopy;
+    showSectionHeading(VIEW_CONTENT.library.resultsTitle, VIEW_CONTENT.library.resultsCopy);
 
     renderSessionLibrary(
         elements.output,
@@ -1195,30 +1377,29 @@ function renderTaskSessionsView() {
     elements.inputSection.hidden = true;
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
-    elements.resultsTitle.textContent = "All Sessions Task Estimates";
-    elements.resultsCopy.textContent = "Every processed session with the creature and task target you chose for it, estimated from that session's own kill rate.";
+    showSectionHeading("All Sessions Task Estimates", "Every processed session with the creature and task target you chose for it, estimated from that session's own kill rate.");
 
     renderTaskSessions(elements.output, sessions);
     attachTaskSessionLinks();
 }
 
+/**
+ * The sidebar is the only navigation now. The old tab strip that duplicated it was
+ * removed, so this is a no-op kept as the single place mode chrome would go.
+ */
 function applyPrimaryMode() {
-    const buttonsByMode = {
-        bestiary: elements.modeBestiaryButton,
-        trackers: elements.modeProgressButton,
-        tasks: elements.modeTasksButton
-    };
-
-    Object.entries(buttonsByMode).forEach(([mode, button]) => {
-        const isSelected = state.mode === mode;
-
-        button.classList.toggle("is-selected", isSelected);
-        button.setAttribute("aria-selected", String(isSelected));
-    });
 }
 
 function getPageContent() {
     const view = getModeView();
+
+    if (state.mode === "trackers" && state.recordView === "changes") {
+        return {
+            eyebrow: "Data",
+            title: "Recent changes",
+            description: "Everything you have recorded lately, newest first. Any of it can be reverted."
+        };
+    }
 
     if (state.mode === "trackers") {
         const tracker = getActiveTracker();
@@ -1270,6 +1451,9 @@ function applyWorkspaceChrome() {
     elements.pageTitle.textContent = content.title;
     elements.pageDescription.textContent = content.description;
     elements.newSessionButton.hidden = state.mode === "trackers";
+    // The page's primary action follows the mode: record progress in a tracker,
+    // start a session in the session views.
+    elements.recordProgressButton.hidden = state.mode !== "trackers";
     elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
 
     document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
@@ -1294,8 +1478,21 @@ function renderApp() {
     applyWorkspaceChrome();
 
     if (state.mode === "trackers") {
+        // The sidebar already lists the seven trackers; a second strip of the same
+        // links was two navigations for one thing.
         elements.huntWorkspace.hidden = true;
-        renderHuntTabStrip();
+        renderUndoBar();
+
+        if (state.recordView === "changes") {
+            renderRecentChangesView();
+            return;
+        }
+
+        if (state.transfer) {
+            renderTransferReviewView();
+            return;
+        }
+
         renderTrackerView();
         return;
     }
@@ -1351,6 +1548,7 @@ function setMode(mode) {
     }
 
     captureVisibleInputs();
+    leaveRecordFlow();
     state.mode = mode;
     renderApp();
     persistState();
@@ -1458,6 +1656,7 @@ function selectFixedView(view) {
 
     captureVisibleInputs();
     setModeView(view);
+    leaveRecordFlow();
     renderApp();
     persistState();
 }
@@ -1664,6 +1863,132 @@ function captureTrackerInputs() {
     });
 }
 
+/* ==========================================================================
+   Writing tracker data
+
+   Every write goes through writeTrackerEntries so that three things are always
+   true: the previous value is captured for undo, the affected row repaints in
+   place rather than redrawing the table, and the session analysis is refreshed.
+   Redrawing the table is what used to throw focus onto <body> after every mark.
+   ========================================================================== */
+
+function writeTrackerEntries(tracker, itemKeys, changesFor, { kind, label }) {
+    const before = {};
+    let touched = 0;
+
+    itemKeys.forEach((itemKey) => {
+        const changes = changesFor(itemKey);
+
+        if (!changes) {
+            return;
+        }
+
+        before[itemKey] = getStoredEntry(state.trackerProgress, tracker.id, itemKey);
+        setEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults, changes);
+        touched += 1;
+    });
+
+    if (!touched) {
+        return null;
+    }
+
+    const change = { kind, trackerId: tracker.id, label, entries: before, units: {} };
+
+    pushChange(state.changeLog, change);
+    onTrackerProgressChanged();
+
+    return peekChange(state.changeLog);
+}
+
+/**
+ * Repaints one row and its dependent readouts, leaving focus where it was.
+ *
+ * The row's DOM is replaced, so the element that had focus no longer exists. Its
+ * identity does: the same data attributes name the same control in the new markup,
+ * so focus is re-established on the control the player was actually using. Without
+ * this, marking an item drops focus onto <body> and keyboard entry has to start
+ * over from the top of the page.
+ */
+function refreshTrackerRow(tracker, itemKey) {
+    const row = buildTrackerRows(tracker).find((candidate) => candidate.key === itemKey);
+
+    if (!row) {
+        renderTrackerView();
+        return;
+    }
+
+    const focusedSelector = describeFocusedControl();
+    const patched = patchTrackerCard(elements.output, tracker, row, {
+        isSelected: state.trackerSelection.has(itemKey),
+        selectable: Boolean(getBulkActions(tracker).length)
+    });
+
+    syncTrackerTotals(tracker);
+    TRACKERS.forEach(syncTrackerTabMeta);
+
+    if (focusedSelector && patched) {
+        const restored = patched.querySelector(focusedSelector) ?? patched;
+
+        restored.focus?.();
+    }
+}
+
+/** A CSS selector that finds the focused control again after its row is replaced. */
+function describeFocusedControl() {
+    const active = document.activeElement;
+
+    if (!active || active === document.body) {
+        return "";
+    }
+
+    const { trackerStage, trackerStageValue, trackerFlag, trackerField, trackerSelect } = active.dataset ?? {};
+
+    if (trackerStage) {
+        return `[data-tracker-stage="${CSS.escape(trackerStage)}"][data-tracker-stage-value="${CSS.escape(trackerStageValue)}"]`;
+    }
+
+    if (trackerFlag) {
+        return `[data-tracker-flag="${CSS.escape(trackerFlag)}"]`;
+    }
+
+    if (trackerField) {
+        return `[data-tracker-field="${CSS.escape(trackerField)}"]`;
+    }
+
+    if (trackerSelect) {
+        return "[data-tracker-select]";
+    }
+
+    return "";
+}
+
+/**
+ * The headline and stat line sit outside the table, so a patched row has to push
+ * its own totals. Rewriting them in place keeps the table DOM — and the focus
+ * inside it — untouched.
+ */
+function syncTrackerTotals(tracker) {
+    const context = getTrackerContext(tracker);
+    const totals = tracker.totals(buildTrackerRows(tracker, context), context);
+    const answer = elements.output.querySelector(".answer-value");
+    const note = elements.output.querySelector(".answer-note");
+    const stats = elements.output.querySelector(".stat-line");
+
+    if (answer) {
+        answer.innerHTML = totals.answer.value;
+    }
+
+    if (note) {
+        note.innerHTML = totals.answer.note ?? "";
+    }
+
+    if (stats) {
+        // Same separator buildStatLine uses, so a patched line is indistinguishable
+        // from a freshly rendered one.
+        stats.innerHTML = (totals.stats ?? []).filter(Boolean).join("<span>·</span>");
+    }
+}
+
 /**
  * Tracker count fields deliberately use their own class and data attributes.
  * Reusing `.kills-input` would put them on the session commit path, which reads
@@ -1673,21 +1998,124 @@ function commitTrackerCount(input) {
     const tracker = getActiveTracker();
     const { trackerItem: itemKey, trackerField: field } = input.dataset;
     const previous = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults)[field];
+    const next = Number.parseInt(input.value, 10) || 0;
 
-    if ((Number.parseInt(input.value, 10) || 0) === previous) {
+    if (next === previous) {
         return;
     }
 
-    setEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults, { [field]: input.value });
+    const change = writeTrackerEntries(tracker, [itemKey], () => ({ [field]: input.value }), {
+        kind: "entry",
+        label: `${itemKey} ${previous || 0} → ${next}`
+    });
+
+    refreshTrackerRow(tracker, itemKey);
+    showUndo(change);
+}
+
+function commitTrackerStage(button) {
+    const tracker = getActiveTracker();
+    const { trackerItem: itemKey, trackerStage: field, trackerStageValue: rawValue } = button.dataset;
+    const value = Number(rawValue) || 0;
+    const entry = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults);
+    // Picking the tile that is already set clears it, which is the only way back to
+    // "not recorded" without an undo.
+    const next = entry[field] === value ? 0 : value;
+    // An exact count would silently outrank the tile the player just picked, so
+    // setting a tile by hand clears it. Typing the count again is one keystroke.
+    const clearsCount = tracker.id === "bestiary" && entry.kills > 0;
+
+    const change = writeTrackerEntries(tracker, [itemKey], () => ({
+        [field]: next,
+        ...(clearsCount ? { kills: 0 } : {})
+    }), {
+        kind: "entry",
+        label: `${itemKey} set to ${button.textContent.trim()}`
+    });
+
+    refreshTrackerRow(tracker, itemKey);
+    showUndo(change);
+}
+
+function commitTrackerFlag(button) {
+    const tracker = getActiveTracker();
+    const { trackerItem: itemKey, trackerFlag: field } = button.dataset;
+    const current = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults)[field];
+
+    const change = writeTrackerEntries(tracker, [itemKey], () => ({ [field]: !current }), {
+        kind: "entry",
+        label: `${itemKey} ${field === "bookmark" ? (current ? "unbookmarked" : "bookmarked") : (current ? "cleared" : "marked")}`
+    });
+
+    refreshTrackerRow(tracker, itemKey);
+
+    if (field !== "bookmark") {
+        showUndo(change);
+    }
+}
+
+/* ==========================================================================
+   Undo
+   ========================================================================== */
+
+function showUndo(change) {
+    if (!change) {
+        return;
+    }
+
+    state.pendingUndoId = change.id;
+    announce(`${change.label}. Undo available.`);
+    renderUndoBar();
+}
+
+function renderUndoBar() {
+    const change = state.changeLog.find((candidate) => candidate.id === state.pendingUndoId);
+
+    if (!elements.undoBar) {
+        return;
+    }
+
+    if (!change) {
+        elements.undoBar.hidden = true;
+        elements.undoBar.innerHTML = "";
+        return;
+    }
+
+    elements.undoBar.hidden = false;
+    elements.undoBar.innerHTML = `
+        <span class="undo-text">${escapeText(change.label)}</span>
+        <button class="undo-action" type="button" id="undoLastChange">Undo</button>
+        <button class="icon-button" type="button" id="dismissUndo" aria-label="Dismiss">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+    `;
+
+    document.getElementById("undoLastChange").addEventListener("click", () => undoChange(change.id));
+    document.getElementById("dismissUndo").addEventListener("click", () => {
+        state.pendingUndoId = "";
+        renderUndoBar();
+    });
+}
+
+function undoChange(changeId) {
+    const change = dropChange(state.changeLog, changeId);
+
+    if (!change) {
+        return;
+    }
+
+    applyUndo(change, state.trackerProgress, {});
+    state.pendingUndoId = "";
     onTrackerProgressChanged();
-    renderTrackerView();
+    announce(`Undone: ${change.label}`);
+    renderApp();
+}
 
-    const restored = elements.output
-        .querySelector(`.tracker-count[data-tracker-item="${CSS.escape(itemKey)}"][data-tracker-field="${CSS.escape(field)}"]`);
+function undoLatestChange() {
+    const change = peekChange(state.changeLog);
 
-    if (restored) {
-        restored.focus();
-        restored.select();
+    if (change) {
+        undoChange(change.id);
     }
 }
 
@@ -1700,118 +2128,431 @@ function onTrackerProgressChanged() {
     persistState();
 }
 
-function attachTrackerActions() {
-    const tracker = getActiveTracker();
+/**
+ * Bulk verbs a tracker supports. Only the tick trackers get them, because the
+ * Bestiary's equivalent would mean asserting kill counts nobody read.
+ *
+ * There is deliberately no "mark not earned" here. A false is equal to the entry
+ * default, so storing one deletes the entry and the item goes back to unknown —
+ * the control would appear to work and change nothing. Asserting a negative is
+ * only meaningful for a whole bounded screen, which is what "confirm remaining"
+ * does inside the unit flow.
+ */
+function getBulkActions(tracker) {
+    const tickField = tracker.tickField;
 
-    elements.output.querySelectorAll("[data-tracker-row]").forEach((row) => {
-        row.addEventListener("click", (event) => {
-            if (event.target.closest("a, button, input, select, label")) {
-                return;
-            }
+    if (!tickField) {
+        return [];
+    }
 
-            state.selectedTrackerKey = row.dataset.trackerRow;
-            renderTrackerView();
-        });
-    });
+    const verb = { done: "earned", completed: "completed", earned: "earned", discovered: "discovered" }[tickField] ?? "marked";
 
-    elements.output.querySelectorAll(".tracker-count").forEach((input) => {
-        input.addEventListener("focusout", () => commitTrackerCount(input));
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                input.blur();
-            }
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-flag]").forEach((button) => {
-        button.addEventListener("click", () => {
-            toggleEntryFlag(
-                state.trackerProgress,
-                tracker.id,
-                button.dataset.trackerItem,
-                tracker.entryDefaults,
-                button.dataset.trackerFlag
-            );
-            onTrackerProgressChanged();
-            renderTrackerView();
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-sort]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.trackerSort[tracker.id] = {
-                key: button.dataset.trackerSort,
-                direction: button.dataset.trackerDirection === "desc" ? "desc" : "asc"
-            };
-            renderTrackerView();
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-page-size]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.trackerPageSize = Number(button.dataset.trackerPageSize) || 0;
-            state.trackerPageIndex = 0;
-            renderTrackerView();
-        });
-    });
-
-    elements.output.querySelectorAll("[data-tracker-page]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.trackerPageIndex = Math.max(0, state.trackerPageIndex + (button.dataset.trackerPage === "next" ? 1 : -1));
-            renderTrackerView();
-        });
-    });
-
-    attachTrackerFacets(tracker);
-    attachTrackerTransfer(tracker);
+    return [
+        { key: `${tickField}:on`, label: `Mark ${verb}`, field: tickField, value: true },
+        { key: `${tickField}:clear`, label: "Clear back to not recorded", field: tickField, value: false }
+    ];
 }
 
-function attachTrackerFacets(tracker) {
-    const filters = getTrackerFilters(tracker);
+function applyBulkAction(tracker, action, visibleRows) {
+    const keys = [...state.trackerSelection];
 
-    tracker.facets.forEach((facet) => {
-        const setFilter = (value) => {
-            filters[facet.key] = value;
+    if (!keys.length) {
+        return;
+    }
+
+    const change = writeTrackerEntries(tracker, keys, () => ({ [action.field]: action.value }), {
+        kind: "bulk",
+        label: `${keys.length} item${keys.length === 1 ? "" : "s"} — ${action.label.toLowerCase()}`
+    });
+
+    state.trackerSelection.clear();
+    renderTrackerView();
+    showUndo(change);
+}
+
+
+function toggleRowSelection(itemKey, extend, list) {
+    if (extend && state.trackerSelectionAnchor) {
+        const keys = list.map((tr) => tr.dataset.trackerRow);
+        const from = keys.indexOf(state.trackerSelectionAnchor);
+        const to = keys.indexOf(itemKey);
+
+        if (from !== -1 && to !== -1) {
+            keys.slice(Math.min(from, to), Math.max(from, to) + 1)
+                .forEach((key) => state.trackerSelection.add(key));
+            renderTrackerView();
+            return;
+        }
+    }
+
+    if (state.trackerSelection.has(itemKey)) {
+        state.trackerSelection.delete(itemKey);
+    } else {
+        state.trackerSelection.add(itemKey);
+        state.trackerSelectionAnchor = itemKey;
+    }
+
+    renderTrackerView();
+}
+
+/**
+ * One delegated listener per surface, bound once.
+ *
+ * Per-element listeners looked fine until a card repainted itself: replacing its
+ * innerHTML throws away every listener inside it, so the second interaction with the
+ * same card silently did nothing. Delegation survives repainting by construction,
+ * which is the whole reason the app can patch a single card instead of the page.
+ */
+let trackerDelegationBound = false;
+
+function bindTrackerDelegation() {
+    if (trackerDelegationBound) {
+        return;
+    }
+
+    trackerDelegationBound = true;
+
+    elements.output.addEventListener("click", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+
+        if (!target || state.mode !== "trackers") {
+            return;
+        }
+
+        const tracker = getActiveTracker();
+        const stage = target.closest("[data-tracker-stage-value]");
+
+        if (stage) {
+            commitTrackerStage(stage);
+            return;
+        }
+
+        const set = target.closest("[data-tracker-set]");
+
+        if (set) {
+            commitTrackerSet(set);
+            return;
+        }
+
+        const flag = target.closest("[data-tracker-flag]");
+
+        if (flag) {
+            commitTrackerFlag(flag);
+            return;
+        }
+
+        const bulk = target.closest("[data-tracker-bulk]");
+
+        if (bulk) {
+            const action = getBulkActions(tracker).find((candidate) => candidate.key === bulk.dataset.trackerBulk);
+
+            if (action) {
+                applyBulkAction(tracker, action);
+            }
+
+            return;
+        }
+
+        const pageSize = target.closest("[data-tracker-page-size]");
+
+        if (pageSize) {
+            state.trackerPageSize = Number(pageSize.dataset.trackerPageSize) || 0;
             state.trackerPageIndex = 0;
-        };
-
-        if (facet.kind === "segmented") {
-            elements.output.querySelectorAll(`[data-tracker-facet="${facet.key}"][data-tracker-facet-value]`)
-                .forEach((button) => button.addEventListener("click", () => {
-                    setFilter(button.dataset.trackerFacetValue);
-                    renderTrackerView();
-                }));
+            renderTrackerView();
             return;
         }
 
-        const field = document.getElementById(`trackerFacet-${facet.key}`);
+        const page = target.closest("[data-tracker-page]");
 
-        if (!field) {
+        if (page) {
+            state.trackerPageIndex = Math.max(0, state.trackerPageIndex + (page.dataset.trackerPage === "next" ? 1 : -1));
+            renderTrackerView();
             return;
         }
 
-        if (facet.kind === "search") {
-            field.addEventListener("input", () => {
-                setFilter(field.value);
-                renderTrackerView();
+        const facetButton = target.closest("[data-tracker-facet-value]");
 
-                // Re-rendering replaces the field, so focus and caret are restored.
-                const restored = document.getElementById(`trackerFacet-${facet.key}`);
+        if (facetButton) {
+            getTrackerFilters(tracker)[facetButton.dataset.trackerFacet] = facetButton.dataset.trackerFacetValue;
+            state.trackerPageIndex = 0;
+            renderTrackerView();
+            return;
+        }
 
-                if (restored) {
-                    restored.focus();
-                    restored.setSelectionRange(restored.value.length, restored.value.length);
+        if (target.closest("#trackerClearSelection")) {
+            state.trackerSelection.clear();
+            renderTrackerView();
+            return;
+        }
+
+        // Clicking the card itself — not one of its controls — opens the detail panel.
+        const card = target.closest("[data-tracker-row]");
+
+        if (card && !target.closest("a, button, input, select, label, summary")) {
+            state.selectedTrackerKey = card.dataset.trackerRow;
+            renderTrackerView();
+        }
+    });
+
+    elements.output.addEventListener("change", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+
+        if (!target || state.mode !== "trackers") {
+            return;
+        }
+
+        const tracker = getActiveTracker();
+        const select = target.closest("[data-tracker-select]");
+
+        if (select) {
+            const key = select.dataset.trackerSelect;
+
+            if (select.checked) {
+                state.trackerSelection.add(key);
+                state.trackerSelectionAnchor = key;
+            } else {
+                state.trackerSelection.delete(key);
+            }
+
+            renderTrackerView();
+            return;
+        }
+
+        if (target.id === "trackerSelectAll") {
+            getTrackerView(tracker).rows.forEach((row) => {
+                if (target.checked) {
+                    state.trackerSelection.add(row.key);
+                } else {
+                    state.trackerSelection.delete(row.key);
                 }
             });
+            renderTrackerView();
             return;
         }
 
-        field.addEventListener("change", () => {
-            setFilter(facet.kind === "check" ? field.checked : field.value);
+        if (target.id === "trackerSort") {
+            state.trackerSort[tracker.id] = { key: target.value, direction: "asc" };
             renderTrackerView();
-        });
+            return;
+        }
+
+        const facet = target.closest("[data-tracker-facet]");
+
+        if (facet) {
+            const definition = tracker.facets.find((candidate) => candidate.key === facet.dataset.trackerFacet);
+
+            if (definition) {
+                getTrackerFilters(tracker)[definition.key] = definition.kind === "check" ? facet.checked : facet.value;
+                state.trackerPageIndex = 0;
+                renderTrackerView();
+            }
+        }
     });
+
+    // Search filters as you type, so it re-renders and restores its own caret.
+    elements.output.addEventListener("input", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+
+        if (!target || state.mode !== "trackers") {
+            return;
+        }
+
+        const search = target.closest('[data-tracker-facet="search"]');
+
+        if (!search) {
+            return;
+        }
+
+        const tracker = getActiveTracker();
+
+        getTrackerFilters(tracker).search = search.value;
+        state.trackerPageIndex = 0;
+        renderTrackerView();
+
+        const restored = document.getElementById("trackerFacet-search");
+
+        if (restored) {
+            restored.focus();
+            restored.setSelectionRange(restored.value.length, restored.value.length);
+        }
+    });
+
+    elements.output.addEventListener("focusout", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const count = target?.closest(".tracker-count");
+
+        if (count && state.mode === "trackers") {
+            commitTrackerCount(count);
+        }
+    });
+
+    elements.output.addEventListener("keydown", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const count = target?.closest(".tracker-count");
+
+        if (!count) {
+            return;
+        }
+
+        if (event.key === "Enter") {
+            event.preventDefault();
+            count.blur();
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            count.value = "";
+            count.blur();
+        }
+    });
+}
+
+/** Yes / no as an explicit choice: the same button again clears back to unknown. */
+function commitTrackerSet(button) {
+    const tracker = getActiveTracker();
+    const { trackerItem: itemKey, trackerSet: field, trackerSetValue: rawValue } = button.dataset;
+    const wantsYes = rawValue === "1";
+    const entry = getEntry(state.trackerProgress, tracker.id, itemKey, tracker.entryDefaults);
+    const isYes = Boolean(entry[field]);
+    const isNo = !isYes && Boolean(entry[REVIEWED_FIELD]);
+    const alreadyThere = wantsYes ? isYes : isNo;
+
+    const changes = alreadyThere
+        ? { [field]: false, [REVIEWED_FIELD]: false }
+        : { [field]: wantsYes, [REVIEWED_FIELD]: true };
+
+    const change = writeTrackerEntries(tracker, [itemKey], () => changes, {
+        kind: "entry",
+        label: `${itemKey} — ${alreadyThere ? "cleared" : (wantsYes ? "yes" : "no")}`
+    });
+
+    refreshTrackerRow(tracker, itemKey);
+    showUndo(change);
+}
+
+/**
+ * Keyboard model for the grid, rebuilt for cards.
+ *
+ * The grid is one tab stop, like the ARIA grid pattern: Tab reaches the card you were
+ * last on, arrows move between cards, and the number keys pick a state without
+ * reaching for the mouse. Marking a hundred items should never require a hundred
+ * pointer trips.
+ */
+function bindGridKeyboard() {
+    if (gridKeyboardBound) {
+        return;
+    }
+
+    gridKeyboardBound = true;
+
+    elements.output.addEventListener("keydown", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const card = target?.closest("[data-tracker-row]");
+
+        if (!card || target.closest("input, textarea, select")) {
+            return;
+        }
+
+        const cards = [...elements.output.querySelectorAll("[data-tracker-row]")];
+        const index = cards.indexOf(card);
+        const columns = countGridColumns();
+        const move = {
+            ArrowRight: 1,
+            ArrowLeft: -1,
+            ArrowDown: columns,
+            ArrowUp: -columns,
+            j: columns,
+            k: -columns
+        }[event.key];
+
+        if (move !== undefined) {
+            event.preventDefault();
+            focusCard(cards[Math.min(cards.length - 1, Math.max(0, index + move))]);
+            return;
+        }
+
+        // Digits pick a state directly: 1 is the leftmost option, and 0 clears.
+        if (/^[0-9]$/.test(event.key)) {
+            const options = [...card.querySelectorAll("[data-tracker-stage-value], [data-tracker-set-value]")];
+            const wanted = Number(event.key);
+            const option = wanted === 0 ? options.find((o) => o.classList.contains("is-on")) : options[wanted - 1];
+
+            if (option) {
+                event.preventDefault();
+                option.click();
+                focusCard(elements.output.querySelector(`[data-tracker-row="${CSS.escape(card.dataset.trackerRow)}"]`));
+            }
+
+            return;
+        }
+
+        if (event.key === "x") {
+            const select = card.querySelector("[data-tracker-select]");
+
+            if (select) {
+                event.preventDefault();
+                select.checked = !select.checked;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+            return;
+        }
+
+        if (event.key === "Enter") {
+            const count = card.querySelector(".tracker-count");
+
+            if (count) {
+                event.preventDefault();
+                count.focus();
+                count.select();
+            }
+        }
+    });
+}
+
+let gridKeyboardBound = false;
+
+function countGridColumns() {
+    const grid = elements.output.querySelector(".card-grid");
+
+    if (!grid) {
+        return 1;
+    }
+
+    return Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length);
+}
+
+function focusCard(card) {
+    if (!card) {
+        return;
+    }
+
+    elements.output.querySelectorAll("[data-tracker-row]").forEach((candidate) => {
+        candidate.setAttribute("tabindex", "-1");
+    });
+    card.setAttribute("tabindex", "0");
+    card.focus();
+    state.trackerCursorKey = card.dataset.trackerRow;
+}
+
+/** Exactly one card is in the page tab order, so Tab lands where you left off. */
+function applyGridTabStop() {
+    const cards = [...elements.output.querySelectorAll("[data-tracker-row]")];
+
+    if (!cards.length) {
+        return;
+    }
+
+    const cursor = cards.find((card) => card.dataset.trackerRow === state.trackerCursorKey) ?? cards[0];
+
+    cards.forEach((card) => card.setAttribute("tabindex", card === cursor ? "0" : "-1"));
+}
+
+function attachTrackerActions() {
+    bindTrackerDelegation();
+    bindGridKeyboard();
+    applyGridTabStop();
+    attachTrackerTransfer(getActiveTracker());
 }
 
 function attachTrackerTransfer(tracker) {
@@ -1831,6 +2572,11 @@ function attachTrackerTransfer(tracker) {
     if (exportButton) {
         exportButton.addEventListener("click", () => exportTrackerFile(tracker));
     }
+
+    document.getElementById("trackerPasteButton")?.addEventListener("click", () => {
+        state.transfer = { stage: "paste", tracker };
+        renderApp();
+    });
 }
 
 function exportTrackerFile(tracker) {
@@ -1850,6 +2596,177 @@ function exportTrackerFile(tracker) {
  * Import replaces this tracker's whole record, so it asks first when there is
  * something to lose. Points and thresholds are never read from the file.
  */
+/* ==========================================================================
+   Bringing progress in from a file or a paste
+
+   Both paths go through the same review: adds, changes, names that did not match,
+   and what is deliberately left alone. Items the source does not mention stay
+   unknown rather than being zeroed, because an incomplete file is not a set of
+   claims about the character. One change entry covers the whole thing, so it undoes
+   in a single step.
+   ========================================================================== */
+
+/** Turns a parsed record into the four lists the review shows. */
+function buildTransferReview(tracker, record, unmatched, source, total) {
+    const additions = [];
+    const changes = [];
+    const rowsByKey = new Map(buildTrackerRows(tracker).map((row) => [row.key, row]));
+
+    Object.entries(record).forEach(([itemKey, entry]) => {
+        const current = getStoredEntry(state.trackerProgress, tracker.id, itemKey);
+        const row = rowsByKey.get(itemKey);
+        const after = describeEntry(tracker, itemKey, entry);
+
+        if (!current) {
+            additions.push({ name: itemKey, after });
+            return;
+        }
+
+        if (JSON.stringify(current) !== JSON.stringify(entry)) {
+            changes.push({ name: itemKey, before: row ? describeEntry(tracker, itemKey, current) : "?", after });
+        }
+    });
+
+    return {
+        tracker,
+        source,
+        additions,
+        changes,
+        unmatched,
+        untouched: getTrackerItems(tracker).length - Object.keys(record).length,
+        total,
+        record
+    };
+}
+
+/** A short, human description of an entry, for the before → after columns. */
+function describeEntry(tracker, itemKey, entry) {
+    const item = getTrackerItems(tracker).find((candidate) => tracker.itemKey(candidate) === itemKey);
+
+    if (!item) {
+        return "?";
+    }
+
+    const row = tracker.derive(item, { ...tracker.entryDefaults, ...entry }, getTrackerContext(tracker));
+
+    row.known = true;
+
+    // A typed count and a tile are different facts, so the review names which one
+    // it is rather than collapsing both into the tile they imply.
+    if (row.hasTypedKills) {
+        return `${formatNumber(row.typedKills)} kills`;
+    }
+
+    return describeValue(tracker, row);
+}
+
+function openTransferReview(review) {
+    state.transfer = review;
+    renderApp();
+}
+
+function renderTransferReviewView() {
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
+
+    if (state.transfer.stage === "paste") {
+        renderPasteBox(elements.output, state.transfer.tracker);
+        document.getElementById("pasteCancel").addEventListener("click", closeTransfer);
+        document.getElementById("pasteReview").addEventListener("click", () => {
+            reviewPastedList(state.transfer.tracker, document.getElementById("pasteInput").value);
+        });
+        return;
+    }
+
+    renderTransferReview(elements.output, state.transfer);
+    document.getElementById("transferCancel").addEventListener("click", closeTransfer);
+    document.getElementById("transferApply").addEventListener("click", applyTransfer);
+}
+
+function closeTransfer() {
+    state.transfer = null;
+    renderApp();
+}
+
+function applyTransfer() {
+    const { tracker, record, additions, changes } = state.transfer;
+    const keys = Object.keys(record);
+    const change = writeTrackerEntries(tracker, keys, (itemKey) => record[itemKey], {
+        kind: "import",
+        label: `${tracker.label}: ${additions.length} added, ${changes.length} changed`
+    });
+
+    state.transfer = null;
+    renderApp();
+    showUndo(change);
+}
+
+/**
+ * A pasted column of names, optionally with a value after a tab or comma. A bare
+ * name means "this one is done", which is what a list copied off a client screen
+ * usually means.
+ */
+function reviewPastedList(tracker, text) {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+    if (!lines.length) {
+        showAlert("Nothing pasted yet.");
+        return;
+    }
+
+    const byKey = new Map(getTrackerItems(tracker).map((item) => {
+        const key = tracker.itemKey(item);
+
+        return [key.trim().toLowerCase(), key];
+    }));
+    const record = {};
+    const unmatched = [];
+
+    lines.forEach((line) => {
+        const [rawName, rawValue] = line.split(/\t|,(?=\s*\d)/);
+        const key = byKey.get(String(rawName).trim().toLowerCase());
+
+        if (!key) {
+            unmatched.push(rawName.trim());
+            return;
+        }
+
+        record[key] = buildPastedEntry(tracker, rawValue);
+    });
+
+    if (!Object.keys(record).length) {
+        showAlert(`None of those ${lines.length} names matched the ${tracker.label} data.`);
+        return;
+    }
+
+    openTransferReview(buildTransferReview(tracker, record, unmatched, "pasted list", lines.length));
+}
+
+function buildPastedEntry(tracker, rawValue) {
+    const value = Number.parseInt(String(rawValue ?? "").replace(/[,\s]/g, ""), 10);
+
+    if (tracker.tickField) {
+        return { ...tracker.entryDefaults, [tracker.tickField]: true };
+    }
+
+    if (Number.isFinite(value) && value > 0) {
+        return { ...tracker.entryDefaults, kills: value };
+    }
+
+    // No number given: a bare name means the entry is finished.
+    if (tracker.id === "bestiary") {
+        return { ...tracker.entryDefaults, stage: STAGE_COMPLETE };
+    }
+
+    if (tracker.id === "charms") {
+        return { ...tracker.entryDefaults, stage: 3 };
+    }
+
+    return { ...tracker.entryDefaults };
+}
+
 async function importTrackerFile(input, tracker) {
     const file = input.files?.[0];
 
@@ -1871,27 +2788,12 @@ async function importTrackerFile(input, tracker) {
             throw new Error(`No ${tracker.label} entry in that file matched the dataset.`);
         }
 
-        const existing = Object.keys(getTrackerRecord(state.trackerProgress, tracker.id)).length;
-
-        if (existing && !window.confirm(`Replace your saved ${tracker.label} progress (${existing} entries) with ${result.matched} rows from this file?`)) {
-            return;
-        }
-
-        state.trackerProgress[tracker.id] = result.record;
-        onTrackerProgressChanged();
-        renderApp();
-
-        const unmatched = result.unmatched.length;
-
-        announce(`Imported ${result.matched} ${tracker.label} entries.`);
-
-        if (unmatched) {
-            showAlert(`Imported ${result.matched} entries. ${unmatched} name${unmatched === 1 ? "" : "s"} did not match the dataset and were skipped: ${result.unmatched.slice(0, 5).join(", ")}${unmatched > 5 ? "\u2026" : ""}`);
-        }
+        openTransferReview(buildTransferReview(tracker, result.record, result.unmatched, file.name, result.matched));
     } catch (error) {
         showAlert(error.message);
     }
 }
+
 
 
 function findHuntById(huntId) {
@@ -2123,6 +3025,9 @@ function processLog() {
 function applyWorkspace(workspace) {
     state.mode = workspace.mode;
     state.trackerProgress = workspace.trackerProgress ?? createTrackerProgress();
+    state.changeLog = workspace.changeLog ?? createChangeLog();
+    state.trackerSelection = new Set();
+    state.pendingUndoId = "";
     state.hunts = workspace.hunts;
     state.activeHuntId = workspace.activeHuntId;
     state.excludedAllTabsEntries = workspace.excludedAllTabsEntries;
@@ -2235,9 +3140,6 @@ elements.sessionLog.addEventListener("change", persistState);
 elements.pasteLogButton.addEventListener("click", pasteLog);
 elements.clearLogButton.addEventListener("click", clearLog);
 elements.compareHuntsButton.addEventListener("click", showComparison);
-elements.modeBestiaryButton.addEventListener("click", () => setMode("bestiary"));
-elements.modeProgressButton.addEventListener("click", () => setMode("trackers"));
-elements.modeTasksButton.addEventListener("click", () => setMode("tasks"));
 elements.sessionRegularButton.addEventListener("click", () => setSessionRespawnMode("regular"));
 elements.sessionRapidButton.addEventListener("click", () => setSessionRespawnMode("rapid"));
 elements.processLogButton.addEventListener("click", processLog);
@@ -2277,6 +3179,9 @@ function navigateWorkspace(mode, view) {
     captureVisibleInputs();
     state.mode = mode;
     setModeView(view);
+    // Navigating anywhere leaves the recording flow. Without this the landing keeps
+    // rendering over whatever the player chose, and there is no way back out.
+    leaveRecordFlow();
     state.selectedTrackerKey = "";
     state.isSessionInputOpen = false;
     closeMobileSidebar();
@@ -2297,26 +3202,176 @@ document.querySelectorAll(".sidebar-section-title").forEach((button) => {
     });
 });
 
-function focusWorkspaceSearch() {
-    if (state.mode !== "trackers") {
-        navigateWorkspace("trackers", "bestiary");
+/**
+ * Everything the player could want to change, from every tracker, as one flat list
+ * for the quick-add combobox. Each entry carries the controls that make sense for
+ * its own shape, so a Bestiary creature offers tiles and a quest offers a tick.
+ */
+function buildQuickAddItems() {
+    return TRACKERS.flatMap((tracker) => {
+        const rows = buildTrackerRows(tracker);
+
+        return rows.map((row) => {
+            const controls = buildQuickControls(tracker, row);
+
+            return {
+                trackerId: tracker.id,
+                trackerLabel: tracker.label,
+                key: row.key,
+                name: row.name,
+                valueLabel: quickValueLabel(tracker, row),
+                controls,
+                countField: Object.keys(tracker.entryDefaults).includes("kills") ? "kills" : ""
+            };
+        });
+    });
+}
+
+function quickValueLabel(tracker, row) {
+    if (!row.known) {
+        return "not recorded";
     }
 
-    requestAnimationFrame(() => {
-        const search = elements.output.querySelector('[data-tracker-facet="search"]');
+    if (tracker.id === "bestiary") {
+        return row.isComplete ? "complete" : `${formatNumber(row.kills)} / ${formatNumber(row.unlockTarget)}`;
+    }
 
-        search?.focus();
-        search?.select();
+    if (tracker.id === "bosstiary") {
+        return row.stageOptions?.find((stage) => stage.value === row.stage)?.label ?? "none";
+    }
+
+    if (tracker.id === "charms") {
+        return row.stage ? `stage ${row.stage}` : "locked";
+    }
+
+    return tracker.tickField && row[tracker.tickField] ? "yes" : "no";
+}
+
+function buildQuickControls(tracker, row) {
+    if (tracker.id === "bestiary") {
+        return BESTIARY_STAGES.map((stage) => ({
+            field: "stage",
+            value: stage.value,
+            label: stage.label,
+            isCurrent: row.stage === stage.value
+        }));
+    }
+
+    if (tracker.id === "bosstiary") {
+        return (row.stageOptions ?? []).map((stage) => ({
+            field: "stage",
+            value: stage.value,
+            label: stage.label,
+            isCurrent: row.stage === stage.value
+        }));
+    }
+
+    if (tracker.id === "charms") {
+        return [0, 1, 2, 3].map((stage) => ({
+            field: "stage",
+            value: stage,
+            label: stage === 0 ? "Locked" : `Stage ${stage}`,
+            isCurrent: row.stage === stage
+        }));
+    }
+
+    const tickField = tracker.tickField;
+
+    if (!tickField) {
+        return [];
+    }
+
+    return [
+        { field: tickField, value: 1, label: "Yes", isCurrent: Boolean(row[tickField]) },
+        { field: tickField, value: 0, label: "No", isCurrent: row.known && !row[tickField] }
+    ];
+}
+
+/**
+ * Quick add writes through the same path as the table, so it undoes the same way —
+ * and then it does not navigate. Landing back where you were is the whole point.
+ */
+function applyQuickSet(item, field, value) {
+    const tracker = getTracker(item.trackerId);
+    const isBoolean = typeof tracker.entryDefaults[field] === "boolean";
+    const changes = isBoolean ? { [field]: Boolean(value) } : { [field]: value };
+
+    // Setting a tile by hand clears a count that would otherwise outrank it.
+    if (field === "stage" && tracker.id === "bestiary") {
+        changes.kills = 0;
+    }
+
+    const change = writeTrackerEntries(tracker, [item.key], () => changes, {
+        kind: "entry",
+        label: `${item.name} → ${isBoolean ? (value ? "yes" : "no") : formatNumber(value)}`
+    });
+
+    if (state.mode === "trackers" && state.activeTrackerId === tracker.id) {
+        refreshTrackerRow(tracker, item.key);
+    }
+
+    showUndo(change);
+}
+
+function focusWorkspaceSearch() {
+    openQuickAdd({
+        items: buildQuickAddItems(),
+        onSet: applyQuickSet,
+        returnFocusSelector: ""
     });
 }
 
 elements.sidebarSearchButton.addEventListener("click", focusWorkspaceSearch);
-document.addEventListener("keydown", (event) => {
-    const target = event.target;
+/**
+ * "Record progress" is not a mode any more — the tracker page is the editor. The
+ * button jumps to the first thing not recorded yet, which is the only thing the old
+ * landing screen was really for.
+ */
+elements.recordProgressButton.addEventListener("click", () => {
+    const tracker = getActiveTracker();
+    const filters = getTrackerFilters(tracker);
 
-    if (event.key === "/" && !target.closest("input, textarea, select, [contenteditable]")) {
+    filters.status = "unknown";
+    state.trackerPageIndex = 0;
+    state.recordView = "";
+    state.transfer = null;
+    renderApp();
+    persistState();
+    announce(`Showing ${tracker.label} entries that are not recorded yet.`);
+});
+
+elements.recentChangesButton.addEventListener("click", () => {
+    state.mode = "trackers";
+    state.recordView = "changes";
+    state.transfer = null;
+    renderApp();
+});
+
+elements.sidebarRecordButton.addEventListener("click", () => {
+    elements.recordProgressButton.click();
+});
+document.addEventListener("keydown", (event) => {
+    // The event target can be the document itself, which has no closest().
+    const target = event.target instanceof Element ? event.target : null;
+    const inField = (selector) => Boolean(target?.closest(selector));
+
+    if (event.key === "/" && !inField("input, textarea, select, [contenteditable]")) {
         event.preventDefault();
         focusWorkspaceSearch();
+        return;
+    }
+
+    if (event.key === "Escape" && isQuickAddOpen()) {
+        closeQuickAdd();
+        return;
+    }
+
+    // Undo is global: the change may have come from a table, a bulk mark, a unit or
+    // an import, and they all restore the same way.
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z"
+        && !inField("input, textarea, [contenteditable]")) {
+        event.preventDefault();
+        undoLatestChange();
     }
 });
 

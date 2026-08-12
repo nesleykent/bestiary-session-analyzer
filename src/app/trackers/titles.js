@@ -1,6 +1,7 @@
 import { loadTitlesData } from "../services/titles-repository.js";
 import { formatNumber } from "../utils/formatters.js";
-import { escapeText, plainText, trackerFlagCell, trackerStarCell } from "../ui/render-tracker.js";
+import { escapeText, plainText, starControl, tickControl } from "../ui/render-controls.js";
+import { STATUS_LABELS, buildStatusFacet } from "./status.js";
 
 /** Titles: boolean progress, no points — the title itself is the reward. */
 
@@ -8,6 +9,7 @@ export function deriveTitleRow(title, entry) {
     return {
         key: title.Name,
         name: title.Name,
+        unit: title.isPermanent ? "Permanent" : "Losable",
         requirement: title.requirement,
         isPermanent: title.isPermanent,
         earned: entry.earned,
@@ -24,59 +26,37 @@ export const titlesTracker = {
     resultsTitle: "Title Progress",
     resultsCopy: "Every title in the game and what it takes to earn one. Permanent titles stay once earned; the rest can be lost again.",
     progress: "boolean",
-    entryDefaults: { earned: false, bookmark: false },
+    entryDefaults: { earned: false, bookmark: false, reviewed: false },
+    tickField: "earned",
     loadItems: loadTitlesData,
     itemKey: (title) => title.Name,
     derive: deriveTitleRow,
     defaultSortKey: "name",
 
-    columns: [
-        { key: "bookmark", label: "", mark: "★", srLabel: "Bookmarked", isNumeric: false, cell: (row) => trackerStarCell(row) },
-        {
-            key: "name",
-            label: "Title",
-            isNumeric: false,
-            cell: (row) => `<td class="creature-cell">${escapeText(row.name)}</td>`
-        },
-        {
-            key: "requirement",
-            label: "How To Earn It",
-            isNumeric: false,
-            cell: (row) => `<td class="spoiler-cell">${plainText(row.requirement) || '<span class="cell-muted">&mdash;</span>'}</td>`
-        },
-        {
-            key: "isPermanent",
-            label: "Permanent",
-            isNumeric: true,
-            cell: (row) => `<td class="is-num cell-muted">${row.isPermanent ? "Yes" : "No"}</td>`
-        },
-        {
-            key: "earned",
-            label: "Earned",
-            isNumeric: true,
-            cell: (row) => trackerFlagCell(row, "earned", { label: row.earned ? "Yes" : "No" })
-        }
+
+    sortOptions: [
+        { key: "name", label: "Name" },
+        { key: "isPermanent", label: "Permanence", isNumeric: true }
     ],
+
+    card: (row) => ({
+        title: escapeText(row.name),
+        meta: `<span>${row.isPermanent ? "Permanent" : "Can be lost"}</span>`,
+        body: plainText(row.requirement),
+        control: tickControl(row, "earned", { yesLabel: "Earned", noLabel: "Not earned" }),
+        extras: starControl(row)
+    }),
+
 
     facets: [
         { key: "search", kind: "search", label: "Search", placeholder: "Title or requirement", matches: (row, value) => row.searchText.includes(value.trim().toLowerCase()) },
-        {
-            key: "status",
-            kind: "segmented",
-            label: "Status",
-            options: () => [
-                { value: "all", label: "All" },
-                { value: "notStarted", label: "Missing" },
-                { value: "done", label: "Earned" }
-            ],
-            matches: (row, value) => row.status === value
-        },
+        buildStatusFacet({ doneWord: "Earned", hasInProgress: false }),
         {
             key: "permanence",
-            kind: "segmented",
+            kind: "select",
             label: "Permanence",
+            allLabel: "Any",
             options: () => [
-                { value: "all", label: "Any" },
                 { value: "permanent", label: "Permanent" },
                 { value: "losable", label: "Losable" }
             ],
@@ -100,7 +80,8 @@ export const titlesTracker = {
                 note: `of ${formatNumber(rows.length)} in the game &mdash; ${percent.toFixed(1)}% earned.`
             },
             stats: [
-                `${formatNumber(rows.length - earned)} still missing`,
+                `${formatNumber(rows.filter((row) => row.known && !row.earned).length)} not earned`,
+                `${formatNumber(rows.filter((row) => !row.known).length)} not recorded yet`,
                 `Permanent ${formatNumber(rows.filter((row) => row.earned && row.isPermanent).length)} of ${formatNumber(rows.filter((row) => row.isPermanent).length)}`
             ]
         };
