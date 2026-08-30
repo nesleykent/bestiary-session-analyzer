@@ -36,7 +36,7 @@ body {
     background: var(--paper);
     color: var(--ink-900);
     font-family: var(--font);
-    font-size: var(--t-300);
+    font-size: var(--t-200);
     line-height: var(--leading-body);
     -webkit-font-smoothing: antialiased;
 }
@@ -252,12 +252,13 @@ h3 {
 }
 
 .sidebar-link.is-selected {
-    color: var(--ink-900);
+    background: var(--accent-tint);
+    color: var(--accent);
     font-weight: var(--weight-bold);
 }
 
 .sidebar-link.is-selected:hover {
-    background: none;
+    background: var(--accent-tint);
 }
 
 .sidebar-link.is-selected::before {
@@ -265,7 +266,7 @@ h3 {
     position: absolute;
     inset: var(--u2) auto var(--u2) 0;
     width: calc(var(--u1) / 2);
-    background: var(--ink-900);
+    background: var(--accent);
 }
 
 .sidebar-link .material-symbols-outlined {
@@ -274,7 +275,7 @@ h3 {
 }
 
 .sidebar-link.is-selected .material-symbols-outlined {
-    color: var(--ink-900);
+    color: var(--accent);
 }
 
 .sidebar-shortcut {
@@ -391,8 +392,8 @@ h3 {
 
 .btn-primary,
 .btn-primary-context {
-    border-color: var(--ink-900);
-    background: var(--ink-900);
+    border-color: var(--accent);
+    background: var(--accent);
     color: var(--surface);
 }
 
@@ -557,7 +558,7 @@ input[type="checkbox"] {
 }
 
 .segmented-button.is-selected {
-    color: var(--ink-900);
+    color: var(--accent);
     font-weight: var(--weight-bold);
 }
 
@@ -566,7 +567,7 @@ input[type="checkbox"] {
     position: absolute;
     inset: auto 0 -1px;
     height: calc(var(--u1) / 2);
-    background: var(--ink-900);
+    background: var(--accent);
 }
 
 .pill {
@@ -664,7 +665,26 @@ input[type="checkbox"] {
     font-size: var(--t-500);
     font-weight: var(--weight-bold);
     letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-tight);
     font-variant-numeric: tabular-nums;
+}
+
+.answer-progress {
+    display: block;
+    width: 100%;
+    height: var(--u1);
+    margin-top: var(--u3);
+    border-radius: var(--radius-pill);
+    background: var(--ink-100);
+    overflow: hidden;
+}
+
+.answer-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+    transition: width var(--duration) var(--ease);
 }
 
 .answer-note,
@@ -706,7 +726,7 @@ input[type="checkbox"] {
 @media (min-width: 1400px) {
     .workspace-main.is-trackers #output.results-shell {
         display: grid;
-        grid-template-columns: calc(var(--u24) * 3) minmax(0, 1fr);
+        grid-template-columns: calc(var(--u24) * 3 + var(--u16)) minmax(0, 1fr);
         column-gap: 0;
         row-gap: var(--u6);
     }
@@ -714,7 +734,7 @@ input[type="checkbox"] {
     .workspace-main.is-trackers #output > .answer {
         align-content: center;
         min-height: var(--u24);
-        padding: var(--u6);
+        padding: var(--u4) var(--u6);
         border-right: 0;
         border-bottom: 1px solid var(--ink-100);
         border-radius: var(--radius-surface) 0 0 var(--radius-surface);
@@ -723,7 +743,7 @@ input[type="checkbox"] {
     .workspace-main.is-trackers #output > .stat-line {
         flex-wrap: nowrap;
         min-height: var(--u24);
-        padding: var(--u6);
+        padding: var(--u4) var(--u6);
         border-top: 1px solid var(--ink-100);
         border-left: 0;
         border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
@@ -971,7 +991,7 @@ input[type="checkbox"] {
 }
 
 .stage.is-on {
-    background: var(--ink-900);
+    background: var(--accent);
     color: var(--surface);
     font-weight: var(--weight-bold);
 }
@@ -1087,8 +1107,8 @@ input[type="checkbox"] {
 }
 
 .chip-toggle.is-on {
-    background: var(--ink-900);
-    border-color: var(--ink-900);
+    background: var(--accent);
+    border-color: var(--accent);
     color: var(--surface);
 }
 
@@ -1108,6 +1128,26 @@ input[type="checkbox"] {
 
 .progress-card.is-done .card-bar > span {
     background: var(--accent);
+}
+
+/* Every tracker uses the same compact, open control rail. The cards remain the
+   primary surface; filters should not become a competing card above them. */
+.workspace-main.is-trackers .results-section > .segmented {
+    padding-inline: 0;
+    border: 0;
+    border-bottom: 1px solid var(--ink-100);
+    border-radius: 0;
+}
+
+.workspace-main.is-trackers .results-section > .toolbar {
+    padding: var(--u4) 0;
+    border: 0;
+    border-bottom: 1px solid var(--ink-100);
+    border-radius: 0;
+}
+
+.tracker-bestiary .progress-card.is-unrecorded .card-bar {
+    display: none;
 }
 
 .pager {
@@ -2095,6 +2135,7 @@ input[type="checkbox"] {
     .workspace-main.is-trackers #output > .stat-line + .results-section {
         margin-top: var(--u6);
     }
+
 }
 
 /* At the narrow end of desktop, search gets a complete row. Sort and the two
@@ -2178,6 +2219,63 @@ input[type="checkbox"] {
 
     h1 {
         font-size: var(--t-500);
+    }
+
+    .workspace-main.is-trackers .results-section > .segmented {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        width: 100%;
+        max-width: 100%;
+        gap: 0;
+        overflow: visible;
+        border: 0;
+        border-bottom: 1px solid var(--ink-100);
+        border-radius: 0;
+    }
+
+    .workspace-main.is-trackers .results-section > .segmented .segmented-button {
+        min-width: 0;
+        min-height: var(--u12);
+        padding: 0 var(--u1);
+        font-size: var(--t-100);
+        line-height: var(--leading-snug);
+        white-space: normal;
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: end;
+        gap: var(--u3);
+        padding-block: var(--u3);
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar > * {
+        min-width: 0;
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar .library-search,
+    .workspace-main.is-trackers .results-section > .toolbar .progress-select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar .filter-disclosure {
+        grid-column: 1;
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar .filter-disclosure[open] {
+        grid-column: 1 / -1;
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar .filter-disclosure > summary,
+    .workspace-main.is-trackers .results-section > .toolbar [data-tracker-selection-mode] {
+        width: 100%;
+    }
+
+    .workspace-main.is-trackers .results-section > .toolbar [data-tracker-selection-mode] {
+        grid-column: 2;
     }
 
     .landing-row {
@@ -2538,4 +2636,45 @@ th.is-sorted .column-sort {
 .table-container .row-aside {
     display: inline;
     margin-left: var(--u1);
+}
+
+/* A growing session history must not push the current page below the viewport.
+   Keep every tab and its metadata, but contain them in one familiar scrollable
+   tab rail instead of wrapping the rail into several rows. */
+.hunt-workspace {
+    flex-wrap: nowrap;
+}
+
+.hunt-tab-strip {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: var(--u1);
+    scrollbar-width: thin;
+}
+
+.hunt-tab {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+    .hunt-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--u3);
+        margin-bottom: var(--u4);
+    }
+
+    .hunt-tab-strip {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .hunt-workspace-actions {
+        grid-column: 1 / -1;
+        justify-self: end;
+        margin-left: 0;
+    }
 }

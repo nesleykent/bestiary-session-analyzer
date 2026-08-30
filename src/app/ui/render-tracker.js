@@ -294,9 +294,9 @@ export function renderTracker(container, view) {
     } = view;
     const selectable = selectionMode && bulkActions.length > 0;
 
-    container.className = "results-shell";
+    container.className = `results-shell tracker-${tracker.id}`;
     container.innerHTML = `
-        ${buildAnswer(totals.answer.label, totals.answer.value, totals.answer.note ?? "")}
+        ${buildAnswer(totals.answer.label, totals.answer.value, totals.answer.note ?? "", totals.answer.progress)}
         ${buildMetricLine(totals.stats ?? [])}
 
         <section class="results-section" aria-labelledby="trackerGridTitle">

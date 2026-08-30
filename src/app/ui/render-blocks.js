@@ -22,11 +22,20 @@ export function buildEmptyState(headline, detail = "") {
     `;
 }
 
-export function buildAnswer(label, value, note = "") {
+export function buildAnswer(label, value, note = "", progress = null) {
+    const normalizedProgress = typeof progress === "number"
+        ? Math.min(1, Math.max(0, progress))
+        : null;
+
     return `
         <article class="answer">
-            <span class="summary-label">${label}</span>
+            ${label ? `<span class="summary-label">${label}</span>` : ""}
             <strong class="answer-value">${value}</strong>
+            ${normalizedProgress !== null ? `
+                <span class="answer-progress" aria-hidden="true">
+                    <span style="width: ${Math.round(normalizedProgress * 100)}%"></span>
+                </span>
+            ` : ""}
             ${note ? `<p class="answer-note">${note}</p>` : ""}
         </article>
     `;

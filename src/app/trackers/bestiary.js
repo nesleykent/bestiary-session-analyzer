@@ -267,7 +267,8 @@ export const bestiaryTracker = {
             answer: {
                 label: "",
                 value: `${formatNumber(totals.completed)} / ${formatNumber(rows.length)} complete`,
-                note: ""
+                note: "",
+                progress: rows.length ? totals.completed / rows.length : 0
             },
             stats: [
                 `${formatNumber(totals.charmPointsEarned)} charm points`,
