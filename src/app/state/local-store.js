@@ -1,5 +1,6 @@
 const STORAGE_KEY = "bestiary-session-analyzer-v6";
 const LEGACY_SESSION_KEY = "bestiary-session-analyzer-v5";
+const APP_STORAGE_KEY = "bestiary-session-analyzer-app-v1";
 
 /**
  * Workspace persistence.
@@ -49,6 +50,34 @@ export function saveWorkspaceState(state) {
 
 export function loadWorkspaceState() {
     const rawState = readRaw(localStorage, STORAGE_KEY) ?? migrateLegacyState();
+
+    if (!rawState) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(rawState);
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * The application workspace (every character). A separate key from the
+ * single-character STORAGE_KEY above, which is left untouched and read only
+ * once, as a migration source, when this key has never been written.
+ */
+export function saveAppState(state) {
+    try {
+        localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(state));
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+export function loadAppState() {
+    const rawState = readRaw(localStorage, APP_STORAGE_KEY);
 
     if (!rawState) {
         return null;

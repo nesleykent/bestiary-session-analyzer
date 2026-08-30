@@ -29,6 +29,8 @@ bestiary-session-analyzer/
 |   |   |   |-- quests-repository.js
 |   |   |   `-- titles-repository.js
 |   |   |-- state/
+|   |   |   |-- app-workspace-transfer.js
+|   |   |   |-- character-workspace.js
 |   |   |   |-- hunt-workspace.js
 |   |   |   |-- local-store.js
 |   |   |   |-- tracker-progress.js
@@ -46,6 +48,7 @@ bestiary-session-analyzer/
 |   |   |-- ui/
 |   |   |   |-- render-all-tabs.js
 |   |   |   |-- render-blocks.js
+|   |   |   |-- render-character-switcher.js
 |   |   |   |-- render-charm-plan.js
 |   |   |   |-- render-comparison.js
 |   |   |   |-- render-hunt-tabs.js
@@ -82,6 +85,7 @@ bestiary-session-analyzer/
 - Bestiary and Tasks are the two top-level modes over one session collection. A session holds shared evidence plus each
   mode's own state, and each mode keeps its own current view.
 - `state/hunt-workspace.js` owns the session collection. Each session is the Bestiary analysis of one pasted Hunt Analyzer.
+- `state/character-workspace.js` owns the character roster. Each character wraps one whole workspace (the shape `hunt-workspace.js` already defines); only the active character's workspace lives on the app's flat runtime state at any time, `state/app-workspace-transfer.js` exports/imports every character in one file, and `state/local-store.js`'s single-workspace key is read once, non-destructively, to migrate pre-multi-character data into the first character.
 - `features/hunt-comparison.js` only ranks and combines Bestiary results that the sessions already calculated.
 - The tab bar reads Charm Plan, All Sessions, then one tab per session; `Compare Sessions` renders the charm rate ranking separately.
 - `state/workspace-transfer.js` serializes the workspace to a file and validates one on the way back in.

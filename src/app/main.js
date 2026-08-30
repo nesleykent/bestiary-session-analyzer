@@ -11,7 +11,6 @@ import { analyzeTaskSession, calculateTaskEstimate } from "./features/task-analy
 import { loadBestiaryData } from "./services/bestiary-repository.js";
 import {
     addHunt,
-    createWorkspace,
     getHuntLabel,
     hasBestiaryAnalysis,
     hasTaskAnalysis,
@@ -20,7 +19,15 @@ import {
     resetHunt,
     restoreWorkspace
 } from "./state/hunt-workspace.js";
-import { loadWorkspaceState, saveWorkspaceState } from "./state/local-store.js";
+import {
+    addCharacter,
+    createDefaultCharacter,
+    getCharacterLabel,
+    removeCharacter,
+    restoreAppWorkspace,
+    wrapLegacyWorkspaceAsCharacter
+} from "./state/character-workspace.js";
+import { loadAppState, loadWorkspaceState, saveAppState } from "./state/local-store.js";
 import {
     countTrackedEntries,
     createTrackerProgress,
@@ -54,8 +61,9 @@ import {
     getTrackerIds,
     TRACKERS
 } from "./trackers/registry.js";
-import { buildExportFileName, parseWorkspaceFile, serializeWorkspace } from "./state/workspace-transfer.js";
+import { buildAppExportFileName, parseAppWorkspaceFile, serializeAppState } from "./state/app-workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
+import { renderCharacterSwitcher, syncCharacterLabel } from "./ui/render-character-switcher.js";
 import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
 
 import { renderPasteBox, renderTransferReview } from "./ui/render-transfer-review.js";
@@ -87,6 +95,8 @@ const elements = {
     huntWorkspace: document.getElementById("huntWorkspace"),
     huntWorkspaceActions: document.getElementById("huntWorkspaceActions"),
     appAlert: document.getElementById("appAlert"),
+    addCharacterButton: document.getElementById("addCharacterButton"),
+    characterList: document.getElementById("characterList"),
     inputSection: document.getElementById("inputSection"),
     respawnModeBlock: document.getElementById("respawnModeBlock"),
     respawnModeHint: document.getElementById("respawnModeHint"),
@@ -163,6 +173,8 @@ const RESPAWN_MODE_SHORT_LABELS = {
 const state = {
     mode: "trackers",
     activeHuntId: "",
+    characters: [],
+    activeCharacterId: "",
     bestiaryData: [],
     bestiaryView: "session",
     isSessionInputOpen: false,
@@ -272,12 +284,182 @@ function hasWorkspaceContent() {
     return state.hunts.some(huntHasContent);
 }
 
-function persistState() {
-    if (!state.hunts.length) {
+/**
+ * A character's own content check: the active character's data lives on the
+ * flat `state` fields, everything else sits in its own stored workspace.
+ * Sessions and tracker progress are both checked — a character can hold real
+ * data (marked Bestiary/tracker entries) with no hunts at all.
+ */
+function characterHasContent(character) {
+    if (character.id === state.activeCharacterId) {
+        return hasWorkspaceContent() || countTrackedEntries(state.trackerProgress) > 0;
+    }
+
+    return (character.workspace?.hunts ?? []).some(huntHasContent)
+        || countTrackedEntries(character.workspace?.trackerProgress ?? {}) > 0;
+}
+
+function getActiveCharacterIndex() {
+    return state.characters.findIndex((character) => character.id === state.activeCharacterId);
+}
+
+/** Writes the active character's live state back into its stored slot. */
+function snapshotActiveCharacterWorkspace() {
+    const index = getActiveCharacterIndex();
+
+    if (index === -1) {
         return;
     }
 
-    saveWorkspaceState(getWorkspaceSnapshot());
+    state.characters[index].workspace = getWorkspaceSnapshot();
+}
+
+function getAppSnapshot() {
+    return {
+        activeCharacterId: state.activeCharacterId,
+        characters: state.characters
+    };
+}
+
+function persistState() {
+    if (!state.characters.length) {
+        return;
+    }
+
+    snapshotActiveCharacterWorkspace();
+    saveAppState(getAppSnapshot());
+}
+
+/**
+ * The transient view state a plain navigation already resets (see
+ * navigateWorkspace), plus the tracker page/selection — the tracker page is
+ * about to show a different character's data entirely.
+ */
+function resetCharacterTransientState() {
+    leaveRecordFlow();
+    state.selectedTrackerKey = "";
+    state.trackerPageIndex = 0;
+    state.activeTrackerId = TRACKERS[0].id;
+    state.isSessionInputOpen = false;
+}
+
+/**
+ * Every character-specific page reads off the flat `state` fields, which
+ * always represent the active character — so switching is: snapshot the
+ * outgoing character's live state into its stored slot, then apply the
+ * incoming character's stored workspace onto those same fields. No
+ * character-specific render or calculation code has to know characters exist.
+ */
+function switchCharacter(characterId) {
+    if (characterId === state.activeCharacterId) {
+        return;
+    }
+
+    const target = state.characters.find((character) => character.id === characterId);
+
+    if (!target) {
+        return;
+    }
+
+    captureVisibleInputs();
+    snapshotActiveCharacterWorkspace();
+    applyWorkspace(target.workspace);
+    state.activeCharacterId = characterId;
+    resetCharacterTransientState();
+    closeMobileSidebar();
+    renderApp();
+    persistState();
+}
+
+function addCharacterFlow() {
+    const { character, characters } = addCharacter(state.characters, "");
+
+    state.characters = characters;
+    switchCharacter(character.id);
+}
+
+/**
+ * Deleting the active character is a switch-and-delete: the neighbor it lands
+ * on is applied the same way a normal switch would, but the character being
+ * removed is never snapshotted first — there is nothing worth saving.
+ */
+function removeCharacterFlow(characterId) {
+    if (state.characters.length < 2) {
+        return;
+    }
+
+    const target = state.characters.find((character) => character.id === characterId);
+
+    if (!target) {
+        return;
+    }
+
+    // Mirrors closeHuntTab: an unsaved textarea edit on the active character
+    // must land on `state` before its content check runs, or a just-typed,
+    // not-yet-blurred session log would silently skip the confirm.
+    if (characterId === state.activeCharacterId) {
+        captureVisibleInputs();
+    }
+
+    const label = getCharacterLabel(state.characters.indexOf(target), target);
+
+    if (characterHasContent(target)
+        && !window.confirm(`Delete ${label}? Every tracker, session and plan it contains is discarded.`)) {
+        return;
+    }
+
+    const wasActive = characterId === state.activeCharacterId;
+    const result = removeCharacter(state.characters, characterId, state.activeCharacterId);
+
+    state.characters = result.characters;
+
+    if (wasActive) {
+        const next = state.characters.find((character) => character.id === result.activeCharacterId);
+
+        state.activeCharacterId = result.activeCharacterId;
+        applyWorkspace(next.workspace);
+        resetCharacterTransientState();
+    }
+
+    renderApp();
+    persistState();
+}
+
+function attachCharacterSwitcherEditors() {
+    elements.characterList.querySelectorAll("[data-character-select]").forEach((button) => {
+        button.addEventListener("click", () => switchCharacter(button.dataset.characterSelect));
+    });
+
+    elements.characterList.querySelectorAll("[data-character-delete]").forEach((button) => {
+        button.addEventListener("click", () => removeCharacterFlow(button.dataset.characterDelete));
+    });
+
+    // Writes straight to state on every keystroke and skips renderApp(), the
+    // same rule attachLibraryFieldEditors follows for session names — a full
+    // re-render here would rebuild the input mid-keystroke and drop the caret.
+    elements.characterList.querySelectorAll("[data-character-name]").forEach((input) => {
+        input.addEventListener("input", () => {
+            const characterId = input.dataset.characterName;
+            const character = state.characters.find((candidate) => candidate.id === characterId);
+
+            if (!character) {
+                return;
+            }
+
+            character.name = input.value;
+            persistState();
+            syncCharacterLabel(
+                elements.characterList,
+                characterId,
+                getCharacterLabel(state.characters.indexOf(character), character)
+            );
+        });
+    });
+}
+
+function renderCharacterSwitcherView() {
+    renderCharacterSwitcher(elements.characterList, state.characters, state.activeCharacterId, getCharacterLabel);
+    attachCharacterSwitcherEditors();
 }
 
 /**
@@ -1607,6 +1789,7 @@ function renderApp() {
     const view = getModeView();
 
     elements.appAlert.textContent = "";
+    renderCharacterSwitcherView();
 
     applyPrimaryMode();
     applyWorkspaceChrome();
@@ -3189,8 +3372,34 @@ function applyWorkspace(workspace) {
     normalizeView();
 }
 
-function restoreWorkspaceState() {
-    applyWorkspace(restoreWorkspace(loadWorkspaceState()) || createWorkspace());
+/**
+ * Boot order: the current app-level save, then — only when that key has never
+ * been written — a one-time migration of the old single-workspace save into a
+ * first character, then a fresh default character. The old key is left
+ * untouched as a non-destructive backup, and the migrated or default result is
+ * persisted immediately, before any render, so a crash mid-session can never
+ * lose the one-time migration.
+ */
+function restoreAppState() {
+    let resolved = restoreAppWorkspace(loadAppState());
+
+    if (!resolved) {
+        const legacyWorkspace = restoreWorkspace(loadWorkspaceState());
+        const character = legacyWorkspace
+            ? wrapLegacyWorkspaceAsCharacter(legacyWorkspace)
+            : createDefaultCharacter();
+
+        resolved = { characters: [character], activeCharacterId: character.id };
+        saveAppState(resolved);
+    }
+
+    state.characters = resolved.characters;
+    state.activeCharacterId = resolved.activeCharacterId;
+
+    const active = state.characters.find((character) => character.id === state.activeCharacterId)
+        || state.characters[0];
+
+    applyWorkspace(active.workspace);
 
     return hasWorkspaceContent();
 }
@@ -3219,8 +3428,8 @@ function exportWorkspace() {
     persistState();
 
     const exportedAt = new Date().toISOString();
-    const fileName = buildExportFileName(exportedAt);
-    const blob = new Blob([serializeWorkspace(getWorkspaceSnapshot(), exportedAt)], { type: "application/json" });
+    const fileName = buildAppExportFileName(exportedAt);
+    const blob = new Blob([serializeAppState(getAppSnapshot(), exportedAt)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const downloadLink = document.createElement("a");
 
@@ -3234,8 +3443,8 @@ function exportWorkspace() {
 }
 
 function requestWorkspaceImport() {
-    if (hasWorkspaceContent()
-        && !window.confirm("Importing replaces the sessions you have now. Continue?")) {
+    if (state.characters.some(characterHasContent)
+        && !window.confirm("Importing replaces every character you have now. Continue?")) {
         return;
     }
 
@@ -3245,13 +3454,20 @@ function requestWorkspaceImport() {
 
 async function importWorkspaceFile(file) {
     try {
-        const workspace = restoreWorkspace(parseWorkspaceFile(await file.text()));
+        const restored = restoreAppWorkspace(parseAppWorkspaceFile(await file.text()));
 
-        if (!workspace) {
+        if (!restored) {
             throw new Error("That file does not contain any exported sessions.");
         }
 
-        applyWorkspace(workspace);
+        state.characters = restored.characters;
+        state.activeCharacterId = restored.activeCharacterId;
+
+        const active = state.characters.find((character) => character.id === state.activeCharacterId)
+            || state.characters[0];
+
+        applyWorkspace(active.workspace);
+        resetCharacterTransientState();
         renderApp();
         persistState();
     } catch (error) {
@@ -3265,7 +3481,7 @@ async function initializeApp() {
         state.bestiaryData = await loadBestiaryData();
         state.trackerItems = await loadTrackerItems(state.bestiaryData);
 
-        const hasRestoredContent = restoreWorkspaceState();
+        const hasRestoredContent = restoreAppState();
         renderApp();
 
         if (hasRestoredContent) {
@@ -3310,6 +3526,7 @@ elements.output.addEventListener("keydown", (event) => {
         event.target.blur();
     }
 });
+elements.addCharacterButton.addEventListener("click", addCharacterFlow);
 elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
 elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
 elements.importWorkspaceInput.addEventListener("change", (event) => {

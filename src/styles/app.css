@@ -278,6 +278,31 @@ h3 {
     color: var(--accent);
 }
 
+.character-switcher .sidebar-section-items {
+    gap: var(--u3);
+}
+
+.character-row {
+    display: grid;
+    gap: var(--u1);
+}
+
+.character-edit-row {
+    display: flex;
+    align-items: center;
+    gap: var(--u1);
+    padding-left: var(--u6);
+}
+
+.character-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.character-edit-row .row-action {
+    flex-shrink: 0;
+}
+
 .sidebar-shortcut {
     margin-left: auto;
     font-size: var(--t-100);
