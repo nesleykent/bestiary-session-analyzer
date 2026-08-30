@@ -1644,6 +1644,9 @@ function renderDashboardView() {
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
     elements.sectionHeading.hidden = true;
+    elements.sectionHeading.classList.remove("is-page-redundant");
+    elements.resultsTitle.textContent = "Dashboard";
+    elements.resultsCopy.textContent = elements.pageDescription.textContent;
 
     const cards = TRACKERS.map((tracker) => {
         const context = getTrackerContext(tracker);
