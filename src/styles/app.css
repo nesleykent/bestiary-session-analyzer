@@ -174,6 +174,8 @@ h3 {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
     padding: var(--u6) var(--u4);
     background: var(--paper);
     border-right: 1px solid var(--ink-100);
@@ -196,9 +198,11 @@ h3 {
 }
 
 .sidebar-nav {
+    /* flex:1 still pulls Data & backup to the bottom when there's room to
+       spare; the sidebar itself scrolls as one unit when there isn't, so a
+       menu opening below the fold is never trapped in a squeezed inner
+       scroll box — the whole sidebar just grows and scrolls together. */
     flex: 1;
-    overflow-y: auto;
-    scrollbar-width: thin;
 }
 
 .sidebar-utilities {
