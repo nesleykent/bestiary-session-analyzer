@@ -27,7 +27,7 @@ import {
     restoreAppWorkspace,
     wrapLegacyWorkspaceAsCharacter
 } from "./state/character-workspace.js";
-import { loadAppState, loadWorkspaceState, saveAppState } from "./state/local-store.js";
+import { clearAllStoredState, loadAppState, loadWorkspaceState, saveAppState } from "./state/local-store.js";
 import {
     countTrackedEntries,
     createTrackerProgress,
@@ -99,6 +99,11 @@ const elements = {
     characterList: document.getElementById("characterList"),
     characterMenu: document.getElementById("characterMenu"),
     characterMenuCurrent: document.getElementById("characterMenuCurrent"),
+    dataMenu: document.getElementById("dataMenu"),
+    clearAllDataButton: document.getElementById("clearAllDataButton"),
+    clearAllDataConfirm: document.getElementById("clearAllDataConfirm"),
+    clearAllDataCancelButton: document.getElementById("clearAllDataCancelButton"),
+    clearAllDataConfirmButton: document.getElementById("clearAllDataConfirmButton"),
     inputSection: document.getElementById("inputSection"),
     respawnModeBlock: document.getElementById("respawnModeBlock"),
     respawnModeHint: document.getElementById("respawnModeHint"),
@@ -475,13 +480,6 @@ function attachCharacterSwitcherEditors() {
 
             character.name = input.value;
             persistState();
-
-            if (characterId === state.activeCharacterId) {
-                elements.characterMenuCurrent.textContent = getCharacterLabel(
-                    state.characters.indexOf(character),
-                    character
-                );
-            }
         });
 
         input.addEventListener("blur", () => {
@@ -498,6 +496,24 @@ function attachCharacterSwitcherEditors() {
     });
 }
 
+/**
+ * Closed, the trigger names the active character — useful context at a
+ * glance. Open, naming it again would be redundant with the highlighted row
+ * right below it, so it reads as a plain category label instead.
+ */
+function syncCharacterMenuLabel() {
+    if (elements.characterMenu.open) {
+        elements.characterMenuCurrent.textContent = "Character";
+        return;
+    }
+
+    const activeIndex = getActiveCharacterIndex();
+
+    elements.characterMenuCurrent.textContent = activeIndex === -1
+        ? ""
+        : getCharacterLabel(activeIndex, state.characters[activeIndex]);
+}
+
 function renderCharacterSwitcherView() {
     renderCharacterSwitcher(
         elements.characterList,
@@ -507,12 +523,7 @@ function renderCharacterSwitcherView() {
         getCharacterLabel
     );
 
-    const activeIndex = getActiveCharacterIndex();
-
-    elements.characterMenuCurrent.textContent = activeIndex === -1
-        ? ""
-        : getCharacterLabel(activeIndex, state.characters[activeIndex]);
-
+    syncCharacterMenuLabel();
     attachCharacterSwitcherEditors();
 }
 
@@ -3582,6 +3593,31 @@ elements.output.addEventListener("keydown", (event) => {
     }
 });
 elements.addCharacterButton.addEventListener("click", addCharacterFlow);
+// The open/closed state can change from a row click closing the menu
+// programmatically, not just the summary's own toggle, so the label syncs
+// off the native "toggle" event rather than any one call site.
+elements.characterMenu.addEventListener("toggle", syncCharacterMenuLabel);
+
+elements.clearAllDataButton.addEventListener("click", () => {
+    elements.clearAllDataConfirm.hidden = false;
+});
+elements.clearAllDataCancelButton.addEventListener("click", () => {
+    elements.clearAllDataConfirm.hidden = true;
+});
+elements.clearAllDataConfirmButton.addEventListener("click", () => {
+    clearAllStoredState();
+    // A reload is the simplest correct way back to a truly fresh boot — every
+    // in-memory field resets itself through the normal init path rather than
+    // this handler having to know and clear each one individually.
+    window.location.reload();
+});
+// Reopening the menu later should not resurrect a stale confirm from a
+// previous visit that was never explicitly cancelled.
+elements.dataMenu.addEventListener("toggle", () => {
+    if (!elements.dataMenu.open) {
+        elements.clearAllDataConfirm.hidden = true;
+    }
+});
 elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
 elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
 elements.importWorkspaceInput.addEventListener("change", (event) => {

@@ -89,3 +89,21 @@ export function loadAppState() {
         return null;
     }
 }
+
+/**
+ * Erases every trace this app has left in the browser — the current app
+ * state, the pre-multi-character save it may have migrated from, and the
+ * legacy session-storage key that save itself could still be waiting to
+ * migrate from. A page reload after this boots as if the app were never
+ * used, which is the whole point of the action.
+ */
+export function clearAllStoredState() {
+    try {
+        localStorage.removeItem(APP_STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(LEGACY_SESSION_KEY);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}

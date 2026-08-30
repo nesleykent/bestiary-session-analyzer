@@ -460,6 +460,46 @@ h3 {
     margin-top: var(--u1);
 }
 
+.data-menu-danger {
+    margin-top: var(--u3);
+    padding-top: var(--u3);
+    border-top: 1px solid var(--ink-100);
+}
+
+.sidebar-link.is-danger {
+    color: var(--caution);
+}
+
+.sidebar-link.is-danger:hover {
+    background: var(--caution-tint);
+}
+
+.sidebar-link.is-danger .material-symbols-outlined {
+    color: var(--caution);
+}
+
+.data-menu-danger-confirm {
+    display: grid;
+    gap: var(--u2);
+    margin-top: var(--u1);
+    padding: var(--u3);
+    border: 1px solid var(--caution-line);
+    border-radius: var(--radius-control);
+    background: var(--caution-tint);
+}
+
+.data-menu-danger-text {
+    font-size: var(--t-100);
+    line-height: var(--leading-body);
+    color: var(--ink-900);
+}
+
+.data-menu-danger-actions {
+    display: flex;
+    gap: var(--u2);
+    justify-content: flex-end;
+}
+
 .workspace-main {
     min-width: 0;
 }
@@ -551,6 +591,19 @@ h3 {
 .btn.is-danger {
     color: var(--caution);
     border-color: var(--caution-line);
+}
+
+/* The one truly irreversible action in the app (clear everything), so it
+   gets the app's strongest available treatment — filled, not outlined. */
+.btn.is-danger-solid {
+    border-color: var(--caution);
+    background: var(--caution);
+    color: var(--surface);
+}
+
+.btn.is-danger-solid:hover:not([disabled]) {
+    background: var(--ink-900);
+    border-color: var(--ink-900);
 }
 
 #processLogButton {

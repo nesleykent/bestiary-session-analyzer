@@ -69,13 +69,27 @@
                 </section>
             </nav>
 
-            <details class="data-menu">
+            <details class="data-menu" id="dataMenu">
                 <summary><span class="material-symbols-outlined" aria-hidden="true">database</span><span>Data &amp; backup</span></summary>
                 <div class="data-menu-actions">
                     <button class="sidebar-link" id="exportWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">download</span><span>Export workspace</span></button>
                     <button class="sidebar-link" id="importWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">upload</span><span>Import workspace</span></button>
                     <button class="sidebar-link" id="recentChangesButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">history_toggle_off</span><span>Recent changes</span></button>
                     <input class="sr-only" id="importWorkspaceInput" type="file" accept="application/json,.json" tabindex="-1" aria-hidden="true">
+                </div>
+
+                <div class="data-menu-danger">
+                    <button class="sidebar-link is-danger" id="clearAllDataButton" type="button">
+                        <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
+                        <span>Clear all data</span>
+                    </button>
+                    <div class="data-menu-danger-confirm" id="clearAllDataConfirm" hidden>
+                        <p class="data-menu-danger-text">Permanently deletes every character and everything else this app has stored in your browser. This cannot be undone.</p>
+                        <div class="data-menu-danger-actions">
+                            <button class="btn btn-tertiary" id="clearAllDataCancelButton" type="button">Cancel</button>
+                            <button class="btn is-danger-solid" id="clearAllDataConfirmButton" type="button">Clear everything</button>
+                        </div>
+                    </div>
                 </div>
             </details>
         </aside>
