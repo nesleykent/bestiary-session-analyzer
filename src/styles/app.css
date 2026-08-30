@@ -2948,6 +2948,14 @@ th.is-sorted .column-sort {
     background: var(--surface);
 }
 
+.library-name.is-saved,
+.library-date.is-saved,
+.library-notes.is-saved {
+    border-color: var(--accent);
+    background: var(--accent-tint);
+    transition: border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease);
+}
+
 .library-actions {
     display: flex;
     gap: var(--u2);
@@ -2957,6 +2965,33 @@ th.is-sorted .column-sort {
 
 .library-table td {
     vertical-align: middle;
+}
+
+@media (max-width: 720px) {
+    .library-table th:first-child,
+    .library-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        min-width: calc(var(--u24) * 2);
+        box-shadow: var(--u1) 0 var(--u2) rgb(var(--shadow-rgb) / 0.08);
+    }
+
+    .library-table th:first-child {
+        z-index: 3;
+    }
+
+    .library-table tbody tr:nth-child(odd) td:first-child {
+        background: var(--surface);
+    }
+
+    .library-table tbody tr:nth-child(even) td:first-child {
+        background: var(--paper);
+    }
+
+    .library-table tbody tr:hover td:first-child {
+        background: var(--accent-tint);
+    }
 }
 
 /* Two figures in one cell need to read as two figures. */

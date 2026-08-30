@@ -3299,6 +3299,8 @@ function syncHuntTabLabel(huntId) {
  * re-render, so the caret is never disturbed while typing.
  */
 function attachLibraryFieldEditors() {
+    const savedTimers = new WeakMap();
+
     const bindField = (attribute, apply) => {
         elements.output.querySelectorAll(`[${attribute}]`).forEach((input) => {
             input.addEventListener("input", () => {
@@ -3312,6 +3314,14 @@ function attachLibraryFieldEditors() {
                 apply(hunt, input.value);
                 persistState();
                 syncHuntTabLabel(huntId);
+
+                input.classList.remove("is-saved");
+                window.clearTimeout(savedTimers.get(input));
+                savedTimers.set(input, window.setTimeout(() => {
+                    input.classList.add("is-saved");
+                    announce(`${getHuntLabelById(huntId)} saved.`);
+                    window.setTimeout(() => input.classList.remove("is-saved"), 900);
+                }, 350));
             });
         });
     };
