@@ -18,7 +18,6 @@ import { escapeText } from "./render-tracker.js";
 const MAX_RESULTS = 8;
 
 let overlay = null;
-let onPick = null;
 let onSetValue = null;
 let results = [];
 let highlighted = 0;
@@ -68,9 +67,16 @@ export function matchItems(items, query) {
 
 function renderResults() {
     const list = overlay.querySelector("#quickAddResults");
+    const input = overlay.querySelector("#quickAddInput");
+    const hasQuery = Boolean(input.value.trim());
 
     if (!results.length) {
-        list.innerHTML = '<li class="quick-empty" role="presentation">No match in any tracker.</li>';
+        input.removeAttribute("aria-activedescendant");
+        list.innerHTML = `
+            <li class="quick-empty" role="presentation">
+                ${hasQuery ? "No matches. Try another name." : "Search by name to choose one value."}
+            </li>
+        `;
         return;
     }
 
@@ -87,8 +93,7 @@ function renderResults() {
         </li>
     `).join("");
 
-    overlay.querySelector("#quickAddInput")
-        .setAttribute("aria-activedescendant", `quickAddOption${highlighted}`);
+    input.setAttribute("aria-activedescendant", `quickAddOption${highlighted}`);
 }
 
 function renderValueStage() {
@@ -97,15 +102,22 @@ function renderValueStage() {
     if (!chosen) {
         stage.hidden = true;
         stage.innerHTML = "";
+        overlay.querySelector("#quickAddResults").hidden = false;
+        overlay.querySelector("#quickAddInput").setAttribute("aria-expanded", "true");
         return;
     }
 
+    overlay.querySelector("#quickAddResults").hidden = true;
+    overlay.querySelector("#quickAddInput").removeAttribute("aria-activedescendant");
+    overlay.querySelector("#quickAddInput").setAttribute("aria-expanded", "false");
     stage.hidden = false;
     stage.innerHTML = `
         <p class="quick-chosen">
-            <strong>${escapeText(chosen.name)}</strong>
+            <span>
+                <strong>${escapeText(chosen.name)}</strong>
+                <span class="quick-current">Current: ${chosen.valueLabel}</span>
+            </span>
             <span class="quick-tracker">${escapeText(chosen.trackerLabel)}</span>
-            <span class="quick-current">now ${chosen.valueLabel}</span>
         </p>
         <div class="quick-controls">
             ${chosen.controls.map((control) => `
@@ -123,7 +135,7 @@ function renderValueStage() {
                     type="number"
                     min="0"
                     inputmode="numeric"
-                    placeholder="exact count"
+                    placeholder="Exact count"
                     aria-label="Exact count for ${escapeAttribute(chosen.name)}"
                 >
             ` : ""}
@@ -185,33 +197,46 @@ export function openQuickAdd({ items, onSet, returnFocusSelector = "" }) {
     close();
 
     onSetValue = onSet;
-    onPick = null;
 
     overlay = document.createElement("div");
     overlay.className = "quick-add";
     overlay.dataset.returnFocus = returnFocusSelector;
     overlay.innerHTML = `
-        <div class="quick-panel" role="dialog" aria-label="Change one value">
-            <input
-                id="quickAddInput"
-                class="quick-input"
-                type="text"
-                role="combobox"
-                aria-expanded="true"
-                aria-controls="quickAddResults"
-                aria-autocomplete="list"
-                autocomplete="off"
-                placeholder="Type a creature, boss, charm, achievement, quest, title or subarea"
-            >
+        <div class="quick-panel" role="dialog" aria-modal="true" aria-labelledby="quickAddTitle" aria-describedby="quickAddDescription">
+            <div class="quick-header">
+                <div>
+                    <h2 id="quickAddTitle">Record progress</h2>
+                    <p id="quickAddDescription">Search every tracker and change one value.</p>
+                </div>
+                <button class="quick-close" id="quickAddClose" type="button" aria-label="Close record progress">
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+            </div>
+            <label class="quick-search" for="quickAddInput">
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input
+                    id="quickAddInput"
+                    class="quick-input"
+                    type="text"
+                    role="combobox"
+                    aria-expanded="true"
+                    aria-controls="quickAddResults"
+                    aria-autocomplete="list"
+                    autocomplete="off"
+                    placeholder="Search creatures, bosses, charms, and more"
+                >
+            </label>
             <ul class="quick-results" id="quickAddResults" role="listbox" aria-label="Matches"></ul>
             <div class="quick-value-stage" id="quickAddValue" hidden></div>
-            <p class="quick-hint">Enter to pick &middot; Esc to close &middot; nothing is saved until you set a value</p>
+            <p class="quick-hint"><span aria-hidden="true">&uarr;&darr;</span> Navigate &middot; Enter Select &middot; Esc Close</p>
         </div>
     `;
 
     document.body.appendChild(overlay);
 
     const input = overlay.querySelector("#quickAddInput");
+
+    overlay.querySelector("#quickAddClose").addEventListener("click", close);
 
     input.addEventListener("input", () => {
         chosen = null;

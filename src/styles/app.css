@@ -1760,36 +1760,95 @@ input[type="checkbox"] {
     z-index: 60;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
     padding: 12vh var(--u4) var(--u4);
     background: rgb(var(--shadow-rgb) / 0.35);
+    overflow-y: auto;
 }
 
 .quick-panel {
     width: min(calc(var(--u24) * 6 + var(--u6)), 100%);
-    max-height: 76vh;
+    max-height: min(76vh, calc(var(--u24) * 6 + var(--u12)));
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--ink-100);
     border-radius: var(--radius-surface);
     background: var(--surface);
     box-shadow: var(--elevation-2);
 }
 
-.quick-input {
-    min-height: var(--u16);
-    border: 0;
-    border-bottom: 1px solid var(--ink-100);
-    border-radius: 0;
-    font-size: var(--t-300);
+.quick-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--u4);
+    padding: var(--u4) var(--u4) var(--u3);
 }
 
-.quick-input:focus {
-    box-shadow: none;
+.quick-header h2 {
+    font-size: var(--t-400);
+}
+
+.quick-header p {
+    margin-top: var(--u1);
+    color: var(--ink-700);
+    font-size: var(--t-200);
+}
+
+.quick-close {
+    flex: 0 0 44px;
+    width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--ink-100);
+    border-radius: var(--radius-control);
+    background: var(--surface);
+    color: var(--ink-700);
+    cursor: pointer;
+}
+
+.quick-close:hover {
+    border-color: var(--ink-300);
+    color: var(--ink-900);
+}
+
+.quick-search {
+    position: relative;
+    display: block;
+    margin: 0 var(--u4) var(--u2);
+}
+
+.quick-search > .material-symbols-outlined {
+    position: absolute;
+    left: var(--u3);
+    top: 50%;
+    z-index: 1;
+    transform: translateY(-50%);
+    color: var(--ink-500);
+    pointer-events: none;
+}
+
+.quick-search .quick-input {
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    padding-left: calc(var(--u8) + var(--u2));
+    border-color: var(--ink-300);
+    font-size: var(--t-200);
+}
+
+.quick-search .quick-input:focus {
+    border-color: var(--accent);
 }
 
 .quick-results {
     overflow-y: auto;
+    max-height: min(42vh, calc(var(--u24) * 3));
     padding: var(--u2) 0;
+    border-top: 1px solid var(--ink-100);
 }
 
 .quick-option {
@@ -1818,16 +1877,22 @@ input[type="checkbox"] {
 
 .quick-value-stage {
     border-top: 1px solid var(--ink-100);
-    padding: var(--u3) var(--u4);
+    padding: var(--u4);
     background: var(--paper);
 }
 
 .quick-chosen {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: var(--u2);
     flex-wrap: wrap;
-    margin-bottom: var(--u2);
+    margin-bottom: var(--u3);
+}
+
+.quick-current {
+    display: block;
+    margin-top: var(--u1);
 }
 
 .quick-controls {
@@ -1836,11 +1901,52 @@ input[type="checkbox"] {
     gap: var(--u2);
 }
 
+.quick-controls .row-action,
+.quick-controls input {
+    height: 44px;
+    min-height: 44px;
+}
+
+.quick-controls .row-action {
+    min-width: 44px;
+}
+
 .quick-hint {
-    padding: var(--u2) var(--u4);
+    padding: var(--u3) var(--u4);
     border-top: 1px solid var(--ink-100);
     font-size: var(--t-100);
     color: var(--ink-500);
+}
+
+@media (max-width: 560px) {
+    .quick-add {
+        padding: var(--u4) var(--u2);
+    }
+
+    .quick-panel {
+        max-height: calc(100vh - var(--u8));
+    }
+
+    .quick-header,
+    .quick-value-stage {
+        padding-left: var(--u3);
+        padding-right: var(--u3);
+    }
+
+    .quick-search {
+        margin-left: var(--u3);
+        margin-right: var(--u3);
+    }
+
+    .quick-option {
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding-left: var(--u3);
+        padding-right: var(--u3);
+    }
+
+    .quick-option .quick-value {
+        grid-column: 1 / -1;
+    }
 }
 
 .detail-panel {
@@ -2062,6 +2168,18 @@ input[type="checkbox"] {
 
 .section-heading {
     margin-bottom: var(--u3);
+}
+
+.section-heading.is-page-redundant h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .hunt-workspace {
