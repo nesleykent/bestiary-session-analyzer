@@ -1,10 +1,10 @@
 import { escapeAttribute } from "./render-blocks.js";
 
-function buildRow(character, index, label, isActive, canDelete) {
+function buildDisplayRow(character, label, isActive, canDelete) {
     return `
         <div class="character-row${isActive ? " is-active" : ""}" data-character-row="${escapeAttribute(character.id)}">
             <button
-                class="sidebar-link character-select${isActive ? " is-selected" : ""}"
+                class="character-row-select"
                 type="button"
                 data-character-select="${escapeAttribute(character.id)}"
                 aria-current="${isActive ? "page" : "false"}"
@@ -12,57 +12,65 @@ function buildRow(character, index, label, isActive, canDelete) {
                 <span class="material-symbols-outlined" aria-hidden="true">person</span>
                 <span data-character-label="${escapeAttribute(character.id)}">${escapeAttribute(label)}</span>
             </button>
-            <div class="character-edit-row">
-                <input
-                    class="library-name character-name"
-                    type="text"
-                    data-character-name="${escapeAttribute(character.id)}"
-                    value="${escapeAttribute(character.name)}"
-                    placeholder="${escapeAttribute(label)}"
-                    aria-label="Rename ${escapeAttribute(label)}"
-                >
-                <button
-                    class="row-action is-danger"
-                    type="button"
-                    data-character-delete="${escapeAttribute(character.id)}"
-                    aria-label="Delete ${escapeAttribute(label)}"
-                    ${canDelete ? "" : "disabled"}
-                >Delete</button>
-            </div>
+            <button
+                class="icon-button character-row-action"
+                type="button"
+                data-character-rename="${escapeAttribute(character.id)}"
+                aria-label="Rename ${escapeAttribute(label)}"
+            ><span class="material-symbols-outlined" aria-hidden="true">edit</span></button>
+            <button
+                class="icon-button character-row-action is-danger"
+                type="button"
+                data-character-delete="${escapeAttribute(character.id)}"
+                aria-label="Delete ${escapeAttribute(label)}"
+                ${canDelete ? "" : "disabled"}
+            ><span class="material-symbols-outlined" aria-hidden="true">delete</span></button>
         </div>
     `;
 }
 
-export function renderCharacterSwitcher(container, characters, activeCharacterId, getLabel) {
-    const canDelete = characters.length > 1;
-
-    container.innerHTML = characters
-        .map((character, index) => buildRow(
-            character,
-            index,
-            getLabel(index, character),
-            character.id === activeCharacterId,
-            canDelete
-        ))
-        .join("");
+/**
+ * No explicit "done" control — Enter or clicking away both blur the field,
+ * which is what commits and closes it, the same mental model as renaming a
+ * file in a desktop file browser.
+ */
+function buildEditingRow(character, label) {
+    return `
+        <div class="character-row is-editing" data-character-row="${escapeAttribute(character.id)}">
+            <input
+                class="character-row-input"
+                type="text"
+                data-character-name="${escapeAttribute(character.id)}"
+                value="${escapeAttribute(character.name)}"
+                placeholder="${escapeAttribute(label)}"
+                aria-label="Rename ${escapeAttribute(label)}"
+            >
+        </div>
+    `;
 }
 
 /**
- * A targeted patch for the label and delete-button state after a rename or a
- * roster change that does not require rebuilding every row, mirroring
- * syncHuntTabLabel in main.js — a full re-render would drop focus/caret out of
- * the rename field mid-keystroke.
+ * At most one row is ever in edit mode at a time (editingCharacterId), so
+ * renaming reads as "click to edit this one row" rather than every character
+ * carrying its own permanently-open text field.
  */
-export function syncCharacterLabel(container, characterId, label) {
-    const labelNode = container.querySelector(`[data-character-label="${characterId}"]`);
+export function renderCharacterSwitcher(container, characters, activeCharacterId, editingCharacterId, getLabel) {
+    const canDelete = characters.length > 1;
 
-    if (labelNode) {
-        labelNode.textContent = label;
-    }
+    container.innerHTML = characters
+        .map((character, index) => {
+            const label = getLabel(index, character);
 
-    const nameInput = container.querySelector(`[data-character-name="${characterId}"]`);
+            return character.id === editingCharacterId
+                ? buildEditingRow(character, label)
+                : buildDisplayRow(character, label, character.id === activeCharacterId, canDelete);
+        })
+        .join("");
+}
 
-    if (nameInput) {
-        nameInput.placeholder = label;
-    }
+export function focusCharacterNameInput(container, characterId) {
+    const input = container.querySelector(`[data-character-name="${characterId}"]`);
+
+    input?.focus();
+    input?.select();
 }

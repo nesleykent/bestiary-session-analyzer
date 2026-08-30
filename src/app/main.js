@@ -63,7 +63,7 @@ import {
 } from "./trackers/registry.js";
 import { buildAppExportFileName, parseAppWorkspaceFile, serializeAppState } from "./state/app-workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
-import { renderCharacterSwitcher, syncCharacterLabel } from "./ui/render-character-switcher.js";
+import { focusCharacterNameInput, renderCharacterSwitcher } from "./ui/render-character-switcher.js";
 import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
 
 import { renderPasteBox, renderTransferReview } from "./ui/render-transfer-review.js";
@@ -97,6 +97,8 @@ const elements = {
     appAlert: document.getElementById("appAlert"),
     addCharacterButton: document.getElementById("addCharacterButton"),
     characterList: document.getElementById("characterList"),
+    characterMenu: document.getElementById("characterMenu"),
+    characterMenuCurrent: document.getElementById("characterMenuCurrent"),
     inputSection: document.getElementById("inputSection"),
     respawnModeBlock: document.getElementById("respawnModeBlock"),
     respawnModeHint: document.getElementById("respawnModeHint"),
@@ -175,6 +177,7 @@ const state = {
     activeHuntId: "",
     characters: [],
     activeCharacterId: "",
+    editingCharacterId: "",
     bestiaryData: [],
     bestiaryView: "session",
     isSessionInputOpen: false,
@@ -341,6 +344,7 @@ function resetCharacterTransientState() {
     state.trackerPageIndex = 0;
     state.activeTrackerId = TRACKERS[0].id;
     state.isSessionInputOpen = false;
+    state.editingCharacterId = "";
 }
 
 /**
@@ -371,11 +375,19 @@ function switchCharacter(characterId) {
     persistState();
 }
 
+/**
+ * A new character starts unnamed, so it goes straight into rename mode —
+ * naming it is almost certainly the next thing the player wants to do, and
+ * the menu stays open for it rather than closing like a plain switch does.
+ */
 function addCharacterFlow() {
     const { character, characters } = addCharacter(state.characters, "");
 
     state.characters = characters;
     switchCharacter(character.id);
+    state.editingCharacterId = character.id;
+    renderCharacterSwitcherView();
+    focusCharacterNameInput(elements.characterList, character.id);
 }
 
 /**
@@ -427,7 +439,19 @@ function removeCharacterFlow(characterId) {
 
 function attachCharacterSwitcherEditors() {
     elements.characterList.querySelectorAll("[data-character-select]").forEach((button) => {
-        button.addEventListener("click", () => switchCharacter(button.dataset.characterSelect));
+        button.addEventListener("click", () => {
+            switchCharacter(button.dataset.characterSelect);
+            // Picking one closes the menu, like a plain select — nothing left to do here.
+            elements.characterMenu.removeAttribute("open");
+        });
+    });
+
+    elements.characterList.querySelectorAll("[data-character-rename]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.editingCharacterId = button.dataset.characterRename;
+            renderCharacterSwitcherView();
+            focusCharacterNameInput(elements.characterList, state.editingCharacterId);
+        });
     });
 
     elements.characterList.querySelectorAll("[data-character-delete]").forEach((button) => {
@@ -437,6 +461,9 @@ function attachCharacterSwitcherEditors() {
     // Writes straight to state on every keystroke and skips renderApp(), the
     // same rule attachLibraryFieldEditors follows for session names — a full
     // re-render here would rebuild the input mid-keystroke and drop the caret.
+    // Enter or clicking away blurs the field, which is what commits the name
+    // and returns the row to its normal display, mirroring a desktop file
+    // browser's rename-in-place.
     elements.characterList.querySelectorAll("[data-character-name]").forEach((input) => {
         input.addEventListener("input", () => {
             const characterId = input.dataset.characterName;
@@ -448,17 +475,44 @@ function attachCharacterSwitcherEditors() {
 
             character.name = input.value;
             persistState();
-            syncCharacterLabel(
-                elements.characterList,
-                characterId,
-                getCharacterLabel(state.characters.indexOf(character), character)
-            );
+
+            if (characterId === state.activeCharacterId) {
+                elements.characterMenuCurrent.textContent = getCharacterLabel(
+                    state.characters.indexOf(character),
+                    character
+                );
+            }
+        });
+
+        input.addEventListener("blur", () => {
+            state.editingCharacterId = "";
+            renderCharacterSwitcherView();
+        });
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === "Escape") {
+                event.preventDefault();
+                input.blur();
+            }
         });
     });
 }
 
 function renderCharacterSwitcherView() {
-    renderCharacterSwitcher(elements.characterList, state.characters, state.activeCharacterId, getCharacterLabel);
+    renderCharacterSwitcher(
+        elements.characterList,
+        state.characters,
+        state.activeCharacterId,
+        state.editingCharacterId,
+        getCharacterLabel
+    );
+
+    const activeIndex = getActiveCharacterIndex();
+
+    elements.characterMenuCurrent.textContent = activeIndex === -1
+        ? ""
+        : getCharacterLabel(activeIndex, state.characters[activeIndex]);
+
     attachCharacterSwitcherEditors();
 }
 

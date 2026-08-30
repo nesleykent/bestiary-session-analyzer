@@ -17,14 +17,20 @@
                 <a class="sidebar-brand" href="#" data-sidebar-mode="trackers" data-sidebar-view="bestiary">Bestiary Session Analyzer</a>
             </div>
 
-            <section class="sidebar-section character-switcher" aria-labelledby="characterSwitcherTitle">
-                <h2 class="sidebar-section-title" id="characterSwitcherTitle">Character</h2>
-                <div class="sidebar-section-items" id="characterList"></div>
-                <button class="sidebar-link" id="addCharacterButton" type="button">
-                    <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-                    <span>Add character</span>
-                </button>
-            </section>
+            <details class="character-menu" id="characterMenu">
+                <summary>
+                    <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                    <span class="character-menu-current" id="characterMenuCurrent">Character</span>
+                    <span class="material-symbols-outlined character-menu-caret" aria-hidden="true">expand_more</span>
+                </summary>
+                <div class="character-menu-panel">
+                    <div class="character-rows" id="characterList"></div>
+                    <button class="sidebar-link" id="addCharacterButton" type="button">
+                        <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+                        <span>Add character</span>
+                    </button>
+                </div>
+            </details>
 
             <nav class="sidebar-nav" aria-label="Primary">
                 <div class="sidebar-utilities">
