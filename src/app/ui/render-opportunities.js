@@ -26,6 +26,15 @@ function buildSection(title, copy, body, count, shown) {
     `;
 }
 
+function buildCreatureAction(name) {
+    return `
+        <button class="opportunity-creature" type="button" data-opportunity-creature="${escapeAttribute(name)}">
+            <span>${escapeAttribute(name)}</span>
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+        </button>
+    `;
+}
+
 function buildFinishable(analysis) {
     if (!analysis.finishableCount) {
         return buildSection(
@@ -51,7 +60,7 @@ function buildFinishable(analysis) {
         '<span class="row-charm">Charm Rate</span>'
     ], "is-head");
     const rows = analysis.finishable.map((entry) => buildRow([
-        `<span class="row-name is-verbatim">${escapeAttribute(entry.name)}${buildLinkButton(escapeAttribute(entry.sessionLabel), "data-opportunity-session", entry.sessionId, "is-pill")}</span>`,
+        `<span class="row-name is-verbatim">${buildCreatureAction(entry.name)}${buildLinkButton(escapeAttribute(entry.sessionLabel), "data-opportunity-session", entry.sessionId, "is-pill")}</span>`,
         `<span class="row-num">${formatNumber(entry.killsLeft)}</span>`,
         `<span class="row-num">${formatTime(entry.timeRemainingMinutes)}</span>`,
         `<span class="row-charm">${formatCharmsPerHour(entry.charmsPerHour)}</span>`
@@ -77,7 +86,7 @@ function buildQuickWins(analysis) {
         '<span class="row-charm">Charm</span>'
     ], "is-head");
     const rows = analysis.quickWins.map((entry) => buildRow([
-        `<span class="row-name is-verbatim">${escapeAttribute(entry.name)}</span>`,
+        `<span class="row-name is-verbatim">${buildCreatureAction(entry.name)}</span>`,
         `<span class="row-num">${formatNumber(entry.killsLeft)} of ${formatNumber(entry.unlockTarget)}</span>`,
         `<span class="row-charm">+${formatNumber(entry.charms)}</span>`
     ]));
@@ -129,7 +138,7 @@ function buildBlindSpots(analysis) {
         '<span class="row-charm">Charm</span>'
     ], "is-head");
     const rows = analysis.blindSpots.map((entry) => buildRow([
-        `<span class="row-name is-verbatim">${escapeAttribute(entry.name)}</span>`,
+        `<span class="row-name is-verbatim">${buildCreatureAction(entry.name)}</span>`,
         `<span class="row-num">${formatNumber(entry.killsLeft)}</span>`,
         `<span class="row-charm">+${formatNumber(entry.charms)}</span>`
     ]));

@@ -1709,6 +1709,27 @@ function attachOpportunityActions() {
     elements.output.querySelectorAll("[data-opportunity-session]").forEach((button) => {
         button.addEventListener("click", () => selectHunt(button.dataset.opportunitySession));
     });
+
+    elements.output.querySelectorAll("[data-opportunity-creature]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const tracker = bestiaryTracker;
+            const row = buildTrackerRows(tracker)
+                .find((candidate) => candidate.name === button.dataset.opportunityCreature);
+            const filters = buildInitialFilters(tracker);
+
+            filters.search = button.dataset.opportunityCreature;
+            state.trackerFilters[tracker.id] = filters;
+            state.mode = "trackers";
+            state.activeTrackerId = tracker.id;
+            state.trackerPageIndex = 0;
+            state.selectedTrackerKey = row?.key ?? "";
+            leaveRecordFlow();
+            closeMobileSidebar();
+            renderApp();
+            persistState();
+            announce(`${button.dataset.opportunityCreature} opened in Bestiary.`);
+        });
+    });
 }
 
 function buildLibraryRows() {

@@ -2362,6 +2362,34 @@ input[type="checkbox"] {
     padding: 0 0 0 var(--u2);
 }
 
+.opportunity-creature {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--u1);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-weight: var(--weight-medium);
+    text-align: left;
+    cursor: pointer;
+}
+
+.opportunity-creature .material-symbols-outlined {
+    font-size: 1.1em;
+    transition: transform var(--duration-fast) var(--ease);
+}
+
+.opportunity-creature:hover span:first-child {
+    text-decoration: underline;
+    text-underline-offset: calc(var(--u1) / 2);
+}
+
+.opportunity-creature:hover .material-symbols-outlined {
+    transform: translateX(var(--u1));
+}
+
 .session-summary {
     display: flex;
     align-items: center;
