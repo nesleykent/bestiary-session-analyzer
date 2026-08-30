@@ -1544,6 +1544,7 @@ function showSectionHeading(title, copy) {
     elements.sectionHeading.hidden = false;
     elements.resultsTitle.textContent = title;
     elements.resultsCopy.textContent = copy;
+    elements.sectionHeading.classList.toggle("is-page-redundant", title === elements.pageTitle.textContent);
 }
 
 function renderRecentChangesView() {
@@ -1617,6 +1618,12 @@ function renderTrackerView() {
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
     elements.sectionHeading.hidden = true;
+    elements.sectionHeading.classList.remove("is-page-redundant");
+    // The heading is visually redundant on tracker pages, but it still labels the
+    // analysis region for assistive technology. Keep that label in sync with the
+    // active tracker instead of leaking the title of the previously visited page.
+    elements.resultsTitle.textContent = tracker.resultsTitle ?? tracker.label;
+    elements.resultsCopy.textContent = tracker.resultsCopy ?? "";
 
     renderTracker(elements.output, getTrackerView(tracker));
     attachTrackerActions();
@@ -1637,6 +1644,9 @@ function renderDashboardView() {
     elements.analysisSection.hidden = false;
     elements.respawnModeBlock.hidden = true;
     elements.sectionHeading.hidden = true;
+    elements.sectionHeading.classList.remove("is-page-redundant");
+    elements.resultsTitle.textContent = "Dashboard";
+    elements.resultsCopy.textContent = elements.pageDescription.textContent;
 
     const cards = TRACKERS.map((tracker) => {
         const context = getTrackerContext(tracker);
@@ -3816,15 +3826,15 @@ function applyQuickSet(item, field, value) {
     showUndo(change);
 }
 
-function focusWorkspaceSearch() {
+function focusWorkspaceSearch(returnFocusSelector = "#sidebarSearchButton") {
     openQuickAdd({
         items: buildQuickAddItems(),
         onSet: applyQuickSet,
-        returnFocusSelector: ""
+        returnFocusSelector
     });
 }
 
-elements.sidebarSearchButton.addEventListener("click", focusWorkspaceSearch);
+elements.sidebarSearchButton.addEventListener("click", () => focusWorkspaceSearch("#sidebarSearchButton"));
 
 elements.recentChangesButton.addEventListener("click", () => {
     state.mode = "trackers";
