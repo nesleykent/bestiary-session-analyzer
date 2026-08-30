@@ -23,7 +23,7 @@ jobs:
           test -f src/app/state/local-store.js
           test -f src/app/ui/render-results.js
           test -f src/app/utils/formatters.js
-          test -f src/styles/main.css
+          test -f src/styles/app.css
           test -f src/data/bestiary.json
 
       - name: Validate datasets
