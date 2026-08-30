@@ -1421,6 +1421,21 @@ input[type="checkbox"] {
     text-align: center;
 }
 
+.empty-state strong,
+.empty-state > span {
+    display: block;
+}
+
+.empty-state > span {
+    margin-top: var(--u1);
+    color: var(--ink-700);
+}
+
+.empty-state-action,
+.answer-actions {
+    margin-top: var(--u4);
+}
+
 /* Empty results occupy the same slot and rhythm as a populated card grid. Without
    this shared margin they fused to the filter surface and read like its footer. */
 .results-section > .empty-state {

@@ -2073,6 +2073,15 @@ function addHuntTab() {
     persistState();
 }
 
+function openCurrentSession() {
+    captureVisibleInputs();
+    state.isSessionInputOpen = true;
+    setModeView("session");
+    renderApp();
+    persistState();
+    elements.sessionLog.focus();
+}
+
 function closeHuntTab(huntId) {
     if (state.hunts.length < 2) {
         return;
@@ -3917,6 +3926,13 @@ elements.newSessionButton.addEventListener("click", () => {
     }
     state.bestiaryView = "session";
     addHuntTab();
+});
+elements.output.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (target?.closest("[data-empty-open-session]")) {
+        openCurrentSession();
+    }
 });
 
 initializeApp();

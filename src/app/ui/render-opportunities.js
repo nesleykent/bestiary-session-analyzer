@@ -46,7 +46,10 @@ function buildFinishable(analysis) {
                     : "No sessions stored yet.",
                 analysis.totals.sessionCount
                     ? "Every creature your sessions measured is already unlocked, so the opportunities below are the ones worth planning for."
-                    : "Paste a Hunt Analyzer under Sessions and its kill rates will project completion times here."
+                    : "Paste a Hunt Analyzer under Sessions and its kill rates will project completion times here.",
+                analysis.totals.sessionCount
+                    ? ""
+                    : '<button class="btn btn-secondary" type="button" data-empty-open-session>Open current session</button>'
             ),
             0,
             0
