@@ -14,14 +14,14 @@
     <div class="app-shell">
         <aside class="workspace-sidebar" id="workspaceSidebar" aria-label="Workspace navigation">
             <div class="sidebar-brand-row">
-                <a class="sidebar-brand" href="#" data-sidebar-mode="trackers" data-sidebar-view="bestiary">Bestiary Session Analyzer</a>
+                <a class="sidebar-brand" href="#" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">Bestiary Session Analyzer</a>
             </div>
 
-            <details class="character-menu" id="characterMenu">
+            <details class="sidebar-menu character-menu" id="characterMenu">
                 <summary>
                     <span class="material-symbols-outlined" aria-hidden="true">person</span>
                     <span class="character-menu-current" id="characterMenuCurrent">Character</span>
-                    <span class="material-symbols-outlined character-menu-caret" aria-hidden="true">expand_more</span>
+                    <span class="material-symbols-outlined sidebar-menu-caret" aria-hidden="true">expand_more</span>
                 </summary>
                 <div class="character-menu-panel">
                     <div class="character-rows" id="characterList"></div>
@@ -69,11 +69,11 @@
                 </section>
             </nav>
 
-            <details class="data-menu" id="dataMenu">
+            <details class="sidebar-menu data-menu" id="dataMenu">
                 <summary>
                     <span class="material-symbols-outlined" aria-hidden="true">database</span>
                     <span>Data &amp; backup</span>
-                    <span class="material-symbols-outlined data-menu-caret" aria-hidden="true">expand_more</span>
+                    <span class="material-symbols-outlined sidebar-menu-caret" aria-hidden="true">expand_more</span>
                 </summary>
                 <div class="data-menu-actions">
                     <button class="sidebar-link" id="exportWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">download</span><span>Export workspace</span></button>

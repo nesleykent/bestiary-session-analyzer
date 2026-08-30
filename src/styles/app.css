@@ -282,13 +282,17 @@ h3 {
     color: var(--accent);
 }
 
-.character-menu {
-    border-bottom: 1px solid var(--ink-100);
-    padding-bottom: var(--u4);
-    margin-bottom: var(--u4);
-}
-
-.character-menu > summary {
+/*
+ * One shared disclosure component for every collapsible sidebar menu
+ * (character switcher, Data & backup, and any future one). Only ONE of
+ * these exists on purpose: two menus that are meant to look and behave
+ * identically kept drifting apart because their summaries were two
+ * hand-maintained copies of the same rules. Sharing the class makes that
+ * divergence structurally impossible instead of something to remember.
+ * Each menu keeps its own class (.character-menu, .data-menu) ONLY for
+ * its position-specific divider — top-of-sidebar vs. bottom-of-sidebar.
+ */
+.sidebar-menu > summary {
     align-items: center;
     display: grid;
     grid-template-columns: var(--u6) minmax(0, 1fr) var(--u6);
@@ -303,31 +307,37 @@ h3 {
     list-style: none;
 }
 
-.character-menu > summary:hover {
+.sidebar-menu > summary:hover {
     background: rgb(var(--shadow-rgb) / 0.05);
 }
 
-.character-menu > summary::-webkit-details-marker {
+.sidebar-menu > summary::-webkit-details-marker {
     display: none;
 }
 
-.character-menu > summary .material-symbols-outlined {
+.sidebar-menu > summary .material-symbols-outlined {
     font-size: calc(var(--u6) - var(--u1));
     color: var(--ink-500);
+}
+
+.sidebar-menu-caret {
+    transition: transform 0.15s ease;
+}
+
+.sidebar-menu[open] .sidebar-menu-caret {
+    transform: rotate(180deg);
+}
+
+.character-menu {
+    border-bottom: 1px solid var(--ink-100);
+    padding-bottom: var(--u4);
+    margin-bottom: var(--u4);
 }
 
 .character-menu-current {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.character-menu-caret {
-    transition: transform 0.15s ease;
-}
-
-.character-menu[open] .character-menu-caret {
-    transform: rotate(180deg);
 }
 
 .character-menu-panel {
@@ -431,44 +441,8 @@ h3 {
     padding-top: var(--u4);
 }
 
-.data-menu > summary {
-    align-items: center;
-    display: grid;
-    grid-template-columns: var(--u6) minmax(0, 1fr) var(--u6);
-    gap: var(--u3);
-    min-height: var(--control-height);
-    padding: 0 var(--u2);
-    border-radius: var(--radius-control);
-    font-size: var(--t-200);
-    font-weight: var(--weight-bold);
-    color: var(--ink-900);
-    cursor: pointer;
-    list-style: none;
-}
-
-.data-menu > summary:hover {
-    background: rgb(var(--shadow-rgb) / 0.05);
-}
-
-.data-menu > summary .material-symbols-outlined {
-    font-size: calc(var(--u6) - var(--u1));
-    color: var(--ink-500);
-}
-
-.data-menu-caret {
-    transition: transform 0.15s ease;
-}
-
-.data-menu[open] .data-menu-caret {
-    transform: rotate(180deg);
-}
-
 .workspace-sidebar :focus-visible {
     outline-color: var(--ink-900);
-}
-
-.data-menu > summary::-webkit-details-marker {
-    display: none;
 }
 
 .data-menu-actions {

@@ -177,7 +177,7 @@ const RESPAWN_MODE_SHORT_LABELS = {
 };
 
 const state = {
-    mode: "trackers",
+    mode: "dashboard",
     activeHuntId: "",
     characters: [],
     activeCharacterId: "",

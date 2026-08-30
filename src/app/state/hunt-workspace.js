@@ -42,7 +42,9 @@ export function createWorkspace() {
     const hunt = createHunt();
 
     return {
-        mode: "trackers",
+        // The Dashboard is the app's homepage — where a brand-new character,
+        // and the brand link in the sidebar, both land.
+        mode: "dashboard",
         trackerProgress: {},
         // The undo trail. Empty for a new workspace.
         changeLog: [],
@@ -160,7 +162,7 @@ function normalizeView(savedView, allowedViews) {
 }
 
 function normalizeMode(savedMode) {
-    return MODES.includes(savedMode) ? savedMode : "bestiary";
+    return MODES.includes(savedMode) ? savedMode : "dashboard";
 }
 
 export function restoreWorkspace(savedState) {
