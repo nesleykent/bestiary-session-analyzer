@@ -1821,9 +1821,10 @@ function applyWorkspaceChrome() {
     elements.pageTitle.textContent = content.title;
     elements.pageDescription.textContent = content.description;
     elements.newSessionButton.hidden = state.mode === "trackers";
-    // The page's primary action follows the mode: record progress in a tracker,
-    // start a session in the session views.
-    elements.recordProgressButton.hidden = state.mode !== "trackers";
+    // Trackers already expose "jump to what's not recorded yet" via their own
+    // "Not recorded" filter tab, so a second control for the same thing in the
+    // page header was pure duplication.
+    elements.recordProgressButton.hidden = true;
     elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
 
     document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
