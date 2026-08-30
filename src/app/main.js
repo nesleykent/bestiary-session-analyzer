@@ -63,6 +63,7 @@ import {
 } from "./trackers/registry.js";
 import { buildAppExportFileName, parseAppWorkspaceFile, serializeAppState } from "./state/app-workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
+import { renderDashboard } from "./ui/render-dashboard.js";
 import { focusCharacterNameInput, renderCharacterSwitcher } from "./ui/render-character-switcher.js";
 import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
 
@@ -110,7 +111,6 @@ const elements = {
     sessionRapidButton: document.getElementById("sessionRapidButton"),
     sessionRegularButton: document.getElementById("sessionRegularButton"),
     newSessionButton: document.getElementById("newSessionButton"),
-    recordProgressButton: document.getElementById("recordProgressButton"),
     output: document.getElementById("output"),
     pasteLogButton: document.getElementById("pasteLogButton"),
     processLogButton: document.getElementById("processLogButton"),
@@ -125,7 +125,6 @@ const elements = {
     sidebarOpenButton: document.getElementById("sidebarOpenButton"),
     sidebarScrim: document.getElementById("sidebarScrim"),
     sidebarSearchButton: document.getElementById("sidebarSearchButton"),
-    sidebarRecordButton: document.getElementById("sidebarRecordButton"),
     sectionHeading: document.querySelector("#analysisSection .section-heading"),
     recentChangesButton: document.getElementById("recentChangesButton"),
     srStatus: document.getElementById("srStatus"),
@@ -225,6 +224,10 @@ function getModeView() {
         return state.activeTrackerId;
     }
 
+    if (state.mode === "dashboard") {
+        return "dashboard";
+    }
+
     return state.mode === "tasks" ? state.tasksView : state.bestiaryView;
 }
 
@@ -238,6 +241,11 @@ function setModeView(view) {
 
     if (state.mode === "tasks") {
         state.tasksView = view;
+        return;
+    }
+
+    // The Dashboard has no view state of its own to track.
+    if (state.mode === "dashboard") {
         return;
     }
 
@@ -1618,6 +1626,34 @@ function renderTrackerView() {
     TRACKERS.forEach(syncTrackerTabMeta);
 }
 
+/**
+ * One card per tracker, each built from that tracker's own totals() — the
+ * exact function that drives its own page header — so the Dashboard cannot
+ * show a number its own tracker page would disagree with.
+ */
+function renderDashboardView() {
+    elements.comparisonSection.hidden = true;
+    elements.inputSection.hidden = true;
+    elements.analysisSection.hidden = false;
+    elements.respawnModeBlock.hidden = true;
+    elements.sectionHeading.hidden = true;
+
+    const cards = TRACKERS.map((tracker) => {
+        const context = getTrackerContext(tracker);
+
+        return { tracker, totals: tracker.totals(buildTrackerRows(tracker, context), context) };
+    });
+
+    renderDashboard(elements.output, cards);
+    attachDashboardActions();
+}
+
+function attachDashboardActions() {
+    elements.output.querySelectorAll("[data-dashboard-tracker]").forEach((card) => {
+        card.addEventListener("click", () => navigateWorkspace("trackers", card.dataset.dashboardTracker));
+    });
+}
+
 
 
 
@@ -1774,6 +1810,17 @@ function applyPrimaryMode() {
 function getPageContent() {
     const view = getModeView();
 
+    if (state.mode === "dashboard") {
+        const activeIndex = getActiveCharacterIndex();
+        const characterLabel = activeIndex === -1 ? "" : getCharacterLabel(activeIndex, state.characters[activeIndex]);
+
+        return {
+            eyebrow: "Overview",
+            title: "Dashboard",
+            description: `Aggregate progress across every tracker, for ${characterLabel || "the active character"}.`
+        };
+    }
+
     if (state.mode === "trackers" && state.recordView === "changes") {
         return {
             eyebrow: "Data",
@@ -1831,11 +1878,8 @@ function applyWorkspaceChrome() {
     elements.pageEyebrow.textContent = content.eyebrow;
     elements.pageTitle.textContent = content.title;
     elements.pageDescription.textContent = content.description;
-    elements.newSessionButton.hidden = state.mode === "trackers";
-    // Trackers already expose "jump to what's not recorded yet" via their own
-    // "Not recorded" filter tab, so a second control for the same thing in the
-    // page header was pure duplication.
-    elements.recordProgressButton.hidden = true;
+    // Trackers and the Dashboard have nothing "New session" would do.
+    elements.newSessionButton.hidden = state.mode === "trackers" || state.mode === "dashboard";
     elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
 
     document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
@@ -1859,6 +1903,13 @@ function renderApp() {
 
     applyPrimaryMode();
     applyWorkspaceChrome();
+
+    if (state.mode === "dashboard") {
+        elements.huntWorkspace.hidden = true;
+        closeDetailPanel();
+        renderDashboardView();
+        return;
+    }
 
     if (state.mode === "trackers") {
         // The sidebar already lists the seven trackers; a second strip of the same
@@ -3774,22 +3825,6 @@ function focusWorkspaceSearch() {
 }
 
 elements.sidebarSearchButton.addEventListener("click", focusWorkspaceSearch);
-/**
- * "Record progress" is not a mode any more — the tracker page is the editor. The
- * button jumps to the first thing not recorded yet, which is the only thing the old
- * landing screen was really for.
- */
-elements.recordProgressButton.addEventListener("click", () => {
-    const tracker = getActiveTracker();
-    const filters = getTrackerFilters(tracker);
-
-    filters.status = "unknown";
-    state.trackerPageIndex = 0;
-    leaveRecordFlow();
-    renderApp();
-    persistState();
-    announce(`Showing ${tracker.label} entries that are not recorded yet.`);
-});
 
 elements.recentChangesButton.addEventListener("click", () => {
     state.mode = "trackers";
@@ -3798,9 +3833,6 @@ elements.recentChangesButton.addEventListener("click", () => {
     renderApp();
 });
 
-elements.sidebarRecordButton.addEventListener("click", () => {
-    elements.recordProgressButton.click();
-});
 document.addEventListener("keydown", (event) => {
     // The event target can be the document itself, which has no closest().
     const target = event.target instanceof Element ? event.target : null;

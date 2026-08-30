@@ -7,7 +7,7 @@ let huntSequence = 0;
 const BESTIARY_VIEWS = ["session", "allSessions", "charmPlan", "comparison", "library", "opportunities"];
 const TASKS_VIEWS = ["session", "allSessions", "library"];
 const RESPAWN_MODES = ["regular", "rapid"];
-const MODES = ["bestiary", "trackers", "tasks"];
+const MODES = ["bestiary", "trackers", "tasks", "dashboard"];
 
 function normalizeRespawnMode(value) {
     return RESPAWN_MODES.includes(value) ? value : "regular";

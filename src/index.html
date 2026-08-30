@@ -34,9 +34,9 @@
 
             <nav class="sidebar-nav" aria-label="Primary">
                 <div class="sidebar-utilities">
-                    <button class="sidebar-link" id="sidebarRecordButton" type="button">
-                        <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
-                        <span>Record progress</span>
+                    <button class="sidebar-link" type="button" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">
+                        <span class="material-symbols-outlined" aria-hidden="true">space_dashboard</span>
+                        <span>Dashboard</span>
                     </button>
                     <button class="sidebar-link" id="sidebarSearchButton" type="button">
                         <span class="material-symbols-outlined" aria-hidden="true">search</span>
@@ -70,7 +70,11 @@
             </nav>
 
             <details class="data-menu" id="dataMenu">
-                <summary><span class="material-symbols-outlined" aria-hidden="true">database</span><span>Data &amp; backup</span></summary>
+                <summary>
+                    <span class="material-symbols-outlined" aria-hidden="true">database</span>
+                    <span>Data &amp; backup</span>
+                    <span class="material-symbols-outlined data-menu-caret" aria-hidden="true">expand_more</span>
+                </summary>
                 <div class="data-menu-actions">
                     <button class="sidebar-link" id="exportWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">download</span><span>Export workspace</span></button>
                     <button class="sidebar-link" id="importWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">upload</span><span>Import workspace</span></button>
@@ -110,10 +114,6 @@
                     <button class="btn btn-primary-context" id="newSessionButton" type="button">
                         <span class="material-symbols-outlined" aria-hidden="true">add</span>
                         New session
-                    </button>
-                    <button class="btn btn-primary-context" id="recordProgressButton" type="button">
-                        <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
-                        Record progress
                     </button>
                 </div>
 
