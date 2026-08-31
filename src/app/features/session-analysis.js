@@ -9,7 +9,7 @@ function buildMonsterProgress(entry, killsThisSession, sessionDuration, totalKil
         ? 0
         : (killRate > 0 ? (remainingKills / killRate) : Number.POSITIVE_INFINITY);
     const charmsPerHour = Number.isFinite(timeRemainingMinutes) && timeRemainingMinutes > 0
-        ? Math.min((charms / timeRemainingMinutes) * 60, charms)
+        ? (charms / timeRemainingMinutes) * 60
         : 0;
 
     return {

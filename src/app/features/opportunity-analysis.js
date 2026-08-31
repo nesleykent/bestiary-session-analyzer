@@ -12,8 +12,8 @@
  *   session archive the fastest kill rate ever *measured* for a creature
  *
  * The arithmetic deliberately mirrors buildMonsterProgress in session-analysis.js
- * — kill rate is kills per minute, and charms per hour is capped at the creature's
- * own charm points — so a projection here agrees with the same creature's row in
+ * — kill rate is kills per minute and charm rate annualises the completion reward
+ * to one hour — so a projection here agrees with the same creature's row in
  * the session that measured it. The verification asserts that agreement rather
  * than trusting it.
  */
@@ -23,7 +23,7 @@ function projectCharmsPerHour(charms, timeRemainingMinutes) {
         return 0;
     }
 
-    return Math.min((charms / timeRemainingMinutes) * 60, charms);
+    return (charms / timeRemainingMinutes) * 60;
 }
 
 /**

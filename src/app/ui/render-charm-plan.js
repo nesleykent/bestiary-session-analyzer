@@ -89,7 +89,7 @@ export function buildCharmPlanResultMarkup(planView) {
     return `
         ${buildAnswer(ANSWER_LABEL, formatNumber(plan.charms), plan.entries.length
             ? ""
-            : "No entry can be completed in this time. Charm points are only earned once an entry is complete.")}
+            : "No entry can be completed in this time. Your progress still matters, but it will not award charm points until an entry is complete.")}
         ${buildStatLine([
             `of ${formatTime(plan.availableMinutes)} available`,
             `${formatTime(plan.timeUsedMinutes)} used`,

@@ -119,11 +119,11 @@ const RESPAWN_MODE_HINT = "Records the spawn conditions this Hunt Analyzer was c
 const VIEW_CONTENT = {
     allSessions: {
         resultsTitle: "All Sessions Analysis",
-        resultsCopy: "A creature analyzed in several sessions appears once per session; keep the one you will hunt. Combined time adds each session's longest remaining time, and total kills belong to the session that produced the entry."
+        resultsCopy: "A creature analyzed in several sessions appears once per session; keep the hunt whose measured rate you want to use. Combined time adds each session's longest remaining time, and every row reads the same character-wide Bestiary total for that creature."
     },
     charmPlan: {
         resultsTitle: "Charm Points Plan",
-        resultsCopy: "Charm points are only earned once an entry is complete, so partial progress counts for nothing."
+        resultsCopy: "Bestiary progress is preserved, but charm points are awarded only when an entry is completed. The plan prioritizes completions that fit your available time."
     },
     tasks: {
         resultsCopy: "Estimated from the kill rate this session recorded."
@@ -2123,7 +2123,7 @@ function closeHuntTab(huntId) {
     // and there is no undo. An empty session has nothing to lose, so only ask
     // when there is something.
     if (closedHunt && huntHasContent(closedHunt)
-        && !window.confirm(`Delete ${closedLabel}? Its Hunt Analyzer text, creature selection and total kills are discarded.`)) {
+        && !window.confirm(`Delete ${closedLabel}? Its Hunt Analyzer text, creature selection, notes and task target are discarded. Character-wide Bestiary totals remain saved.`)) {
         return;
     }
 
