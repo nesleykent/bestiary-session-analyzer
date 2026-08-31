@@ -36,7 +36,7 @@ The application keeps three kinds of information separate:
 
 | Layer | Meaning | Examples |
 |---|---|---|
-| **Character progress** | Persistent truth about one character | Bestiary kills, Bosstiary stages, unlocked charms, achievements, quests, titles, discovered areas |
+| **Character progress** | Persistent truth about one character | Achievements, Bestiary kills, Bosstiary stages, unlocked charms, discovered areas, quests, titles |
 | **Hunt evidence** | Performance measured from one copied Hunt Analyzer | Duration, creatures killed, kill rate, respawn mode, date, route notes |
 | **Decision support** | Calculations built from progress and evidence | Completion estimates, Opportunities, session comparison, Charm Points Plan, task estimates |
 
@@ -46,7 +46,23 @@ This separation is important. A Hunt Analyzer measures how quickly a creature wa
 
 ### Dashboard
 
-The **Dashboard** summarizes the current character record using the same calculations as the individual trackers. It provides direct entry points to Bestiary, Bosstiary, Charms, Achievements, Quests, Titles, and Measuring Tibia.
+The **Dashboard** summarizes the current character record using the same calculations as the individual trackers. It provides direct entry points to Achievements, Bestiary, Bosstiary, Charms, Measuring Tibia, Quests, and Titles.
+
+### Achievements
+
+**Purpose:** Tracks completed achievements and achievement-point progression.
+
+The tracker covers 570 achievements with:
+
+- earned state;
+- achievement points and grade;
+- category;
+- secret status;
+- community rarity;
+- the requirement or spoiler text;
+- bookmarks.
+
+Earned count and achievement points are reported separately. Achievements in the `Removed` category remain searchable but are excluded from obtainable totals. Achievements awarded by completing Measuring Tibia areas are derived automatically instead of being recorded twice.
 
 ### Bestiary
 
@@ -91,21 +107,17 @@ The tracker covers 25 charms, each with three unlock or upgrade stages:
 
 For every charm, the application shows its type, current stage, effect, amount spent, next-stage cost, total cost, status, and bookmark. It keeps the two currencies separate and compares recorded Major Charm spending with the charm points earned in the Bestiary tracker.
 
-### Achievements
+### Measuring Tibia
 
-**Purpose:** Tracks completed achievements and achievement-point progression.
+**Purpose:** Tracks Measuring Tibia Quest and Cyclopedia Map area progression, including the subareas required to complete each area.
 
-The tracker covers 570 achievements with:
+The tracker covers 20 areas and 171 subareas. It records discovered subareas, groups them by area, shows how many Bestiary creatures are associated with each subarea, and derives:
 
-- earned state;
-- achievement points and grade;
-- category;
-- secret status;
-- community rarity;
-- the requirement or spoiler text;
-- bookmarks.
+- area completion;
+- overall map progress;
+- the achievement awarded by a completed area.
 
-Earned count and achievement points are reported separately. Achievements in the `Removed` category remain searchable but are excluded from obtainable totals. Achievements awarded by completing Measuring Tibia areas are derived automatically instead of being recorded twice.
+Since Tibia's 2026 discovery update, subareas are active automatically and fully discovered areas also contribute to the character's area speed bonus. The application tracks the discovery completion state; it does not simulate point-of-interest locations.
 
 ### Quests
 
@@ -120,18 +132,6 @@ The current dataset contains 237 quests across 94 questlogs. The tracker records
 **Purpose:** Tracks character titles and whether they are currently unlocked.
 
 The tracker covers 113 titles and records earned state and bookmarks. It also shows each title's requirement and whether the title is permanent or can be lost when its condition is no longer met. This distinction matters because Tibia awards and removes some titles dynamically when the character logs in.
-
-### Measuring Tibia
-
-**Purpose:** Tracks Measuring Tibia Quest and Cyclopedia Map area progression, including the subareas required to complete each area.
-
-The tracker covers 20 areas and 171 subareas. It records discovered subareas, groups them by area, shows how many Bestiary creatures are associated with each subarea, and derives:
-
-- area completion;
-- overall map progress;
-- the achievement awarded by a completed area.
-
-Since Tibia's 2026 discovery update, subareas are active automatically and fully discovered areas also contribute to the character's area speed bonus. The application tracks the discovery completion state; it does not simulate point-of-interest locations.
 
 ### Shared tracker tools
 
@@ -361,13 +361,13 @@ See [Repository Structure](docs/repository-structure.md), [Product Journey](docs
 
 | Dataset | Snapshot contents | Application source |
 |---|---:|---|
+| Achievements | 570 achievements | [TibiaDraptor](https://tibiadraptor.com/) |
 | Bestiary | 833 creatures | [TibiaDraptor](https://tibiadraptor.com/) |
 | Bosstiary | 316 bosses | [TibiaDraptor](https://tibiadraptor.com/) |
 | Charms | 25 Major and Minor charms | [TibiaDraptor](https://tibiadraptor.com/) |
-| Achievements | 570 achievements | [TibiaDraptor](https://tibiadraptor.com/) |
+| Measuring Tibia | 20 areas and 171 subareas | [Tibiopedia.pl](https://tibiopedia.pl/quests/Measuring_Tibia_Quest) |
 | Quests | 237 quests across 94 questlogs | [TibiaDraptor](https://tibiadraptor.com/) |
 | Titles | 113 titles | [TibiaDraptor](https://tibiadraptor.com/) |
-| Measuring Tibia | 20 areas and 171 subareas | [Tibiopedia.pl](https://tibiopedia.pl/quests/Measuring_Tibia_Quest) |
 
 Imported progress never replaces canonical thresholds, rewards, costs, categories, or other bundled game metadata.
 
@@ -375,25 +375,25 @@ Imported progress never replaces canonical thresholds, rewards, costs, categorie
 
 The product language and rules in this README were checked against CipSoft's documentation and announcements:
 
-- [Cyclopedia, Bestiary, Charms, Bosstiary, and Cyclopedia Map guide](https://www.tibia.com/gameguides/?section=interface&subtopic=manual)
-- [Bestiary and Charms introduction](https://www.tibia.com/news/?id=4351&subtopic=newsarchive)
-- [Major Charms, Minor Charms, and Minor Charm Echoes](https://www.tibia.com/news/?id=8140&subtopic=newsarchive)
-- [Bosstiary progress levels, categories, boss points, and boss slots](https://www.tibia.com/news/?id=6733&subtopic=newsarchive)
+- [2026 Echo Wardens and discovery-system changes](https://www.tibia.com/news/?id=8834&subtopic=newsarchive)
 - [Achievements, grades, and achievement points](https://www.tibia.com/gameguides/?section=achievements&subtopic=manual)
-- [Quests, missions, Quest Log, and Quest Tracker](https://www.tibia.com/gameguides/?section=quests&subtopic=manual)
+- [Bestiary and Charms introduction](https://www.tibia.com/news/?id=4351&subtopic=newsarchive)
+- [Bestiary, Bosstiary, Charms, Cyclopedia, and Cyclopedia Map guide](https://www.tibia.com/gameguides/?section=interface&subtopic=manual)
+- [Bosstiary progress levels, categories, boss points, and boss slots](https://www.tibia.com/news/?id=6733&subtopic=newsarchive)
+- [Bounty and Weekly Tasks](https://www.tibia.com/gameguides/?section=combat&subtopic=manual)
 - [Character titles](https://www.tibia.com/support/?entryid=205&subtopic=gethelp)
 - [Cyclopedia Map areas and subareas](https://www.tibia.com/news/?id=4646&subtopic=newsarchive)
-- [2026 Echo Wardens and discovery-system changes](https://www.tibia.com/news/?id=8834&subtopic=newsarchive)
-- [Bounty and Weekly Tasks](https://www.tibia.com/gameguides/?section=combat&subtopic=manual)
+- [Major Charms, Minor Charms, and Minor Charm Echoes](https://www.tibia.com/news/?id=8140&subtopic=newsarchive)
 - [Party Hunt Analyser and Bestiary Tracker](https://www.tibia.com/news/?id=5259&subtopic=newsarchive)
+- [Quests, missions, Quest Log, and Quest Tracker](https://www.tibia.com/gameguides/?section=quests&subtopic=manual)
 
 ## Current boundaries
 
 - The application is a manual progress workspace, not a live account synchronizer.
-- Quest entries currently track completion, not individual mission steps.
-- Task estimates cover creature-kill targets, not Weekly Delivery Tasks.
 - The Charms tracker calculates Minor Charm Echoes generated by recorded Major Charm stages; it does not yet know whether the character is promoted and therefore does not add Tibia's separate 100-echo promotion grant.
 - Hunt Analyzer parsing expects the documented English text structure.
+- Quest entries currently track completion, not individual mission steps.
+- Task estimates cover creature-kill targets, not Weekly Delivery Tasks.
 - Projections reuse measured performance; they cannot guarantee future hunting conditions.
 - The bundled game data is a snapshot and must be updated when Tibia content changes.
 - This is an unofficial fan project and is not affiliated with CipSoft.

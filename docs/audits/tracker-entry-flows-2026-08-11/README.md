@@ -65,13 +65,13 @@ Measured in-browser at 1440×900 unless stated.
 
 | Tracker | Items | Pages @60 | Primary input | Entry control | Pass unit available as a facet |
 | --- | --- | --- | --- | --- | --- |
+| Achievements | 570 | 10 | `done` | Yes/No button | Category (18) |
 | Bestiary | 833 | 14 | `kills` (number) + Echo Warden flag | number field + Yes/No button | Class (21 values) |
 | Bosstiary | 316 | 6 | `kills` (number) | number field | Category (3) |
 | Charms | 25 | 1 | `stage` 0–3 | **number field** | Type (Major/Minor) |
-| Achievements | 570 | 10 | `done` | Yes/No button | Category (18) |
+| Measuring Tibia | 171 | 3 | `discovered` | Yes/No button | Area (20) |
 | Quests | 237 | 4 | `completed` | Yes/No button | Questlog (94) |
 | Titles | 113 | 2 | `earned` | Yes/No button | Permanent / Losable |
-| Measuring Tibia | 171 | 3 | `discovered` | Yes/No button | Area (20) |
 
 ### Shared mechanics, as they actually behave
 
@@ -110,13 +110,13 @@ From the official game guide's interface manual and TibiaWiki:
 
 | Client surface | What the player can actually read | Grouping |
 | --- | --- | --- |
+| Achievements | Which achievements the character has, with grade and points. Secret ones stay hidden until earned | Category |
 | Bestiary | Silhouettes until the first kill; then a **kill counter toward the next stage** and 3 unlock stages. Exact current counts are legible per creature in its entry, and at a glance only in the **Bestiary Tracker widget — max 50 pinned creatures**, starred by the player | Creature class |
 | Bosstiary | A **progress level**: no kills → few kills → Prowess → Expertise → Mastery. Thresholds are fixed per category | Bane / Archfoe / Nemesis |
 | Charms | Which charms are unlocked and their level 1–3; charm points available | Charm list |
-| Achievements | Which achievements the character has, with grade and points. Secret ones stay hidden until earned | Category |
-| Titles | All titles with unlock requirements, and which are unlocked | Title list |
-| Quests | The questlog: entries, with started/completed missions | Questlog |
 | Cyclopedia Map | **The percentage of each area discovered.** A subarea needs 7 points of interest; 30% reveals NPCs, 70% passages, 100% creature lists | Area → subarea |
+| Quests | The questlog: entries, with started/completed missions | Questlog |
+| Titles | All titles with unlock requirements, and which are unlocked | Title list |
 
 Two consequences the current design contradicts:
 
@@ -404,13 +404,13 @@ step for the whole import.
 
 | Tracker | Pass unit | Primary control | Rationale |
 | --- | --- | --- | --- |
+| Achievements | Category (18) | **Mark-Yes-only checklist** + "confirm remaining as No" | 570 items, sparse truth, most players own a minority |
 | Bestiary | Creature class (21) | **Stage picker** (Not started / 1 / 2 / Complete) with an optional exact-kills field, exact required only for starred creatures | Matches what the client shows; ≤50 starred creatures are the only ones with legible counts |
 | Bosstiary | Category (3) | **Stage picker** (None / Prowess / Expertise / Mastery) → stores threshold kills | The client shows a level, not a count |
 | Charms | Type (2) | **Segmented 0–3** | 25 items, four-value enum |
-| Achievements | Category (18) | **Mark-Yes-only checklist** + "confirm remaining as No" | 570 items, sparse truth, most players own a minority |
+| Measuring Tibia | Area (20) | **Area percentage or n-of-m**, subarea marks optional | The client's visible figure is a percentage |
 | Quests | Questlog (94) | **Mark-Yes-only, grouped by questlog** showing which quests each covers | Reading unit ≠ storage unit |
 | Titles | Permanent / Losable | **Mark-Yes-only**, losable set re-checkable | Only one of the two can regress |
-| Measuring Tibia | Area (20) | **Area percentage or n-of-m**, subarea marks optional | The client's visible figure is a percentage |
 
 ---
 

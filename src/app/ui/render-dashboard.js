@@ -1,13 +1,13 @@
 import { escapeText } from "./render-tracker.js";
 
 const TRACKER_ICONS = {
+    achievements: "trophy",
     bestiary: "pets",
     bosstiary: "skull",
     charms: "auto_awesome",
-    achievements: "trophy",
+    measuringTibia: "straighten",
     quests: "account_tree",
-    titles: "workspace_premium",
-    measuringTibia: "straighten"
+    titles: "workspace_premium"
 };
 
 /**

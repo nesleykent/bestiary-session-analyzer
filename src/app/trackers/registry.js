@@ -11,17 +11,17 @@ import { titlesTracker } from "./titles.js";
  * dataset — not a new view, a new store or new navigation.
  */
 export const TRACKERS = [
+    achievementsTracker,
     bestiaryTracker,
     bosstiaryTracker,
     charmsTracker,
-    achievementsTracker,
+    measuringTibiaTracker,
     questsTracker,
-    titlesTracker,
-    measuringTibiaTracker
+    titlesTracker
 ];
 
 export function getTracker(trackerId) {
-    return TRACKERS.find((tracker) => tracker.id === trackerId) ?? TRACKERS[0];
+    return TRACKERS.find((tracker) => tracker.id === trackerId) ?? bestiaryTracker;
 }
 
 export function getTrackerIds() {

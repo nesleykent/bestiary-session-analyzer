@@ -12,10 +12,10 @@ No previous visual metaphor is carried forward. A new visual direction must be s
 
 The app sits between several systems that Tibia exposes separately:
 
-- Bestiary entries advance through kill thresholds; completing an entry unlocks the ability to assign charms. Tibia separates session analytics from this persistent creature progress. [Official interface guide](https://www.tibia.com/gameguides/?section=interface&subtopic=manual)
-- Major and minor charms have separate rules, three upgrade stages, and different currencies. Minor Charm Echoes are distinct from Charm Points. [Official charm-overhaul announcement](https://www.tibia.com/news/?id=8140&subtopic=newsarchive)
-- Bosstiary uses Prowess, Expertise, and Mastery, with different kill thresholds for Bane, Archfoe, and Nemesis bosses. Boss progress also creates boss points and loot-slot benefits. [Official Bosstiary announcement](https://www.tibia.com/news/?id=6733&subtopic=newsarchive)
 - Achievements are completion goals with grades and points; quests are resumable adventures with their own quest-log state. They are related to character completion, but they are not hunting-session calculations. [Official achievements guide](https://www.tibia.com/gameguides/?section=achievements&subtopic=manual), [official quests guide](https://www.tibia.com/gameguides/?section=quests&subtopic=manual)
+- Bestiary entries advance through kill thresholds; completing an entry unlocks the ability to assign charms. Tibia separates session analytics from this persistent creature progress. [Official interface guide](https://www.tibia.com/gameguides/?section=interface&subtopic=manual)
+- Bosstiary uses Prowess, Expertise, and Mastery, with different kill thresholds for Bane, Archfoe, and Nemesis bosses. Boss progress also creates boss points and loot-slot benefits. [Official Bosstiary announcement](https://www.tibia.com/news/?id=6733&subtopic=newsarchive)
+- Major and minor charms have separate rules, three upgrade stages, and different currencies. Minor Charm Echoes are distinct from Charm Points. [Official charm-overhaul announcement](https://www.tibia.com/news/?id=8140&subtopic=newsarchive)
 - Measuring Tibia tracks areas and subareas. The 2026 discovery update makes subareas automatically active and adds area speed rewards, so the tracker is long-term exploration progress rather than a manual “start discovery” workflow. [Official 2026 discovery update](https://www.tibia.com/news/?id=8834&subtopic=newsarchive)
 - The Hunting Analyser is evidence from one hunt: duration and killed monsters can be copied from the client. It does not replace character-wide progress. [Official analytics announcement](https://www.tibia.com/news/?id=4160&subtopic=newsarchive)
 - Echo Warden progress is creature-specific, separate from normal Bestiary kills, and rewards additional charm points for the first Echo Warden of a creature type. [Official Echo Warden announcement](https://www.tibia.com/news/?id=8834&subtopic=newsarchive)
@@ -35,7 +35,7 @@ A Tibia character-progress and hunt-planning workspace. It stores long-term comp
 ### Who is it for?
 
 - Active Tibia players working on Bestiary or charms.
-- Completionists tracking bosses, achievements, quests, titles, and exploration.
+- Completionists tracking achievements, bosses, exploration, quests, and titles.
 - Returning players who need to reconstruct what remains.
 - Players using measured hunts to decide what fits into their available play time.
 - Players estimating creature-kill tasks from their own performance rather than a generic rate.
@@ -52,54 +52,54 @@ Updating progress and importing a hunt are supporting actions. The product succe
 
 ## Complete Capability Inventory
 
-### 1. Bestiary Tracker
-
-- **What is it?** Character-wide progress for 833 creatures: kills, completion stage, remaining kills, Charm Points, Echo Warden progress, Animus Mastery, and bookmarks.
-- **Who is it for?** Charm farmers, completionists, and any player using Bestiary sessions.
-- **Why use it?** It is the single source of truth that every Bestiary session and planning calculation reads.
-- **One key action:** Update or import creature progress.
-
-### 2. Bosstiary Tracker
-
-- **What is it?** Progress for 316 bosses across Bane, Archfoe, and Nemesis categories, including kills, next stage, remaining kills, boss points, and bookmarks.
-- **Who is it for?** Boss hunters and players working toward boss-slot benefits or Bosstiary titles.
-- **Why use it?** Boss thresholds and cooldown categories make manual tracking difficult, especially across a long character history.
-- **One key action:** Record a boss kill.
-
-### 3. Charms Tracker
-
-- **What is it?** Ownership and upgrade progress for 25 major and minor charms, including stage, spent currency, next-stage cost, and completion.
-- **Who is it for?** Players deciding where to spend Charm Points and Minor Charm Echoes.
-- **Why use it?** Charm upgrades span three stages and two currencies; the tracker shows what is owned, spent, available, and next.
-- **One key action:** Set the current stage of a charm.
-
-### 4. Achievements Tracker
+### 1. Achievements Tracker
 
 - **What is it?** Completion for 570 achievements, with category, grade, rarity, points, secret status, description, and bookmarks.
 - **Who is it for?** Completionists and players pursuing achievement points or rare goals.
 - **Why use it?** It makes a very large goal set searchable and turns long descriptions into a manageable completion list.
 - **One key action:** Mark an achievement earned.
 
-### 5. Quests Tracker
+### 2. Bestiary Tracker
+
+- **What is it?** Character-wide progress for 833 creatures: kills, completion stage, remaining kills, Charm Points, Echo Warden progress, Animus Mastery, and bookmarks.
+- **Who is it for?** Charm farmers, completionists, and any player using Bestiary sessions.
+- **Why use it?** It is the single source of truth that every Bestiary session and planning calculation reads.
+- **One key action:** Update or import creature progress.
+
+### 3. Bosstiary Tracker
+
+- **What is it?** Progress for 316 bosses across Bane, Archfoe, and Nemesis categories, including kills, next stage, remaining kills, boss points, and bookmarks.
+- **Who is it for?** Boss hunters and players working toward boss-slot benefits or Bosstiary titles.
+- **Why use it?** Boss thresholds and cooldown categories make manual tracking difficult, especially across a long character history.
+- **One key action:** Record a boss kill.
+
+### 4. Charms Tracker
+
+- **What is it?** Ownership and upgrade progress for 25 major and minor charms, including stage, spent currency, next-stage cost, and completion.
+- **Who is it for?** Players deciding where to spend Charm Points and Minor Charm Echoes.
+- **Why use it?** Charm upgrades span three stages and two currencies; the tracker shows what is owned, spent, available, and next.
+- **One key action:** Set the current stage of a charm.
+
+### 5. Measuring Tibia Tracker
+
+- **What is it?** Discovery progress for 20 areas and 171 subareas, including associated Bestiary creatures and automatically derived area achievements.
+- **Who is it for?** Explorers, outfit collectors, completionists, and players pursuing area speed rewards.
+- **Why use it?** It turns a geographically distributed discovery activity into an area-by-area completion plan.
+- **One key action:** Mark a subarea discovered.
+
+### 6. Quests Tracker
 
 - **What is it?** Completion for 237 quests, searchable by quest, questlog, or reward.
 - **Who is it for?** Returning players, questers, and players planning access or reward unlocks.
 - **Why use it?** It provides a durable overview beyond the in-client active-quest view.
 - **One key action:** Mark a quest completed.
 
-### 6. Titles Tracker
+### 7. Titles Tracker
 
 - **What is it?** Progress for 113 titles, including unlock requirements, permanence, status, and bookmarks.
 - **Who is it for?** Completionists and players pursuing visible character identity goals.
 - **Why use it?** Permanent and losable titles have different planning value and are earned through many unrelated systems.
 - **One key action:** Mark a title earned.
-
-### 7. Measuring Tibia Tracker
-
-- **What is it?** Discovery progress for 20 areas and 171 subareas, including associated Bestiary creatures and automatically derived area achievements.
-- **Who is it for?** Explorers, outfit collectors, completionists, and players pursuing area speed rewards.
-- **Why use it?** It turns a geographically distributed discovery activity into an area-by-area completion plan.
-- **One key action:** Mark a subarea discovered.
 
 ### 8. Bestiary Session Capture
 
@@ -209,7 +209,7 @@ The previous interface exposed implementation categories. The rebuild should exp
 ### Completionist
 
 1. Open **Character Progress**.
-2. Choose a collection: Bestiary, Bosstiary, Charms, Achievements, Quests, Titles, or Measuring Tibia.
+2. Choose a collection: Achievements, Bestiary, Bosstiary, Charms, Measuring Tibia, Quests, or Titles.
 3. Search or filter to the relevant goal set.
 4. Update one progress value or bookmark the next objective.
 5. Return to **Next Objective** only when a decision is needed.

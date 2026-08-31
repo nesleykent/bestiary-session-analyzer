@@ -177,7 +177,7 @@ const state = {
     // The undo trail, persisted with the record.
     changeLog: [],
     trackerItems: {},
-    activeTrackerId: TRACKERS[0].id,
+    activeTrackerId: bestiaryTracker.id,
     trackerSort: {},
     trackerFilters: {},
     trackerPageSize: 24,
@@ -1259,20 +1259,20 @@ function renderBestiaryDetail(row) {
 }
 
 const TRACKER_DETAIL_ICONS = {
+    achievements: "trophy",
     bosstiary: "skull",
     charms: "auto_awesome",
-    achievements: "trophy",
+    measuringTibia: "straighten",
     quests: "account_tree",
-    titles: "workspace_premium",
-    measuringTibia: "straighten"
+    titles: "workspace_premium"
 };
 
 /** The affirmative verb each tracker's single-button tick control asserts. */
 const TICK_YES_LABELS = {
     achievements: "Earned",
+    measuringTibia: "Discovered",
     quests: "Completed",
-    titles: "Earned",
-    measuringTibia: "Discovered"
+    titles: "Earned"
 };
 
 /** The header's one-line meta, tailored to what each tracker's row actually has. */
@@ -1906,13 +1906,13 @@ function getPageContent() {
     if (state.mode === "trackers") {
         const tracker = getActiveTracker();
         const trackerDescriptions = {
+            achievements: "Track achievement progress and earned points.",
             bestiary: "Character-wide progress for every creature.",
             bosstiary: "Character-wide progress for every boss.",
             charms: "Track Major and Minor charm stages, effects, costs, and currencies.",
-            achievements: "Track achievement progress and earned points.",
+            measuringTibia: "Follow Cyclopedia Map areas and their completion requirements.",
             quests: "Keep every quest state in one dependable list.",
-            titles: "Track the titles your character has unlocked.",
-            measuringTibia: "Follow Cyclopedia Map areas and their completion requirements."
+            titles: "Track the titles your character has unlocked."
         };
 
         return {

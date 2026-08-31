@@ -21,7 +21,7 @@ The workflow becomes understandable only when each existing feature has one resp
 
 | Product area | Responsibility | Relationship to progress |
 | --- | --- | --- |
-| Trackers | Preserve the character's canonical Bestiary, Bosstiary, Charm, Achievement, Quest, Title, and Measuring Tibia state | The only canonical ledger |
+| Trackers | Preserve the character's canonical Achievement, Bestiary, Bosstiary, Charm, Measuring Tibia, Quest, and Title state | The only canonical ledger |
 | Full check | Build or refresh a trustworthy baseline from one bounded Tibia source screen | Writes only after scoped review |
 | Quick update | Record a small known change without reopening a full check | Writes one explicit before → after change |
 | Bestiary Sessions | Parse what happened during a hunt | Creates evidence proposals; never silently owns the total |
@@ -68,7 +68,7 @@ The rejected workflow has the wrong unit of completion.
 
 ## Research applied
 
-- Tibia's own guide describes Bestiary, Bosstiary, achievements, titles, and the Cyclopedia Map as separate client surfaces. The site should mirror those source boundaries instead of merging them into one generic row task: <https://www.tibia.com/gameguides/?section=interface&subtopic=manual>
+- Tibia's own guide describes achievements, Bestiary, Bosstiary, the Cyclopedia Map, and titles as separate client surfaces. The site should mirror those source boundaries instead of merging them into one generic row task: <https://www.tibia.com/gameguides/?section=interface&subtopic=manual>
 - The GOV.UK task-list guidance is appropriate for long work completed over several sittings: show bounded tasks, their status, save progress, and resume where the user left off: <https://design-system.service.gov.uk/components/task-list/> and <https://design-system.service.gov.uk/patterns/complete-multiple-tasks/>
 - GOV.UK recommends check-answer steps for confidence and error reduction, with section-level checks for very large transactions: <https://design-system.service.gov.uk/patterns/check-answers/>
 - High-volume grid products optimize for direct editing, Return/Tab/arrow navigation, multi-cell selection, paste, and applying one value to several selected records: <https://trailhead.salesforce.com/content/learn/modules/lightning-experience-for-salesforce-classic-users/work-with-list-views> and <https://support.airtable.com/airtable-keyboard-shortcuts>
@@ -92,15 +92,15 @@ The setup path becomes a task list whose grouping matches the Tibia source:
 
 | Tracker | Pass unit | Entry action | Pass completion |
 | --- | --- | --- | --- |
+| Achievements | Client category | Mark achievements earned | Confirm untouched achievements in the category as No |
 | Bestiary kills | Creature class | Enter non-zero/current totals | Review entered totals; confirm untouched creatures in this class as zero |
 | Echo Warden | Its own eligible-creature pass | Mark creatures with the bonus | Confirm untouched eligible creatures as No |
 | Animus Mastery | Its own source-aligned pass | Mark mastered creatures | Confirm untouched creatures as No |
 | Bosstiary | Boss category | Enter current boss kills | Review; confirm untouched bosses in the category as zero |
 | Charms | Major and Minor | Set current stage with one direct choice | Review the small set and finish the section |
-| Achievements | Client category | Mark achievements earned | Confirm untouched achievements in the category as No |
+| Measuring Tibia | Map area | Mark discovered subareas | Confirm untouched subareas in the area as No |
 | Quests | Questlog group | Mark completed quest entries | Confirm untouched entries in that questlog as No |
 | Titles | Permanent/losable source grouping | Mark titles currently available/earned using correct terminology | Confirm untouched titles as No |
-| Measuring Tibia | Map area | Mark discovered subareas | Confirm untouched subareas in the area as No |
 
 Each pass has only four states: **Not started**, **In progress**, **Ready to review**, and **Synced**. These describe the transcription task, not the game item.
 

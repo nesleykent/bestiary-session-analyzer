@@ -12,7 +12,7 @@ Describe what is broken and which feature is affected.
 
 ## Affected Area
 
-Examples: Bestiary, Bosstiary, Charms, Achievements, Quests, Titles, Measuring Tibia, Charm Points Plan, Opportunities, Session History, comparison, or Task Estimate.
+Examples: Achievements, Bestiary, Bosstiary, Charm Points Plan, Charms, Compare Sessions, Measuring Tibia, Opportunities, Quests, Session History, Task Estimate, or Titles.
 
 ## Steps To Reproduce
 

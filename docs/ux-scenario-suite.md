@@ -291,13 +291,13 @@ These scenarios validate the journey model without prescribing layout or visual 
 
 | Shipped capability | Governing scenarios | Journey outcome |
 |---|---|---|
+| Achievements Tracker | S23, S25 | Resumable achievement goal without derived-state conflict |
 | Bestiary Tracker | S04, S05, S09, S14 | Reliable creature truth that feeds decisions |
 | Bosstiary Tracker | S20 | Resumable boss-stage goal |
 | Charms Tracker | S21, S22 | Affordable charm-stage goal with prerequisite return |
-| Achievements Tracker | S23, S25 | Resumable achievement goal without derived-state conflict |
+| Measuring Tibia Tracker | S25 | Area goal with subarea and derived-achievement closure |
 | Quests Tracker | S23 | Resumable quest goal with spoiler control |
 | Titles Tracker | S24 | Current ownership modeled correctly for losable titles |
-| Measuring Tibia Tracker | S25 | Area goal with subarea and derived-achievement closure |
 | Bestiary Session Capture | S10–S13 | Validated, revision-safe measured evidence |
 | Bestiary Session Estimate | S06, S07, S14 | Actionable objective using disclosed truth and evidence |
 | Bestiary Sessions Overview | S15 | Explicit preferred evidence without session mutation |

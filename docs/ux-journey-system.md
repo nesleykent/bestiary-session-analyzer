@@ -446,13 +446,13 @@ Tracker-specific completion:
 
 | Tracker | Successful action | Consequence |
 |---|---|---|
+| Achievements | Earned state confirmed | Completion and achievement points refresh |
 | Bestiary | Total kills recorded | Stages, opportunities, plans, and estimates refresh |
 | Bosstiary | Boss kills recorded | Stage and Boss Points refresh |
 | Charms | Stage confirmed | Major or minor currency balance refreshes separately |
-| Achievements | Earned state confirmed | Completion and achievement points refresh |
+| Measuring Tibia | Subarea discovery confirmed | Area completion and derived achievement refresh |
 | Quests | Completion confirmed | Quest completion and related filters refresh |
 | Titles | Current ownership confirmed | Completion reflects permanent or losable meaning |
-| Measuring Tibia | Subarea discovery confirmed | Area completion and derived achievement refresh |
 
 ### Bestiary exact-data entry
 
@@ -508,7 +508,7 @@ Bookmarks create decision candidates. If they do not appear in the decision jour
 
 Goal: turn any non-session tracker entry into a goal the player can resume and resolve.
 
-This loop covers Bosstiary, Charms, Achievements, Quests, Titles, and Measuring Tibia. These collections do not require Hunting Analyser evidence, but they still need an intentional transition from tracking to action.
+This loop covers Achievements, Bosstiary, Charms, Measuring Tibia, Quests, and Titles. These collections do not require Hunting Analyser evidence, but they still need an intentional transition from tracking to action.
 
 ```mermaid
 flowchart LR
@@ -539,13 +539,13 @@ flowchart LR
 
 | Goal type | Before acting | Context while acting | Return action | Resolution |
 |---|---|---|---|---|
+| Achievement | How to earn, grade, points, secret/spoiler state | Achievement requirement | Mark earned | Achievement points and collection completion update |
 | Bosstiary boss stage | Current kills, next threshold, cooldown/category meaning, Boss Points | Boss and intended stage | Record current boss kills | Continue to next threshold or mark stage complete |
 | Major charm stage | Current Charm Points, stage cost, effect, prerequisite budget | Charm and intended stage | Confirm stage purchased | Currency and stage update; dependent budget warnings resolve |
 | Minor charm stage | Current Minor Charm Echoes, stage cost, effect | Charm and intended stage | Confirm stage purchased | Echo balance and stage update independently from Charm Points |
-| Achievement | How to earn, grade, points, secret/spoiler state | Achievement requirement | Mark earned | Achievement points and collection completion update |
+| Measuring Tibia subarea | Area, remaining subareas, associated creatures, reward context | Area and subarea | Mark discovered | Area completion, speed reward context, and derived achievement update |
 | Quest | Questlog group, access/reward requirement, spoiler preference | Quest and intended completion | Mark completed | Quest state and any linked goal prerequisites update |
 | Title | Requirement and permanent/losable meaning | Title requirement | Confirm current ownership | Ownership updates; losable titles remain current-state truth |
-| Measuring Tibia subarea | Area, remaining subareas, associated creatures, reward context | Area and subarea | Mark discovered | Area completion, speed reward context, and derived achievement update |
 
 ### Charm dependency loop
 

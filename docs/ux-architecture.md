@@ -82,7 +82,7 @@ No page may place data import, export, sorting, filtering, creation, and destruc
 
 Search is a cross-product jump tool, not a duplicate page:
 
-- Searches creatures, bosses, charms, achievements, quests, titles, areas, subareas, sessions, and plans.
+- Searches achievements, creatures, bosses, charms, areas, subareas, quests, titles, sessions, and plans.
 - Results are grouped by domain.
 - Each result states where it will lead.
 - Recent objects appear before typing.
@@ -94,13 +94,13 @@ This map is the audit boundary for the redesign. A capability is not considered 
 
 | Capability | Primary destination | Owning object | One primary action | Successful next state |
 |---|---|---|---|---|
+| Achievements Tracker | Character Progress | Achievement progress | Mark earned | Updated completion and achievement points |
 | Bestiary Tracker | Character Progress | Creature progress | Update kills | Updated stage, remaining kills, rewards, and dependent decisions |
 | Bosstiary Tracker | Character Progress | Boss progress | Record boss kills | Updated boss stage and Boss Points |
 | Charms Tracker | Character Progress | Charm ownership | Set charm stage | Updated stage and separated currency balance |
-| Achievements Tracker | Character Progress | Achievement progress | Mark earned | Updated completion and achievement points |
+| Measuring Tibia Tracker | Character Progress | Area discovery | Mark subarea discovered | Updated area completion, reward context, and derived achievement |
 | Quests Tracker | Character Progress | Quest progress | Mark completed | Updated quest completion and related filters |
 | Titles Tracker | Character Progress | Title ownership | Mark earned | Updated current title ownership |
-| Measuring Tibia Tracker | Character Progress | Area discovery | Mark subarea discovered | Updated area completion, reward context, and derived achievement |
 | Bestiary Session Capture | Bestiary Hunts | Hunt session | Process Hunting Analyser | Validated measured hunt with matched and unmatched creatures |
 | Bestiary Session Estimate | Bestiary Hunts | Session/creature evidence | Choose objectives | Selected objectives with measured completion estimates |
 | Bestiary Sessions Overview | Bestiary Hunts | Evidence pair | Choose representative session | One explicit evidence source per planned objective |
@@ -176,13 +176,13 @@ Alternatives are a short ordered list. They never compete visually with the prim
 
 The collection selector contains:
 
+- Achievements
 - Bestiary
 - Bosstiary
 - Charms
-- Achievements
+- Measuring Tibia
 - Quests
 - Titles
-- Measuring Tibia
 
 Each collection shows completion and the metric meaningful to that collection. It does not show unrelated statistics.
 
@@ -207,6 +207,19 @@ Each collection shows completion and the metric meaningful to that collection. I
 - Opening detail never hides the edited row without a clear return path.
 - Bookmarks mean “candidate objective,” not “favorite.” Copy and tooltips use that meaning.
 - Bulk import previews matched, changed, unchanged, and unmatched rows before replacement.
+
+### Achievements UX
+
+Primary action: **Mark earned**.
+
+Hierarchy:
+
+- Name and earned state.
+- How to earn it.
+- Grade and points.
+- Category, rarity, and secret status as filters.
+
+Achievements derived from Measuring Tibia are read-only here and link back to the responsible area. The interface explains why the toggle is unavailable.
 
 ### Bestiary UX
 
@@ -264,18 +277,18 @@ Hierarchy:
 
 Changing a stage previews the currency effect before saving when it would make available currency negative. The product never merges both currencies into one “points” value.
 
-### Achievements UX
+### Measuring Tibia UX
 
-Primary action: **Mark earned**.
+Primary action: **Mark subarea discovered**.
 
 Hierarchy:
 
-- Name and earned state.
-- How to earn it.
-- Grade and points.
-- Category, rarity, and secret status as filters.
+- Area completion first.
+- Subareas nested inside the area.
+- Bestiary creatures associated with the selected subarea.
+- Area achievement and speed-reward context.
 
-Achievements derived from Measuring Tibia are read-only here and link back to the responsible area. The interface explains why the toggle is unavailable.
+The 2026 system behavior is reflected: subareas are automatically active in Tibia, so this product does not ask the user to “start” discovery.
 
 ### Quests UX
 
@@ -301,19 +314,6 @@ Hierarchy:
 - Earned state.
 
 Losable titles explain that “earned” records current ownership, not historical discovery.
-
-### Measuring Tibia UX
-
-Primary action: **Mark subarea discovered**.
-
-Hierarchy:
-
-- Area completion first.
-- Subareas nested inside the area.
-- Bestiary creatures associated with the selected subarea.
-- Area achievement and speed-reward context.
-
-The 2026 system behavior is reflected: subareas are automatically active in Tibia, so this product does not ask the user to “start” discovery.
 
 ## Bestiary Hunts
 
