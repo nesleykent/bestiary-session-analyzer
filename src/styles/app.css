@@ -1755,6 +1755,10 @@ input[type="checkbox"] {
     overflow-y: auto;
 }
 
+body.has-quick-add {
+    overflow: hidden;
+}
+
 .quick-panel {
     width: min(calc(var(--u24) * 6 + var(--u6)), 100%);
     max-height: min(76vh, calc(var(--u24) * 6 + var(--u12)));
