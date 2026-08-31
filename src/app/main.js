@@ -127,7 +127,6 @@ const elements = {
     sessionToggle: document.getElementById("sessionToggle"),
     sidebarOpenButton: document.getElementById("sidebarOpenButton"),
     sidebarScrim: document.getElementById("sidebarScrim"),
-    workspaceSidebar: document.getElementById("workspaceSidebar"),
     sidebarSearchButton: document.getElementById("sidebarSearchButton"),
     sectionHeading: document.querySelector("#analysisSection .section-heading"),
     recentChangesButton: document.getElementById("recentChangesButton"),
@@ -2179,7 +2178,7 @@ function applyWorkspaceChrome() {
     elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
 
     document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
-        const isBrandOrHome = button.classList.contains("sidebar-brand") || button.hasAttribute("data-sidebar-home");
+        const isBrandOrHome = button.hasAttribute("data-sidebar-home");
         const isSelected = !isBrandOrHome
             && button.dataset.sidebarMode === state.mode
             && button.dataset.sidebarView === view;
@@ -3960,36 +3959,10 @@ elements.output.addEventListener("keydown", (event) => {
 });
 elements.addCharacterButton.addEventListener("click", addCharacterFlow);
 
-/**
- * The sidebar itself scrolls (see the layout fix for Data & backup opening
- * into a squeezed panel), so a menu sitting near the bottom of a long list —
- * Data & backup is the last thing in the sidebar — can open with its entire
- * revealed content below the fold and nothing visibly different on screen.
- * The character menu never showed this because it sits near the top, where
- * there is always room below it; scrolling the opened menu to the top of the
- * visible area gives every sidebar menu that same immediate visibility,
- * regardless of where it happens to sit.
- */
-function scrollSidebarMenuIntoView(details) {
-    if (!details.open) {
-        return;
-    }
-
-    const sidebar = elements.workspaceSidebar;
-    // Align the menu's top with the sidebar's own scrollport rather than
-    // trusting scrollIntoView's alignment: with a fixed-position ancestor in
-    // play (the mobile sidebar drawer) it settled on the wrong offset in
-    // testing, silently leaving the menu exactly as hidden as before.
-    const target = Math.min(details.offsetTop, sidebar.scrollHeight - sidebar.clientHeight);
-
-    sidebar.scrollTo({ top: Math.max(0, target) });
-}
-
 // The open/closed state can change from a row click closing the menu
 // programmatically, not just the summary's own toggle, so the label syncs
 // off the native "toggle" event rather than any one call site.
 elements.characterMenu.addEventListener("toggle", syncCharacterMenuLabel);
-elements.characterMenu.addEventListener("toggle", () => scrollSidebarMenuIntoView(elements.characterMenu));
 
 elements.clearAllDataButton.addEventListener("click", () => {
     elements.clearAllDataConfirm.hidden = false;
@@ -4011,7 +3984,6 @@ elements.dataMenu.addEventListener("toggle", () => {
         elements.clearAllDataConfirm.hidden = true;
     }
 });
-elements.dataMenu.addEventListener("toggle", () => scrollSidebarMenuIntoView(elements.dataMenu));
 elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
 elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
 elements.importWorkspaceInput.addEventListener("change", (event) => {
@@ -4023,7 +3995,7 @@ elements.importWorkspaceInput.addEventListener("change", (event) => {
 });
 
 function closeMobileSidebar() {
-    document.body.classList.remove("sidebar-open");
+    document.body.classList.remove("nav-open");
     elements.sidebarScrim.hidden = true;
 }
 
@@ -4202,7 +4174,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 elements.sidebarOpenButton.addEventListener("click", () => {
-    document.body.classList.add("sidebar-open");
+    document.body.classList.add("nav-open");
     elements.sidebarScrim.hidden = false;
 });
 elements.sidebarScrim.addEventListener("click", closeMobileSidebar);

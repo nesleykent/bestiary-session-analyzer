@@ -12,90 +12,103 @@
 </head>
 <body>
     <div class="app-shell">
-        <aside class="workspace-sidebar" id="workspaceSidebar" aria-label="Workspace navigation">
-            <div class="sidebar-brand-row">
-                <a class="sidebar-brand" href="#" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">Bestiary Session Analyzer</a>
+        <aside class="app-nav" id="workspaceSidebar" aria-label="Workspace navigation">
+            <div class="app-nav-top">
+                <div class="app-nav-brand-row">
+                    <a class="app-nav-brand" href="#" data-sidebar-mode="dashboard" data-sidebar-view="dashboard" data-sidebar-home>Bestiary Session Analyzer</a>
+                </div>
+
+                <details class="app-nav-disclosure app-nav-switcher" id="characterMenu">
+                    <summary>
+                        <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                        <span class="app-nav-switcher-label" id="characterMenuCurrent">Character</span>
+                        <span class="material-symbols-outlined app-nav-disclosure-caret" aria-hidden="true">expand_more</span>
+                    </summary>
+                    <div class="app-nav-switcher-panel">
+                        <div class="app-nav-switcher-list" id="characterList"></div>
+                        <button class="app-nav-item" id="addCharacterButton" type="button">
+                            <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+                            <span>Add character</span>
+                        </button>
+                    </div>
+                </details>
             </div>
 
-            <details class="sidebar-menu character-menu" id="characterMenu">
-                <summary>
-                    <span class="material-symbols-outlined" aria-hidden="true">person</span>
-                    <span class="character-menu-current" id="characterMenuCurrent">Character</span>
-                    <span class="material-symbols-outlined sidebar-menu-caret" aria-hidden="true">expand_more</span>
-                </summary>
-                <div class="character-menu-panel">
-                    <div class="character-rows" id="characterList"></div>
-                    <button class="sidebar-link" id="addCharacterButton" type="button">
-                        <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-                        <span>Add character</span>
-                    </button>
-                </div>
-            </details>
-
-            <nav class="sidebar-nav" aria-label="Primary">
-                <div class="sidebar-utilities">
-                    <button class="sidebar-link" type="button" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">
+            <nav class="app-nav-scroll" aria-label="Primary">
+                <div class="app-nav-quicklinks">
+                    <button class="app-nav-item" type="button" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">
                         <span class="material-symbols-outlined" aria-hidden="true">space_dashboard</span>
                         <span>Dashboard</span>
                     </button>
-                    <button class="sidebar-link" id="sidebarSearchButton" type="button" aria-keyshortcuts="/" title="Record progress (/)">
+                    <button class="app-nav-item" id="sidebarSearchButton" type="button" aria-keyshortcuts="/" title="Record progress (/)">
                         <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
                         <span>Record progress</span>
-                        <span class="sidebar-shortcut">/</span>
+                        <span class="app-nav-item-shortcut">/</span>
                     </button>
                 </div>
 
-                <section class="sidebar-section" aria-labelledby="trackersNavTitle">
-                    <h2 class="sidebar-section-title" id="trackersNavTitle">Trackers</h2>
-                    <div class="sidebar-section-items" id="trackerNavItems">
-                        <button class="sidebar-link is-selected" type="button" data-sidebar-mode="trackers" data-sidebar-view="bestiary"><span class="material-symbols-outlined" aria-hidden="true">pets</span><span>Bestiary</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="bosstiary"><span class="material-symbols-outlined" aria-hidden="true">skull</span><span>Bosstiary</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="charms"><span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span><span>Charms</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="achievements"><span class="material-symbols-outlined" aria-hidden="true">trophy</span><span>Achievements</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="quests"><span class="material-symbols-outlined" aria-hidden="true">account_tree</span><span>Quests</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="titles"><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span><span>Titles</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="trackers" data-sidebar-view="measuringTibia"><span class="material-symbols-outlined" aria-hidden="true">straighten</span><span>Measuring Tibia</span></button>
+                <section class="app-nav-group" aria-labelledby="trackersNavTitle">
+                    <h2 class="app-nav-group-title" id="trackersNavTitle">Trackers</h2>
+                    <div class="app-nav-group-items" id="trackerNavItems">
+                        <button class="app-nav-item is-selected" type="button" data-sidebar-mode="trackers" data-sidebar-view="bestiary"><span class="material-symbols-outlined" aria-hidden="true">pets</span><span>Bestiary</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="bosstiary"><span class="material-symbols-outlined" aria-hidden="true">skull</span><span>Bosstiary</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="charms"><span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span><span>Charms</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="achievements"><span class="material-symbols-outlined" aria-hidden="true">trophy</span><span>Achievements</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="quests"><span class="material-symbols-outlined" aria-hidden="true">account_tree</span><span>Quests</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="titles"><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span><span>Titles</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="measuringTibia"><span class="material-symbols-outlined" aria-hidden="true">straighten</span><span>Measuring Tibia</span></button>
                     </div>
                 </section>
 
-                <section class="sidebar-section" aria-labelledby="sessionsNavTitle">
-                    <h2 class="sidebar-section-title" id="sessionsNavTitle">Planning &amp; sessions</h2>
-                    <div class="sidebar-section-items">
-                        <button class="sidebar-link" type="button" data-sidebar-mode="bestiary" data-sidebar-view="charmPlan"><span class="material-symbols-outlined" aria-hidden="true">route</span><span>Charm Plan</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="bestiary" data-sidebar-view="opportunities"><span class="material-symbols-outlined" aria-hidden="true">explore</span><span>Opportunities</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="bestiary" data-sidebar-view="library"><span class="material-symbols-outlined" aria-hidden="true">history</span><span>Session History</span></button>
-                        <button class="sidebar-link" type="button" data-sidebar-mode="tasks" data-sidebar-view="allSessions"><span class="material-symbols-outlined" aria-hidden="true">checklist</span><span>Task Sessions</span></button>
+                <section class="app-nav-group" aria-labelledby="sessionsNavTitle">
+                    <h2 class="app-nav-group-title" id="sessionsNavTitle">Planning &amp; sessions</h2>
+                    <div class="app-nav-group-items">
+                        <button class="app-nav-item" type="button" data-sidebar-mode="bestiary" data-sidebar-view="charmPlan"><span class="material-symbols-outlined" aria-hidden="true">route</span><span>Charm Plan</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="bestiary" data-sidebar-view="opportunities"><span class="material-symbols-outlined" aria-hidden="true">explore</span><span>Opportunities</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="bestiary" data-sidebar-view="library"><span class="material-symbols-outlined" aria-hidden="true">history</span><span>Session History</span></button>
+                        <button class="app-nav-item" type="button" data-sidebar-mode="tasks" data-sidebar-view="allSessions"><span class="material-symbols-outlined" aria-hidden="true">checklist</span><span>Task Sessions</span></button>
                     </div>
                 </section>
             </nav>
 
-            <details class="sidebar-menu data-menu" id="dataMenu">
-                <summary>
-                    <span class="material-symbols-outlined" aria-hidden="true">database</span>
-                    <span>Data &amp; backup</span>
-                    <span class="material-symbols-outlined sidebar-menu-caret" aria-hidden="true">expand_more</span>
-                </summary>
-                <div class="data-menu-actions">
-                    <button class="sidebar-link" id="exportWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">download</span><span>Export workspace</span></button>
-                    <button class="sidebar-link" id="importWorkspaceButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">upload</span><span>Import workspace</span></button>
-                    <button class="sidebar-link" id="recentChangesButton" type="button"><span class="material-symbols-outlined" aria-hidden="true">history_toggle_off</span><span>Recent changes</span></button>
-                    <input class="sr-only" id="importWorkspaceInput" type="file" accept="application/json,.json" tabindex="-1" aria-hidden="true">
-                </div>
+            <div class="app-nav-bottom">
+                <details class="app-nav-disclosure app-nav-databox" id="dataMenu">
+                    <summary>
+                        <span class="material-symbols-outlined" aria-hidden="true">database</span>
+                        <span>Data &amp; backup</span>
+                        <span class="material-symbols-outlined app-nav-disclosure-caret" aria-hidden="true">expand_more</span>
+                    </summary>
+                    <div class="app-nav-databox-grid">
+                        <button class="app-nav-databox-tile" id="exportWorkspaceButton" type="button" aria-label="Export workspace">
+                            <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                            <span aria-hidden="true">Export</span>
+                        </button>
+                        <button class="app-nav-databox-tile" id="importWorkspaceButton" type="button" aria-label="Import workspace">
+                            <span class="material-symbols-outlined" aria-hidden="true">upload</span>
+                            <span aria-hidden="true">Import</span>
+                        </button>
+                        <button class="app-nav-databox-tile" id="recentChangesButton" type="button">
+                            <span class="material-symbols-outlined" aria-hidden="true">history_toggle_off</span>
+                            <span>Recent changes</span>
+                        </button>
+                        <input class="sr-only" id="importWorkspaceInput" type="file" accept="application/json,.json" tabindex="-1" aria-hidden="true">
+                    </div>
 
-                <div class="data-menu-danger">
-                    <button class="sidebar-link is-danger" id="clearAllDataButton" type="button">
-                        <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
-                        <span>Clear all data</span>
-                    </button>
-                    <div class="data-menu-danger-confirm" id="clearAllDataConfirm" hidden>
-                        <p class="data-menu-danger-text">Permanently deletes every character and everything else this app has stored in your browser. This cannot be undone.</p>
-                        <div class="data-menu-danger-actions">
-                            <button class="btn btn-tertiary" id="clearAllDataCancelButton" type="button">Cancel</button>
-                            <button class="btn is-danger-solid" id="clearAllDataConfirmButton" type="button">Clear everything</button>
+                    <div class="app-nav-databox-danger">
+                        <button class="app-nav-item is-danger" id="clearAllDataButton" type="button">
+                            <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span>
+                            <span>Clear all data</span>
+                        </button>
+                        <div class="app-nav-databox-danger-confirm" id="clearAllDataConfirm" hidden>
+                            <p class="app-nav-databox-danger-text">Permanently deletes every character and everything else this app has stored in your browser. This cannot be undone.</p>
+                            <div class="app-nav-databox-danger-actions">
+                                <button class="btn btn-tertiary" id="clearAllDataCancelButton" type="button">Cancel</button>
+                                <button class="btn is-danger-solid" id="clearAllDataConfirmButton" type="button">Clear everything</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </details>
+                </details>
+            </div>
         </aside>
 
         <main class="workspace-main" id="workspaceMain">
@@ -186,7 +199,7 @@ Looted Items:" spellcheck="false"></textarea>
             <button class="icon-button detail-close" id="detailCloseButton" type="button" aria-label="Close details"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
             <div id="detailPanelContent"></div>
         </aside>
-        <button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Close navigation" hidden></button>
+        <button class="app-nav-scrim" id="sidebarScrim" type="button" aria-label="Close navigation" hidden></button>
     </div>
 
     <script>

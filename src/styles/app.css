@@ -168,28 +168,38 @@ h3 {
     grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
 }
 
-.workspace-sidebar {
+/*
+ * app-nav: the workspace rail. Three flex regions — top (brand + character
+ * switcher), scroll (trackers + planning links), bottom (Data & backup) —
+ * so a menu anchored to the top or bottom region is always fully on
+ * screen, and only the scroll region grows past the viewport.
+ */
+.app-nav {
     position: sticky;
     top: 0;
     display: flex;
     flex-direction: column;
     height: 100vh;
-    overflow-y: auto;
-    scrollbar-width: thin;
     padding: var(--u6) var(--u4);
     background: var(--paper);
     border-right: 1px solid var(--ink-100);
 }
 
-.sidebar-brand-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--u2);
+.app-nav :focus-visible {
+    outline-color: var(--ink-900);
+}
+
+.app-nav-top,
+.app-nav-bottom {
+    flex-shrink: 0;
+}
+
+.app-nav-brand-row {
     padding: 0 0 var(--u6);
 }
 
-.sidebar-brand {
+.app-nav-brand {
+    display: block;
     font-size: var(--t-200);
     font-weight: var(--weight-bold);
     letter-spacing: var(--tracking-heading);
@@ -197,15 +207,17 @@ h3 {
     text-decoration: none;
 }
 
-.sidebar-nav {
-    /* flex:1 still pulls Data & backup to the bottom when there's room to
-       spare; the sidebar itself scrolls as one unit when there isn't, so a
-       menu opening below the fold is never trapped in a squeezed inner
-       scroll box — the whole sidebar just grows and scrolls together. */
+.app-nav-scroll {
     flex: 1;
+    /* min-height:0 lets this region actually shrink inside the flex column —
+       otherwise it refuses to go below its content size and pushes
+       app-nav-bottom off the bottom of the viewport instead of scrolling. */
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
 
-.sidebar-utilities {
+.app-nav-quicklinks {
     display: grid;
     gap: var(--u1);
     padding-bottom: var(--u4);
@@ -213,11 +225,11 @@ h3 {
     border-bottom: 1px solid var(--ink-100);
 }
 
-.sidebar-section + .sidebar-section {
+.app-nav-group + .app-nav-group {
     margin-top: var(--u8);
 }
 
-.sidebar-section-title {
+.app-nav-group-title {
     margin: 0;
     padding: 0 var(--u2) var(--u2);
     font-size: var(--t-100);
@@ -227,12 +239,17 @@ h3 {
     color: var(--ink-500);
 }
 
-.sidebar-section-items {
+.app-nav-group-items {
     display: grid;
     gap: var(--u1);
 }
 
-.sidebar-link {
+/*
+ * app-nav-item: every clickable row in the rail — nav links, the
+ * "Add character" row, "Clear all data" — shares this one control so a
+ * visual change to one never has to be repeated by hand across the others.
+ */
+.app-nav-item {
     position: relative;
     display: grid;
     grid-template-columns: var(--u6) minmax(0, 1fr) auto;
@@ -250,22 +267,22 @@ h3 {
     cursor: pointer;
 }
 
-.sidebar-link:hover {
+.app-nav-item:hover {
     background: rgb(var(--shadow-rgb) / 0.05);
     color: var(--ink-900);
 }
 
-.sidebar-link.is-selected {
+.app-nav-item.is-selected {
     background: var(--accent-tint);
     color: var(--accent);
     font-weight: var(--weight-bold);
 }
 
-.sidebar-link.is-selected:hover {
+.app-nav-item.is-selected:hover {
     background: var(--accent-tint);
 }
 
-.sidebar-link.is-selected::before {
+.app-nav-item.is-selected::before {
     content: "";
     position: absolute;
     inset: var(--u2) auto var(--u2) 0;
@@ -273,26 +290,39 @@ h3 {
     background: var(--accent);
 }
 
-.sidebar-link .material-symbols-outlined {
+.app-nav-item .material-symbols-outlined {
     font-size: calc(var(--u6) - var(--u1));
     color: var(--ink-500);
 }
 
-.sidebar-link.is-selected .material-symbols-outlined {
+.app-nav-item.is-selected .material-symbols-outlined {
     color: var(--accent);
 }
 
+.app-nav-item.is-danger {
+    color: var(--caution);
+}
+
+.app-nav-item.is-danger:hover {
+    background: var(--caution-tint);
+}
+
+.app-nav-item.is-danger .material-symbols-outlined {
+    color: var(--caution);
+}
+
+.app-nav-item-shortcut {
+    margin-left: auto;
+    font-size: var(--t-100);
+    color: var(--ink-500);
+}
+
 /*
- * One shared disclosure component for every collapsible sidebar menu
- * (character switcher, Data & backup, and any future one). Only ONE of
- * these exists on purpose: two menus that are meant to look and behave
- * identically kept drifting apart because their summaries were two
- * hand-maintained copies of the same rules. Sharing the class makes that
- * divergence structurally impossible instead of something to remember.
- * Each menu keeps its own class (.character-menu, .data-menu) ONLY for
- * its position-specific divider — top-of-sidebar vs. bottom-of-sidebar.
+ * app-nav-disclosure: the shared <details> shell behind both the character
+ * switcher and Data & backup, so the two stay pixel-identical in how they
+ * open rather than drifting apart as two hand-maintained copies.
  */
-.sidebar-menu > summary {
+.app-nav-disclosure > summary {
     align-items: center;
     display: grid;
     grid-template-columns: var(--u6) minmax(0, 1fr) var(--u6);
@@ -307,56 +337,56 @@ h3 {
     list-style: none;
 }
 
-.sidebar-menu > summary:hover {
+.app-nav-disclosure > summary:hover {
     background: rgb(var(--shadow-rgb) / 0.05);
 }
 
-.sidebar-menu > summary::-webkit-details-marker {
+.app-nav-disclosure > summary::-webkit-details-marker {
     display: none;
 }
 
-.sidebar-menu > summary .material-symbols-outlined {
+.app-nav-disclosure > summary .material-symbols-outlined {
     font-size: calc(var(--u6) - var(--u1));
     color: var(--ink-500);
 }
 
-.sidebar-menu-caret {
+.app-nav-disclosure-caret {
     transition: transform 0.15s ease;
 }
 
-.sidebar-menu[open] .sidebar-menu-caret {
+.app-nav-disclosure[open] .app-nav-disclosure-caret {
     transform: rotate(180deg);
 }
 
-.character-menu {
+.app-nav-switcher {
     border-bottom: 1px solid var(--ink-100);
     padding-bottom: var(--u4);
     margin-bottom: var(--u4);
 }
 
-.character-menu-current {
+.app-nav-switcher-label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.character-menu-panel {
+.app-nav-switcher-panel {
     padding-top: var(--u2);
 }
 
-.character-rows {
+.app-nav-switcher-list {
     display: grid;
     gap: var(--u1);
     margin-bottom: var(--u1);
 }
 
-.character-row {
+.app-nav-switcher-row {
     display: flex;
     align-items: center;
     gap: var(--u1);
 }
 
-.character-row-select {
+.app-nav-switcher-select {
     flex: 1;
     display: flex;
     align-items: center;
@@ -373,52 +403,52 @@ h3 {
     cursor: pointer;
 }
 
-.character-row-select span:last-child {
+.app-nav-switcher-select span:last-child {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.character-row-select:hover {
+.app-nav-switcher-select:hover {
     background: rgb(var(--shadow-rgb) / 0.05);
     color: var(--ink-900);
 }
 
-.character-row.is-active .character-row-select {
+.app-nav-switcher-row.is-active .app-nav-switcher-select {
     background: var(--accent-tint);
     color: var(--accent);
     font-weight: var(--weight-bold);
 }
 
-.character-row-select .material-symbols-outlined {
+.app-nav-switcher-select .material-symbols-outlined {
     flex-shrink: 0;
     font-size: calc(var(--u6) - var(--u1));
     color: var(--ink-500);
 }
 
-.character-row.is-active .character-row-select .material-symbols-outlined {
+.app-nav-switcher-row.is-active .app-nav-switcher-select .material-symbols-outlined {
     color: var(--accent);
 }
 
-.character-row-action {
+.app-nav-switcher-action {
     flex-shrink: 0;
 }
 
-.character-row-action.is-danger:hover {
+.app-nav-switcher-action.is-danger:hover {
     background: var(--caution-tint);
     color: var(--caution);
 }
 
-.character-row-action[disabled] {
+.app-nav-switcher-action[disabled] {
     color: var(--ink-300);
     cursor: not-allowed;
 }
 
-.character-row-action[disabled]:hover {
+.app-nav-switcher-action[disabled]:hover {
     background: none;
 }
 
-.character-row-input {
+.app-nav-switcher-input {
     flex: 1;
     min-width: 0;
     min-height: var(--control-height);
@@ -430,46 +460,55 @@ h3 {
     font-weight: var(--weight-medium);
 }
 
-.sidebar-shortcut {
-    margin-left: auto;
-    font-size: var(--t-100);
-    color: var(--ink-500);
-}
-
-.data-menu {
+.app-nav-databox {
     border-top: 1px solid var(--ink-100);
     padding-top: var(--u4);
 }
 
-.workspace-sidebar :focus-visible {
-    outline-color: var(--ink-900);
-}
-
-.data-menu-actions {
+.app-nav-databox-grid {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--u1);
     margin-top: var(--u2);
 }
 
-.data-menu-danger {
+.app-nav-databox-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--u1);
+    padding: var(--u2) var(--u1);
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    background: none;
+    color: var(--ink-700);
+    text-align: center;
+    line-height: var(--leading-tight);
+}
+
+.app-nav-databox-tile span:last-child {
+    font-size: var(--t-100);
+}
+
+.app-nav-databox-tile .material-symbols-outlined {
+    font-size: calc(var(--u6) - var(--u1));
+    color: var(--ink-500);
+}
+
+.app-nav-databox-tile:hover {
+    border-color: var(--ink-100);
+    background: rgb(var(--shadow-rgb) / 0.05);
+    color: var(--ink-900);
+}
+
+.app-nav-databox-danger {
     margin-top: var(--u3);
     padding-top: var(--u3);
     border-top: 1px solid var(--ink-100);
 }
 
-.sidebar-link.is-danger {
-    color: var(--caution);
-}
-
-.sidebar-link.is-danger:hover {
-    background: var(--caution-tint);
-}
-
-.sidebar-link.is-danger .material-symbols-outlined {
-    color: var(--caution);
-}
-
-.data-menu-danger-confirm {
+.app-nav-databox-danger-confirm {
     display: grid;
     gap: var(--u2);
     margin-top: var(--u1);
@@ -479,13 +518,13 @@ h3 {
     background: var(--caution-tint);
 }
 
-.data-menu-danger-text {
+.app-nav-databox-danger-text {
     font-size: var(--t-100);
     line-height: var(--leading-body);
     color: var(--ink-900);
 }
 
-.data-menu-danger-actions {
+.app-nav-databox-danger-actions {
     display: flex;
     gap: var(--u2);
     justify-content: flex-end;
@@ -526,7 +565,7 @@ h3 {
     display: none;
 }
 
-.sidebar-scrim {
+.app-nav-scrim {
     display: none;
 }
 
@@ -2556,7 +2595,7 @@ body.has-quick-add {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .workspace-sidebar {
+    .app-nav {
         position: fixed;
         inset: 0 auto 0 0;
         z-index: 50;
@@ -2566,12 +2605,12 @@ body.has-quick-add {
         transition: transform var(--duration) var(--ease);
     }
 
-    body.sidebar-open .workspace-sidebar {
+    body.nav-open .app-nav {
         transform: none;
         box-shadow: var(--elevation-2);
     }
 
-    .sidebar-scrim {
+    .app-nav-scrim {
         display: block;
         position: fixed;
         inset: 0;
@@ -2676,7 +2715,7 @@ body.has-quick-add {
     .tick-option,
     .btn,
     .row-action,
-    .sidebar-link {
+    .app-nav-item {
         min-height: var(--u12);
     }
 }
