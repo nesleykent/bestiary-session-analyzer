@@ -35,20 +35,24 @@
             </div>
 
             <nav class="app-nav-scroll" aria-label="Primary">
-                <div class="app-nav-quicklinks">
-                    <button class="app-nav-item" type="button" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">
+                <div class="app-nav-quickpair">
+                    <button class="app-nav-quickbutton" type="button" data-sidebar-mode="dashboard" data-sidebar-view="dashboard">
                         <span class="material-symbols-outlined" aria-hidden="true">space_dashboard</span>
                         <span>Dashboard</span>
                     </button>
-                    <button class="app-nav-item" id="sidebarSearchButton" type="button" aria-keyshortcuts="/" title="Record progress (/)">
+                    <button class="app-nav-quickbutton" id="sidebarSearchButton" type="button" aria-keyshortcuts="/" title="Record progress (/)">
                         <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
-                        <span>Record progress</span>
+                        <span>Record</span>
                         <span class="app-nav-item-shortcut">/</span>
                     </button>
                 </div>
 
-                <section class="app-nav-group" aria-labelledby="trackersNavTitle">
-                    <h2 class="app-nav-group-title" id="trackersNavTitle">Trackers</h2>
+                <details class="app-nav-disclosure app-nav-navgroup" open>
+                    <summary>
+                        <span class="material-symbols-outlined" aria-hidden="true">list_alt</span>
+                        <span>Trackers</span>
+                        <span class="material-symbols-outlined app-nav-disclosure-caret" aria-hidden="true">expand_more</span>
+                    </summary>
                     <div class="app-nav-group-items" id="trackerNavItems">
                         <button class="app-nav-item is-selected" type="button" data-sidebar-mode="trackers" data-sidebar-view="bestiary"><span class="material-symbols-outlined" aria-hidden="true">pets</span><span>Bestiary</span></button>
                         <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="bosstiary"><span class="material-symbols-outlined" aria-hidden="true">skull</span><span>Bosstiary</span></button>
@@ -58,17 +62,21 @@
                         <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="titles"><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span><span>Titles</span></button>
                         <button class="app-nav-item" type="button" data-sidebar-mode="trackers" data-sidebar-view="measuringTibia"><span class="material-symbols-outlined" aria-hidden="true">straighten</span><span>Measuring Tibia</span></button>
                     </div>
-                </section>
+                </details>
 
-                <section class="app-nav-group" aria-labelledby="sessionsNavTitle">
-                    <h2 class="app-nav-group-title" id="sessionsNavTitle">Planning &amp; sessions</h2>
+                <details class="app-nav-disclosure app-nav-navgroup" open>
+                    <summary>
+                        <span class="material-symbols-outlined" aria-hidden="true">event_note</span>
+                        <span>Planning &amp; sessions</span>
+                        <span class="material-symbols-outlined app-nav-disclosure-caret" aria-hidden="true">expand_more</span>
+                    </summary>
                     <div class="app-nav-group-items">
                         <button class="app-nav-item" type="button" data-sidebar-mode="bestiary" data-sidebar-view="charmPlan"><span class="material-symbols-outlined" aria-hidden="true">route</span><span>Charm Plan</span></button>
                         <button class="app-nav-item" type="button" data-sidebar-mode="bestiary" data-sidebar-view="opportunities"><span class="material-symbols-outlined" aria-hidden="true">explore</span><span>Opportunities</span></button>
                         <button class="app-nav-item" type="button" data-sidebar-mode="bestiary" data-sidebar-view="library"><span class="material-symbols-outlined" aria-hidden="true">history</span><span>Session History</span></button>
                         <button class="app-nav-item" type="button" data-sidebar-mode="tasks" data-sidebar-view="allSessions"><span class="material-symbols-outlined" aria-hidden="true">checklist</span><span>Task Sessions</span></button>
                     </div>
-                </section>
+                </details>
             </nav>
 
             <div class="app-nav-bottom">

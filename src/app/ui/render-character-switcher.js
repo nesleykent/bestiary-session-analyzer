@@ -1,6 +1,26 @@
 import { escapeAttribute } from "./render-blocks.js";
 
+/**
+ * A stable hue per character id (not name, so renaming never reshuffles
+ * colors) gives each row a distinct identity mark at a glance, in place of
+ * the generic person icon every row used to share.
+ */
+function avatarHue(characterId) {
+    let hash = 0;
+    for (const char of String(characterId)) {
+        hash = (hash * 31 + char.codePointAt(0)) % 360;
+    }
+    return hash;
+}
+
+function avatarInitial(label) {
+    const trimmed = label.trim();
+    return trimmed ? Array.from(trimmed)[0].toUpperCase() : "?";
+}
+
 function buildDisplayRow(character, label, isActive, canDelete) {
+    const hue = avatarHue(character.id);
+
     return `
         <div class="app-nav-switcher-row${isActive ? " is-active" : ""}" data-character-row="${escapeAttribute(character.id)}">
             <button
@@ -9,7 +29,7 @@ function buildDisplayRow(character, label, isActive, canDelete) {
                 data-character-select="${escapeAttribute(character.id)}"
                 aria-current="${isActive ? "page" : "false"}"
             >
-                <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                <span class="app-nav-avatar" aria-hidden="true" style="background: hsl(${hue} 55% 45%)">${escapeAttribute(avatarInitial(label))}</span>
                 <span data-character-label="${escapeAttribute(character.id)}">${escapeAttribute(label)}</span>
             </button>
             <button

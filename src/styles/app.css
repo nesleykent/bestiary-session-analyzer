@@ -217,31 +217,74 @@ h3 {
     scrollbar-width: thin;
 }
 
-.app-nav-quicklinks {
+/*
+ * The two fixed destinations (Dashboard, Record progress) sit as a compact
+ * horizontal pair rather than stacked full-width rows — they're the two
+ * things you reach for constantly regardless of which nav section is open
+ * or closed below, so they read as a toolbar, not a list item.
+ */
+.app-nav-quickpair {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--u1);
     padding-bottom: var(--u4);
-    margin-bottom: var(--u6);
+    margin-bottom: var(--u4);
     border-bottom: 1px solid var(--ink-100);
 }
 
-.app-nav-group + .app-nav-group {
-    margin-top: var(--u8);
+.app-nav-quickbutton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--u1);
+    min-height: calc(var(--control-height) * 1.4);
+    padding: var(--u2) var(--u1);
+    border: 1px solid var(--ink-100);
+    border-radius: var(--radius-control);
+    background: none;
+    font-size: var(--t-100);
+    font-weight: var(--weight-medium);
+    color: var(--ink-700);
+    text-align: center;
+    cursor: pointer;
 }
 
-.app-nav-group-title {
-    margin: 0;
-    padding: 0 var(--u2) var(--u2);
-    font-size: var(--t-100);
-    font-weight: var(--weight-bold);
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
+.app-nav-quickbutton .material-symbols-outlined {
+    font-size: calc(var(--u6) - var(--u1));
     color: var(--ink-500);
+}
+
+.app-nav-quickbutton:hover {
+    border-color: var(--ink-300);
+    background: rgb(var(--shadow-rgb) / 0.05);
+    color: var(--ink-900);
+}
+
+.app-nav-quickbutton.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-tint);
+    color: var(--accent);
+}
+
+.app-nav-quickbutton.is-selected .material-symbols-outlined {
+    color: var(--accent);
+}
+
+/*
+ * app-nav-navgroup: Trackers and Planning & sessions are disclosures too,
+ * not static lists — the same collapsible primitive the character switcher
+ * and Data & backup use, so every grouping in the rail behaves one way
+ * instead of two (edges collapsible, middle permanently expanded).
+ */
+.app-nav-navgroup + .app-nav-navgroup {
+    margin-top: var(--u2);
 }
 
 .app-nav-group-items {
     display: grid;
     gap: var(--u1);
+    padding-top: var(--u1);
 }
 
 /*
@@ -420,14 +463,18 @@ h3 {
     font-weight: var(--weight-bold);
 }
 
-.app-nav-switcher-select .material-symbols-outlined {
+.app-nav-avatar {
+    display: flex;
     flex-shrink: 0;
-    font-size: calc(var(--u6) - var(--u1));
-    color: var(--ink-500);
-}
-
-.app-nav-switcher-row.is-active .app-nav-switcher-select .material-symbols-outlined {
-    color: var(--accent);
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--u6) - var(--u1));
+    height: calc(var(--u6) - var(--u1));
+    border-radius: 50%;
+    font-size: var(--t-100);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    color: #fff;
 }
 
 .app-nav-switcher-action {
