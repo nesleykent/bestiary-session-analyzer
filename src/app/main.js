@@ -20,16 +20,13 @@ import {
     restoreWorkspace
 } from "./state/hunt-workspace.js";
 import {
-    addCharacter,
     createDefaultCharacter,
     getCharacterLabel,
-    removeCharacter,
     restoreAppWorkspace,
     wrapLegacyWorkspaceAsCharacter
 } from "./state/character-workspace.js";
-import { clearAllStoredState, loadAppState, loadWorkspaceState, saveAppState } from "./state/local-store.js";
+import { loadAppState, loadWorkspaceState, saveAppState } from "./state/local-store.js";
 import {
-    countTrackedEntries,
     createTrackerProgress,
     getEntry,
     getStoredEntry,
@@ -62,10 +59,8 @@ import {
     getTrackerIds,
     TRACKERS
 } from "./trackers/registry.js";
-import { buildAppExportFileName, parseAppWorkspaceFile, serializeAppState } from "./state/app-workspace-transfer.js";
 import { renderAllTabs } from "./ui/render-all-tabs.js";
 import { renderDashboard } from "./ui/render-dashboard.js";
-import { focusCharacterNameInput, renderCharacterSwitcher } from "./ui/render-character-switcher.js";
 import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
 import { escapeAttribute } from "./ui/render-blocks.js";
 import { bookmarkControl, plainText, stageControl, tickControl } from "./ui/render-controls.js";
@@ -92,22 +87,10 @@ const elements = {
     detailCloseButton: document.getElementById("detailCloseButton"),
     detailPanel: document.getElementById("detailPanel"),
     detailPanelContent: document.getElementById("detailPanelContent"),
-    exportWorkspaceButton: document.getElementById("exportWorkspaceButton"),
-    importWorkspaceButton: document.getElementById("importWorkspaceButton"),
-    importWorkspaceInput: document.getElementById("importWorkspaceInput"),
     huntTabStrip: document.getElementById("huntTabStrip"),
     huntWorkspace: document.getElementById("huntWorkspace"),
     huntWorkspaceActions: document.getElementById("huntWorkspaceActions"),
     appAlert: document.getElementById("appAlert"),
-    addCharacterButton: document.getElementById("addCharacterButton"),
-    characterList: document.getElementById("characterList"),
-    characterMenu: document.getElementById("characterMenu"),
-    characterMenuCurrent: document.getElementById("characterMenuCurrent"),
-    dataMenu: document.getElementById("dataMenu"),
-    clearAllDataButton: document.getElementById("clearAllDataButton"),
-    clearAllDataConfirm: document.getElementById("clearAllDataConfirm"),
-    clearAllDataCancelButton: document.getElementById("clearAllDataCancelButton"),
-    clearAllDataConfirmButton: document.getElementById("clearAllDataConfirmButton"),
     inputSection: document.getElementById("inputSection"),
     respawnModeBlock: document.getElementById("respawnModeBlock"),
     respawnModeHint: document.getElementById("respawnModeHint"),
@@ -125,12 +108,7 @@ const elements = {
     sessionEditor: document.getElementById("sessionEditor"),
     sessionLog: document.getElementById("sessionLog"),
     sessionToggle: document.getElementById("sessionToggle"),
-    sidebarOpenButton: document.getElementById("sidebarOpenButton"),
-    sidebarScrim: document.getElementById("sidebarScrim"),
-    workspaceSidebar: document.getElementById("workspaceSidebar"),
-    sidebarSearchButton: document.getElementById("sidebarSearchButton"),
     sectionHeading: document.querySelector("#analysisSection .section-heading"),
-    recentChangesButton: document.getElementById("recentChangesButton"),
     srStatus: document.getElementById("srStatus"),
     undoBar: document.getElementById("undoBar"),
     workspaceMain: document.getElementById("workspaceMain")
@@ -310,15 +288,6 @@ function hasWorkspaceContent() {
  * Sessions and tracker progress are both checked — a character can hold real
  * data (marked Bestiary/tracker entries) with no hunts at all.
  */
-function characterHasContent(character) {
-    if (character.id === state.activeCharacterId) {
-        return hasWorkspaceContent() || countTrackedEntries(state.trackerProgress) > 0;
-    }
-
-    return (character.workspace?.hunts ?? []).some(huntHasContent)
-        || countTrackedEntries(character.workspace?.trackerProgress ?? {}) > 0;
-}
-
 function getActiveCharacterIndex() {
     return state.characters.findIndex((character) => character.id === state.activeCharacterId);
 }
@@ -348,195 +317,6 @@ function persistState() {
 
     snapshotActiveCharacterWorkspace();
     saveAppState(getAppSnapshot());
-}
-
-/**
- * The transient view state a plain navigation already resets (see
- * navigateWorkspace), plus the tracker page/selection — the tracker page is
- * about to show a different character's data entirely.
- */
-function resetCharacterTransientState() {
-    leaveRecordFlow();
-    state.selectedTrackerKey = "";
-    state.trackerPageIndex = 0;
-    state.activeTrackerId = TRACKERS[0].id;
-    state.isSessionInputOpen = false;
-    state.editingCharacterId = "";
-}
-
-/**
- * Every character-specific page reads off the flat `state` fields, which
- * always represent the active character — so switching is: snapshot the
- * outgoing character's live state into its stored slot, then apply the
- * incoming character's stored workspace onto those same fields. No
- * character-specific render or calculation code has to know characters exist.
- */
-function switchCharacter(characterId) {
-    if (characterId === state.activeCharacterId) {
-        return;
-    }
-
-    const target = state.characters.find((character) => character.id === characterId);
-
-    if (!target) {
-        return;
-    }
-
-    captureVisibleInputs();
-    snapshotActiveCharacterWorkspace();
-    applyWorkspace(target.workspace);
-    state.activeCharacterId = characterId;
-    resetCharacterTransientState();
-    closeMobileSidebar();
-    renderApp();
-    persistState();
-}
-
-/**
- * A new character starts unnamed, so it goes straight into rename mode —
- * naming it is almost certainly the next thing the player wants to do, and
- * the menu stays open for it rather than closing like a plain switch does.
- */
-function addCharacterFlow() {
-    const { character, characters } = addCharacter(state.characters, "");
-
-    state.characters = characters;
-    switchCharacter(character.id);
-    state.editingCharacterId = character.id;
-    renderCharacterSwitcherView();
-    focusCharacterNameInput(elements.characterList, character.id);
-}
-
-/**
- * Deleting the active character is a switch-and-delete: the neighbor it lands
- * on is applied the same way a normal switch would, but the character being
- * removed is never snapshotted first — there is nothing worth saving.
- */
-function removeCharacterFlow(characterId) {
-    if (state.characters.length < 2) {
-        return;
-    }
-
-    const target = state.characters.find((character) => character.id === characterId);
-
-    if (!target) {
-        return;
-    }
-
-    // Mirrors closeHuntTab: an unsaved textarea edit on the active character
-    // must land on `state` before its content check runs, or a just-typed,
-    // not-yet-blurred session log would silently skip the confirm.
-    if (characterId === state.activeCharacterId) {
-        captureVisibleInputs();
-    }
-
-    const label = getCharacterLabel(state.characters.indexOf(target), target);
-
-    if (characterHasContent(target)
-        && !window.confirm(`Delete ${label}? Every tracker, session and plan it contains is discarded.`)) {
-        return;
-    }
-
-    const wasActive = characterId === state.activeCharacterId;
-    const result = removeCharacter(state.characters, characterId, state.activeCharacterId);
-
-    state.characters = result.characters;
-
-    if (wasActive) {
-        const next = state.characters.find((character) => character.id === result.activeCharacterId);
-
-        state.activeCharacterId = result.activeCharacterId;
-        applyWorkspace(next.workspace);
-        resetCharacterTransientState();
-    }
-
-    renderApp();
-    persistState();
-}
-
-function attachCharacterSwitcherEditors() {
-    elements.characterList.querySelectorAll("[data-character-select]").forEach((button) => {
-        button.addEventListener("click", () => {
-            switchCharacter(button.dataset.characterSelect);
-            // Picking one closes the menu, like a plain select — nothing left to do here.
-            elements.characterMenu.removeAttribute("open");
-        });
-    });
-
-    elements.characterList.querySelectorAll("[data-character-rename]").forEach((button) => {
-        button.addEventListener("click", () => {
-            state.editingCharacterId = button.dataset.characterRename;
-            renderCharacterSwitcherView();
-            focusCharacterNameInput(elements.characterList, state.editingCharacterId);
-        });
-    });
-
-    elements.characterList.querySelectorAll("[data-character-delete]").forEach((button) => {
-        button.addEventListener("click", () => removeCharacterFlow(button.dataset.characterDelete));
-    });
-
-    // Writes straight to state on every keystroke and skips renderApp(), the
-    // same rule attachLibraryFieldEditors follows for session names — a full
-    // re-render here would rebuild the input mid-keystroke and drop the caret.
-    // Enter or clicking away blurs the field, which is what commits the name
-    // and returns the row to its normal display, mirroring a desktop file
-    // browser's rename-in-place.
-    elements.characterList.querySelectorAll("[data-character-name]").forEach((input) => {
-        input.addEventListener("input", () => {
-            const characterId = input.dataset.characterName;
-            const character = state.characters.find((candidate) => candidate.id === characterId);
-
-            if (!character) {
-                return;
-            }
-
-            character.name = input.value;
-            persistState();
-        });
-
-        input.addEventListener("blur", () => {
-            state.editingCharacterId = "";
-            renderCharacterSwitcherView();
-        });
-
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === "Escape") {
-                event.preventDefault();
-                input.blur();
-            }
-        });
-    });
-}
-
-/**
- * Closed, the trigger names the active character — useful context at a
- * glance. Open, naming it again would be redundant with the highlighted row
- * right below it, so it reads as a plain category label instead.
- */
-function syncCharacterMenuLabel() {
-    if (elements.characterMenu.open) {
-        elements.characterMenuCurrent.textContent = "Character";
-        return;
-    }
-
-    const activeIndex = getActiveCharacterIndex();
-
-    elements.characterMenuCurrent.textContent = activeIndex === -1
-        ? ""
-        : getCharacterLabel(activeIndex, state.characters[activeIndex]);
-}
-
-function renderCharacterSwitcherView() {
-    renderCharacterSwitcher(
-        elements.characterList,
-        state.characters,
-        state.activeCharacterId,
-        state.editingCharacterId,
-        getCharacterLabel
-    );
-
-    syncCharacterMenuLabel();
-    attachCharacterSwitcherEditors();
 }
 
 /**
@@ -1989,7 +1769,6 @@ function attachOpportunityActions() {
             state.trackerPageIndex = 0;
             state.selectedTrackerKey = row?.key ?? "";
             leaveRecordFlow();
-            closeMobileSidebar();
             renderApp();
             persistState();
             announce(`${button.dataset.opportunityCreature} opened in Bestiary.`);
@@ -2097,8 +1876,7 @@ function renderTaskSessionsView() {
 }
 
 /**
- * The sidebar is the only navigation now. The old tab strip that duplicated it was
- * removed, so this is a no-op kept as the single place mode chrome would go.
+ * No-op kept as the single place mode chrome would go, should it ever need to.
  */
 function applyPrimaryMode() {
 }
@@ -2169,7 +1947,6 @@ function getPageContent() {
 
 function applyWorkspaceChrome() {
     const content = getPageContent();
-    const view = getModeView();
 
     elements.pageEyebrow.textContent = content.eyebrow;
     elements.pageTitle.textContent = content.title;
@@ -2177,25 +1954,12 @@ function applyWorkspaceChrome() {
     // Trackers and the Dashboard have nothing "New session" would do.
     elements.newSessionButton.hidden = state.mode === "trackers" || state.mode === "dashboard";
     elements.workspaceMain.classList.toggle("is-trackers", state.mode === "trackers");
-
-    document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
-        const isBrandOrHome = button.classList.contains("sidebar-brand") || button.hasAttribute("data-sidebar-home");
-        const isSelected = !isBrandOrHome
-            && button.dataset.sidebarMode === state.mode
-            && button.dataset.sidebarView === view;
-
-        button.classList.toggle("is-selected", isSelected);
-        if (button.tagName === "BUTTON") {
-            button.setAttribute("aria-current", isSelected ? "page" : "false");
-        }
-    });
 }
 
 function renderApp() {
     const view = getModeView();
 
     elements.appAlert.textContent = "";
-    renderCharacterSwitcherView();
 
     applyPrimaryMode();
     applyWorkspaceChrome();
@@ -2208,8 +1972,6 @@ function renderApp() {
     }
 
     if (state.mode === "trackers") {
-        // The sidebar already lists the seven trackers; a second strip of the same
-        // links was two navigations for one thing.
         elements.huntWorkspace.hidden = true;
         renderUndoBar();
 
@@ -3850,63 +3612,6 @@ function downloadFile(text, fileName, mimeType) {
 }
 
 
-/**
- * Import replaces the whole progress record, so it asks first when there is
- * something to lose. Charm points and thresholds are never read from the file.
- */
-
-function exportWorkspace() {
-    captureVisibleInputs();
-    persistState();
-
-    const exportedAt = new Date().toISOString();
-    const fileName = buildAppExportFileName(exportedAt);
-    const blob = new Blob([serializeAppState(getAppSnapshot(), exportedAt)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const downloadLink = document.createElement("a");
-
-    downloadLink.href = url;
-    downloadLink.download = fileName;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-    URL.revokeObjectURL(url);
-
-}
-
-function requestWorkspaceImport() {
-    if (state.characters.some(characterHasContent)
-        && !window.confirm("Importing replaces every character you have now. Continue?")) {
-        return;
-    }
-
-    elements.importWorkspaceInput.value = "";
-    elements.importWorkspaceInput.click();
-}
-
-async function importWorkspaceFile(file) {
-    try {
-        const restored = restoreAppWorkspace(parseAppWorkspaceFile(await file.text()));
-
-        if (!restored) {
-            throw new Error("That file does not contain any exported sessions.");
-        }
-
-        state.characters = restored.characters;
-        state.activeCharacterId = restored.activeCharacterId;
-
-        const active = state.characters.find((character) => character.id === state.activeCharacterId)
-            || state.characters[0];
-
-        applyWorkspace(active.workspace);
-        resetCharacterTransientState();
-        renderApp();
-        persistState();
-    } catch (error) {
-        showAlert(error.message);
-    }
-}
-
 async function initializeApp() {
     try {
         setBusyState(true);
@@ -3958,75 +3663,6 @@ elements.output.addEventListener("keydown", (event) => {
         event.target.blur();
     }
 });
-elements.addCharacterButton.addEventListener("click", addCharacterFlow);
-
-/**
- * The sidebar itself scrolls (see the layout fix for Data & backup opening
- * into a squeezed panel), so a menu sitting near the bottom of a long list —
- * Data & backup is the last thing in the sidebar — can open with its entire
- * revealed content below the fold and nothing visibly different on screen.
- * The character menu never showed this because it sits near the top, where
- * there is always room below it; scrolling the opened menu to the top of the
- * visible area gives every sidebar menu that same immediate visibility,
- * regardless of where it happens to sit.
- */
-function scrollSidebarMenuIntoView(details) {
-    if (!details.open) {
-        return;
-    }
-
-    const sidebar = elements.workspaceSidebar;
-    // Align the menu's top with the sidebar's own scrollport rather than
-    // trusting scrollIntoView's alignment: with a fixed-position ancestor in
-    // play (the mobile sidebar drawer) it settled on the wrong offset in
-    // testing, silently leaving the menu exactly as hidden as before.
-    const target = Math.min(details.offsetTop, sidebar.scrollHeight - sidebar.clientHeight);
-
-    sidebar.scrollTo({ top: Math.max(0, target) });
-}
-
-// The open/closed state can change from a row click closing the menu
-// programmatically, not just the summary's own toggle, so the label syncs
-// off the native "toggle" event rather than any one call site.
-elements.characterMenu.addEventListener("toggle", syncCharacterMenuLabel);
-elements.characterMenu.addEventListener("toggle", () => scrollSidebarMenuIntoView(elements.characterMenu));
-
-elements.clearAllDataButton.addEventListener("click", () => {
-    elements.clearAllDataConfirm.hidden = false;
-});
-elements.clearAllDataCancelButton.addEventListener("click", () => {
-    elements.clearAllDataConfirm.hidden = true;
-});
-elements.clearAllDataConfirmButton.addEventListener("click", () => {
-    clearAllStoredState();
-    // A reload is the simplest correct way back to a truly fresh boot — every
-    // in-memory field resets itself through the normal init path rather than
-    // this handler having to know and clear each one individually.
-    window.location.reload();
-});
-// Reopening the menu later should not resurrect a stale confirm from a
-// previous visit that was never explicitly cancelled.
-elements.dataMenu.addEventListener("toggle", () => {
-    if (!elements.dataMenu.open) {
-        elements.clearAllDataConfirm.hidden = true;
-    }
-});
-elements.dataMenu.addEventListener("toggle", () => scrollSidebarMenuIntoView(elements.dataMenu));
-elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
-elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
-elements.importWorkspaceInput.addEventListener("change", (event) => {
-    const [file] = event.target.files;
-
-    if (file) {
-        importWorkspaceFile(file);
-    }
-});
-
-function closeMobileSidebar() {
-    document.body.classList.remove("sidebar-open");
-    elements.sidebarScrim.hidden = true;
-}
-
 function navigateWorkspace(mode, view) {
     captureVisibleInputs();
     state.mode = mode;
@@ -4036,17 +3672,9 @@ function navigateWorkspace(mode, view) {
     leaveRecordFlow();
     state.selectedTrackerKey = "";
     state.isSessionInputOpen = false;
-    closeMobileSidebar();
     renderApp();
     persistState();
 }
-
-document.querySelectorAll("[data-sidebar-mode][data-sidebar-view]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-        event.preventDefault();
-        navigateWorkspace(button.dataset.sidebarMode, button.dataset.sidebarView);
-    });
-});
 
 /**
  * Everything the player could want to change, from every tracker, as one flat list
@@ -4159,22 +3787,13 @@ function applyQuickSet(item, field, value) {
     showUndo(change);
 }
 
-function focusWorkspaceSearch(returnFocusSelector = "#sidebarSearchButton") {
+function focusWorkspaceSearch(returnFocusSelector) {
     openQuickAdd({
         items: buildQuickAddItems(),
         onSet: applyQuickSet,
         returnFocusSelector
     });
 }
-
-elements.sidebarSearchButton.addEventListener("click", () => focusWorkspaceSearch("#sidebarSearchButton"));
-
-elements.recentChangesButton.addEventListener("click", () => {
-    state.mode = "trackers";
-    leaveRecordFlow();
-    state.recordView = "changes";
-    renderApp();
-});
 
 document.addEventListener("keydown", (event) => {
     // The event target can be the document itself, which has no closest().
@@ -4201,11 +3820,6 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-elements.sidebarOpenButton.addEventListener("click", () => {
-    document.body.classList.add("sidebar-open");
-    elements.sidebarScrim.hidden = false;
-});
-elements.sidebarScrim.addEventListener("click", closeMobileSidebar);
 elements.detailCloseButton.addEventListener("click", () => {
     closeDetailPanel();
     if (state.mode === "trackers") {

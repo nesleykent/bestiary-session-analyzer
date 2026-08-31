@@ -42,8 +42,7 @@ export function createWorkspace() {
     const hunt = createHunt();
 
     return {
-        // The Dashboard is the app's homepage — where a brand-new character,
-        // and the brand link in the sidebar, both land.
+        // The Dashboard is the app's homepage — where a brand-new character lands.
         mode: "dashboard",
         trackerProgress: {},
         // The undo trail. Empty for a new workspace.
