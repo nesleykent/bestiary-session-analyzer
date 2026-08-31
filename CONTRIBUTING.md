@@ -1,51 +1,73 @@
 # Contributing
 
-## Development Workflow
+Thank you for helping improve Bestiary Session Analyzer. The working name is narrower than the product: contributions may involve Tibia progress tracking, Hunt Analyzer processing, planning, bundled game data, documentation, accessibility, or repository maintenance.
 
-1. Keep application runtime code inside `src/`.
-2. Keep repository automation under `.github/`.
-3. Keep root-level files limited to repository metadata, docs, and deployment entry points.
+## Before starting
 
-## Local Verification
+- Search the [open issues](https://github.com/nesleykent/bestiary-session-analyzer/issues) to avoid duplicate work.
+- Use a bug report for broken behavior and a feature request for a new workflow or product change.
+- Keep changes focused. Unrelated cleanup makes behavior and dataset changes harder to verify.
+- Treat bundled Tibia metadata as read-only application data. Player-owned progress belongs in browser state, imports, or session records.
 
-Always use port **4173**. One port, reused for every change — do not start a second server to get around a stale
-file, and stop the old one before starting a new one:
+## Local development
 
-```bash
-pkill -f "http.server 4173"; python3 -m http.server 4173 --bind 127.0.0.1
-```
-
-Then open `http://127.0.0.1:4173/src/`.
-
-### Stale modules are the trap
-
-`http.server` sends no cache headers, so the browser holds on to `src/app/**/*.js` and `main.css`. After editing a
-module, an ordinary reload can still run the previous version — which looks exactly like a bug in the code you just
-wrote, and has cost real debugging time here more than once.
-
-Fix it in the browser, not by changing port:
-
-- **Hard reload** — `Cmd+Shift+R` (macOS) or `Ctrl+Shift+R`.
-- **Keep it off while working** — DevTools → Network → *Disable cache*, with DevTools left open.
-
-If you would rather the server never allow caching, serve with no-store headers instead:
+The application is dependency-free and uses native HTML, CSS, and JavaScript modules. From the repository root, run:
 
 ```bash
-python3 -c "import http.server as h; \
-C=type('C',(h.SimpleHTTPRequestHandler,),{'end_headers':lambda s:(s.send_header('Cache-Control','no-store'),h.SimpleHTTPRequestHandler.end_headers(s))}); \
-h.test(HandlerClass=C, port=4173, bind='127.0.0.1')"
+python3 -m http.server 4173 --bind 127.0.0.1
 ```
 
-When you are done, stop it:
+Then open `http://127.0.0.1:4173/src/`. Stop the server with `Ctrl+C` when finished.
+
+Python's basic server permits browser caching. If a module change appears to have no effect, hard-reload with `Cmd+Shift+R` on macOS or `Ctrl+Shift+R` elsewhere. Keeping **Disable cache** enabled in browser developer tools is useful during active development.
+
+## Source responsibilities
+
+| Path | Responsibility |
+|---|---|
+| `src/app/features/` | Parsing, calculations, planning, comparisons, and task estimates |
+| `src/app/services/` | Read-only dataset loading |
+| `src/app/state/` | Progress, sessions, persistence, transfers, and undo |
+| `src/app/trackers/` | Tracker rules, fields, totals, and status |
+| `src/app/ui/` | Shared and feature-specific rendering |
+| `src/data/` | Bundled Tibia metadata snapshots |
+| `src/styles/` | Design tokens and application styling |
+| `docs/` | Product, UX, architecture, and audit documentation |
+| `.github/` | GitHub templates and automation |
+
+Read [Repository Structure](docs/repository-structure.md) before changing a responsibility boundary.
+
+## Verification
+
+Run checks that match the risk of the change. Before opening a pull request, at minimum:
 
 ```bash
-pkill -f "http.server 4173"
+git diff --check
+rg --files src/app -g '*.js' | xargs -n1 node --check
+for file in src/data/*.json; do python3 -m json.tool "$file" > /dev/null; done
 ```
 
-## Pull Requests
+For rendered changes, also verify:
 
-Before opening a pull request:
+- the intended page and primary interaction in a browser;
+- the browser console has no relevant errors or warnings;
+- desktop and mobile-sized layouts when responsive behavior is affected;
+- filtering, persistence, undo, and import behavior when the changed surface uses them;
+- no accidental loss of visible information or functional density.
 
-1. Verify `src/data/bestiary.json` is valid JSON.
-2. Confirm any new source files are placed under the correct `src/app/*` functional area.
-3. Update `README.md` and `docs/repository-structure.md` if the repository layout changes.
+For calculation changes, include a small reproducible example with known inputs and expected output. For dataset changes, state the source and snapshot date.
+
+## Pull requests
+
+A useful pull request explains the player problem, the chosen change, and how the result was verified. Include screenshots for visible changes and call out limitations or follow-up work explicitly.
+
+Before submitting, confirm that:
+
+- the change stays within the stated scope;
+- names and rules match current Tibia terminology;
+- character-wide progress is not accidentally stored as session-owned data;
+- user-provided text and imported data are rendered safely;
+- `README.md` and architecture documentation are updated when behavior or structure changes;
+- all relevant checks pass.
+
+By contributing, you agree that your contribution is licensed under the repository's [GPL-3.0 license](LICENSE).

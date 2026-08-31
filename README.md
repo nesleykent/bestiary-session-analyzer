@@ -6,6 +6,10 @@
 
 [Open the application](https://nesleykent.github.io/bestiary-session-analyzer/) · [Report a bug](https://github.com/nesleykent/bestiary-session-analyzer/issues)
 
+[![CI](https://github.com/nesleykent/bestiary-session-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/nesleykent/bestiary-session-analyzer/actions/workflows/ci.yml)
+[![GitHub Pages](https://github.com/nesleykent/bestiary-session-analyzer/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/nesleykent/bestiary-session-analyzer/actions/workflows/deploy-pages.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-2f6feb.svg)](LICENSE)
+
 Tibia spreads a character's progression across the Cyclopedia, Quest Log, achievements, titles, the Task Board, and hunting analytics. This application brings those systems into one character record, learns realistic kill rates from the player's own Hunt Analyzer sessions, and turns the combined information into practical estimates and plans.
 
 It is not an automatic Tibia profile mirror. The player owns and records the progress; the application preserves it, connects it, and helps answer:
@@ -15,6 +19,16 @@ It is not an automatic Tibia profile mirror. The player owns and records the pro
 - Which measured hunt advances the Bestiary most efficiently?
 - What can be completed in the time available?
 - How long will a Bounty or Weekly Kill Task take at this character's measured rate?
+
+## Repository guide
+
+- [Feature reference](#feature-reference) explains the trackers and planning tools.
+- [Calculation contract](#calculation-contract) documents the formulas behind projections.
+- [Data ownership and persistence](#data-ownership-and-persistence) explains what is stored and where.
+- [Running locally](#running-locally) covers the dependency-free development setup.
+- [Repository structure](#repository-structure) maps responsibilities to source directories.
+- [Official Tibia references](#official-tibia-references) lists the primary sources behind product terminology.
+- [Contributing](CONTRIBUTING.md), [support](SUPPORT.md), and [security](SECURITY.md) describe repository participation.
 
 ## Product model
 

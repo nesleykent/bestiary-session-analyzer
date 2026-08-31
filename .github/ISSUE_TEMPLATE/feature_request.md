@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an enhancement to the analyzer or repository
+about: Propose a Tibia progression, planning, data, or repository improvement
 title: "[Feature] "
 labels: enhancement
 assignees: ""
@@ -8,15 +8,27 @@ assignees: ""
 
 ## Problem
 
-Describe the user need or workflow gap.
+What player or contributor problem should be solved? Describe the current workflow and where it falls short.
+
+## Affected Area
+
+Which tracker, analysis, planning flow, dataset, or repository surface would change?
 
 ## Proposed Solution
 
-Describe the change you want.
+Describe the outcome you want. Screens, controls, or implementation details are welcome but not required.
+
+## Tibia Rules or Sources
+
+If the request depends on a Tibia mechanic, link an official guide or announcement when possible.
 
 ## Alternatives Considered
 
-List any workarounds or alternative ideas.
+List current workarounds or alternative ideas, if any.
+
+## Data and Compatibility
+
+Could this affect saved progress, imports, existing sessions, calculations, or mobile layouts?
 
 ## Additional Context
 

@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a defect in the analyzer or site behavior
+about: Report broken tracking, analysis, planning, data, or site behavior
 title: "[Bug] "
 labels: bug
 assignees: ""
@@ -8,7 +8,11 @@ assignees: ""
 
 ## Summary
 
-Describe the problem clearly.
+Describe what is broken and which feature is affected.
+
+## Affected Area
+
+Examples: Bestiary, Bosstiary, Charms, Achievements, Quests, Titles, Measuring Tibia, Charm Points Plan, Opportunities, Session History, comparison, or Task Estimate.
 
 ## Steps To Reproduce
 
@@ -27,5 +31,17 @@ Describe what happened instead.
 ## Environment
 
 - Browser:
-- Device:
-- Log sample:
+- Operating system/device:
+- Application URL or commit:
+
+## Input or Saved State
+
+Include the smallest non-sensitive Hunt Analyzer sample, tracker value, import row, or other input needed to reproduce the problem. Remove character names and anything else you do not want published.
+
+## Evidence
+
+Add screenshots, console errors, or calculation examples when useful.
+
+## Additional Context
+
+Mention whether the problem still occurs after a hard reload and whether it affects new data, previously saved data, or both.
