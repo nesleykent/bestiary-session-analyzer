@@ -2091,6 +2091,37 @@ body.has-quick-add {
     font-size: var(--t-200);
 }
 
+.detail-stage-list {
+    display: grid;
+    gap: var(--u2);
+}
+
+.detail-stage-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--u2);
+    color: var(--ink-500);
+    font-size: var(--t-200);
+}
+
+.detail-stage-list li .material-symbols-outlined {
+    font-size: calc(var(--u6) - var(--u1));
+    color: var(--ink-300);
+}
+
+.detail-stage-list li.is-done {
+    color: var(--ink-900);
+    font-weight: var(--weight-medium);
+}
+
+.detail-stage-list li.is-done .material-symbols-outlined {
+    color: var(--accent);
+}
+
+.detail-stage-list .row-aside {
+    margin-left: auto;
+}
+
 .detail-checks,
 .detail-actions {
     display: grid;

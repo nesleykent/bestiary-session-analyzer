@@ -127,6 +127,7 @@ const elements = {
     sessionToggle: document.getElementById("sessionToggle"),
     sidebarOpenButton: document.getElementById("sidebarOpenButton"),
     sidebarScrim: document.getElementById("sidebarScrim"),
+    workspaceSidebar: document.getElementById("workspaceSidebar"),
     sidebarSearchButton: document.getElementById("sidebarSearchButton"),
     sectionHeading: document.querySelector("#analysisSection .section-heading"),
     recentChangesButton: document.getElementById("recentChangesButton"),
@@ -1536,32 +1537,91 @@ function buildDetailInfoGroup(title, value) {
     `;
 }
 
-/** The one or two groups particular to this tracker, beyond the shared shell. */
+function buildDetailStageList(items) {
+    return `
+        <ul class="detail-stage-list">
+            ${items.map((item) => `
+                <li class="${item.isDone ? "is-done" : ""}">
+                    <span class="material-symbols-outlined" aria-hidden="true">${item.isDone ? "check_circle" : "radio_button_unchecked"}</span>
+                    <span>${escapeText(item.label)}</span>
+                    <span class="row-aside">${item.meta}</span>
+                </li>
+            `).join("")}
+        </ul>
+    `;
+}
+
+function buildDetailGroupHtml(title, innerHtml) {
+    return `
+        <section class="detail-group">
+            <h3 class="detail-group-title">${escapeText(title)}</h3>
+            ${innerHtml}
+        </section>
+    `;
+}
+
+/**
+ * The one or two groups particular to this tracker, beyond the shared shell.
+ * Every stage/points/completion figure here is read straight off the row
+ * (or, for cross-item context like a questlog or map area, off other rows
+ * from the same buildTrackerRows() pass) rather than recomputed — so this
+ * can never disagree with the grid or the tracker's own totals.
+ */
 function buildDetailInfoGroups(tracker, row) {
     if (tracker.id === "bosstiary") {
+        const stageList = buildDetailStageList(row.stages.map((stage, index) => ({
+            label: stage.label,
+            meta: `${formatNumber(stage.kills)} kills · ${formatNumber(stage.points)} points`,
+            isDone: row.stagesCleared > index
+        })));
+
         return [
-            buildDetailInfoGroup("Boss points", `${formatNumber(row.pointsEarned)} <span class="row-aside">of ${formatNumber(row.totalPoints)}</span>`)
+            buildDetailInfoGroup("Boss points", `${formatNumber(row.pointsEarned)} <span class="row-aside">of ${formatNumber(row.totalPoints)}</span>`),
+            buildDetailGroupHtml("Stages", stageList)
         ];
     }
 
     if (tracker.id === "charms") {
+        const stageList = buildDetailStageList(row.stages.map((stage, index) => ({
+            label: `Stage ${index + 1}`,
+            meta: `${formatNumber(stage.cost)} ${row.currencyLabel}`,
+            isDone: row.stage > index
+        })));
+
         return [
             buildDetailInfoGroup("Effect", escapeText(row.effect)),
             buildDetailInfoGroup("Cost", row.isComplete
                 ? "Maxed"
-                : `${formatNumber(row.nextCost)} <span class="row-aside">next stage, ${formatNumber(row.totalCost)} to max</span>`)
+                : `${formatNumber(row.nextCost)} <span class="row-aside">next stage, ${formatNumber(row.totalCost)} to max</span>`),
+            buildDetailGroupHtml("Stages", stageList)
         ];
     }
 
     if (tracker.id === "achievements") {
+        const rarityMeta = row.rarityLabel
+            ? `${row.rarityLabel}${Number.isFinite(row.rarityPercent) ? ` <span class="row-aside">${row.rarityPercent.toFixed(1)}% of characters have it</span>` : ""}`
+            : "";
+
         return [
             buildDetailInfoGroup("Description", plainText(row.spoiler)),
+            buildDetailInfoGroup("Points", `${formatNumber(row.points)}${row.isSecret ? ' <span class="pill">Secret</span>' : ""}`),
+            buildDetailInfoGroup("Rarity", rarityMeta),
             buildDetailInfoGroup("Grade", row.grade ? "★".repeat(row.grade) : "")
         ];
     }
 
     if (tracker.id === "quests") {
-        return [buildDetailInfoGroup("Rewards", escapeText(row.rewards))];
+        const siblings = row.questlog
+            ? buildTrackerRows(getTracker("quests")).filter((candidate) => candidate.questlog === row.questlog)
+            : [];
+        const questlogMeta = siblings.length > 1
+            ? `${formatNumber(siblings.filter((candidate) => candidate.completed).length)} <span class="row-aside">of ${formatNumber(siblings.length)} in this questlog completed</span>`
+            : "";
+
+        return [
+            buildDetailInfoGroup("Rewards", escapeText(row.rewards)),
+            buildDetailInfoGroup("Questlog progress", questlogMeta)
+        ];
     }
 
     if (tracker.id === "titles") {
@@ -1569,8 +1629,12 @@ function buildDetailInfoGroups(tracker, row) {
     }
 
     if (tracker.id === "measuringTibia") {
+        const areaRows = buildTrackerRows(getTracker("measuringTibia")).filter((candidate) => candidate.area === row.area);
+        const areaDiscovered = areaRows.filter((candidate) => candidate.discovered).length;
+
         return [
-            buildDetailInfoGroup("Area", escapeText(row.area)),
+            buildDetailInfoGroup("Area progress", `${formatNumber(areaDiscovered)} <span class="row-aside">of ${formatNumber(row.areaSubareaCount)} subareas in ${escapeText(row.area)} discovered</span>`),
+            buildDetailInfoGroup("Area achievement", escapeText(row.areaAchievement)),
             buildDetailInfoGroup("Bestiary creatures", row.creatureCount === null ? "" : formatNumber(row.creatureCount))
         ];
     }
@@ -3895,10 +3959,37 @@ elements.output.addEventListener("keydown", (event) => {
     }
 });
 elements.addCharacterButton.addEventListener("click", addCharacterFlow);
+
+/**
+ * The sidebar itself scrolls (see the layout fix for Data & backup opening
+ * into a squeezed panel), so a menu sitting near the bottom of a long list —
+ * Data & backup is the last thing in the sidebar — can open with its entire
+ * revealed content below the fold and nothing visibly different on screen.
+ * The character menu never showed this because it sits near the top, where
+ * there is always room below it; scrolling the opened menu to the top of the
+ * visible area gives every sidebar menu that same immediate visibility,
+ * regardless of where it happens to sit.
+ */
+function scrollSidebarMenuIntoView(details) {
+    if (!details.open) {
+        return;
+    }
+
+    const sidebar = elements.workspaceSidebar;
+    // Align the menu's top with the sidebar's own scrollport rather than
+    // trusting scrollIntoView's alignment: with a fixed-position ancestor in
+    // play (the mobile sidebar drawer) it settled on the wrong offset in
+    // testing, silently leaving the menu exactly as hidden as before.
+    const target = Math.min(details.offsetTop, sidebar.scrollHeight - sidebar.clientHeight);
+
+    sidebar.scrollTo({ top: Math.max(0, target) });
+}
+
 // The open/closed state can change from a row click closing the menu
 // programmatically, not just the summary's own toggle, so the label syncs
 // off the native "toggle" event rather than any one call site.
 elements.characterMenu.addEventListener("toggle", syncCharacterMenuLabel);
+elements.characterMenu.addEventListener("toggle", () => scrollSidebarMenuIntoView(elements.characterMenu));
 
 elements.clearAllDataButton.addEventListener("click", () => {
     elements.clearAllDataConfirm.hidden = false;
@@ -3920,6 +4011,7 @@ elements.dataMenu.addEventListener("toggle", () => {
         elements.clearAllDataConfirm.hidden = true;
     }
 });
+elements.dataMenu.addEventListener("toggle", () => scrollSidebarMenuIntoView(elements.dataMenu));
 elements.exportWorkspaceButton.addEventListener("click", exportWorkspace);
 elements.importWorkspaceButton.addEventListener("click", requestWorkspaceImport);
 elements.importWorkspaceInput.addEventListener("change", (event) => {
