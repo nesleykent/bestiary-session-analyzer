@@ -7,7 +7,7 @@ import { STATUS_LABELS, buildStatusFacet } from "./status.js";
  * A charm is locked or at level 1, 2 or 3 — four values, so it gets four buttons
  * rather than a number field that looks like it would accept 250.
  */
-const CHARM_STAGES = [
+export const CHARM_STAGES = [
     { value: 0, label: "—", title: "Locked" },
     { value: 1, label: "1", title: "Stage 1" },
     { value: 2, label: "2", title: "Stage 2" },

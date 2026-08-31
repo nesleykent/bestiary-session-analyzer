@@ -54,6 +54,7 @@ import {
     importTrackerJson
 } from "./state/tracker-transfer.js";
 import { BESTIARY_STAGES, STAGE_COMPLETE, bestiaryTracker } from "./trackers/bestiary.js";
+import { CHARM_STAGES } from "./trackers/charms.js";
 import {
     buildInitialFilters,
     getTracker,
@@ -66,6 +67,8 @@ import { renderAllTabs } from "./ui/render-all-tabs.js";
 import { renderDashboard } from "./ui/render-dashboard.js";
 import { focusCharacterNameInput, renderCharacterSwitcher } from "./ui/render-character-switcher.js";
 import { escapeText, patchTrackerCard, renderTracker } from "./ui/render-tracker.js";
+import { escapeAttribute } from "./ui/render-blocks.js";
+import { bookmarkControl, plainText, stageControl, tickControl } from "./ui/render-controls.js";
 
 import { renderPasteBox, renderTransferReview } from "./ui/render-transfer-review.js";
 import { closeQuickAdd, isQuickAddOpen, openQuickAdd } from "./ui/render-quick-add.js";
@@ -1279,8 +1282,8 @@ function closeDetailPanel() {
     elements.appShell.classList.remove("has-detail");
 }
 
-function formatDetailRecordedAt(itemKey) {
-    const change = state.changeLog.find((candidate) => candidate.trackerId === bestiaryTracker.id
+function formatDetailRecordedAt(trackerId, itemKey) {
+    const change = state.changeLog.find((candidate) => candidate.trackerId === trackerId
         && Object.prototype.hasOwnProperty.call(candidate.entries ?? {}, itemKey));
 
     if (!change?.at) {
@@ -1364,7 +1367,7 @@ function renderBestiaryDetail(row) {
                 <button class="btn btn-secondary detail-action" type="button" id="detailSessionsButton"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span><span>View measured sessions</span></button>
                 <a class="btn btn-secondary detail-action" href="${row.wikiLink}" target="_blank" rel="noreferrer"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span><span>Open Tibia Wiki</span><span class="material-symbols-outlined detail-action-tail" aria-hidden="true">north_east</span></a>
             </div>
-            <p class="detail-last-recorded">Last recorded: ${escapeText(formatDetailRecordedAt(row.key))}</p>
+            <p class="detail-last-recorded">Last recorded: ${escapeText(formatDetailRecordedAt(bestiaryTracker.id, row.key))}</p>
         </section>
     `;
 
@@ -1474,6 +1477,211 @@ function renderBestiaryDetail(row) {
     });
 }
 
+const TRACKER_DETAIL_ICONS = {
+    bosstiary: "skull",
+    charms: "auto_awesome",
+    achievements: "trophy",
+    quests: "account_tree",
+    titles: "workspace_premium",
+    measuringTibia: "straighten"
+};
+
+/** The affirmative verb each tracker's single-button tick control asserts. */
+const TICK_YES_LABELS = {
+    achievements: "Earned",
+    quests: "Completed",
+    titles: "Earned",
+    measuringTibia: "Discovered"
+};
+
+/** The header's one-line meta, tailored to what each tracker's row actually has. */
+function buildDetailMeta(tracker, row) {
+    if (tracker.id === "bosstiary") {
+        return `${row.category} · ${formatNumber(row.pointsEarned)} of ${formatNumber(row.totalPoints)} boss points`;
+    }
+
+    if (tracker.id === "charms") {
+        return `${row.type} charm · spends ${row.currencyLabel}`;
+    }
+
+    if (tracker.id === "achievements") {
+        return row.rarityLabel ? `${row.categoryLabel} · ${row.rarityLabel}` : row.categoryLabel;
+    }
+
+    if (tracker.id === "quests") {
+        return row.questlog || "Ungrouped";
+    }
+
+    if (tracker.id === "titles") {
+        return row.isPermanent ? "Permanent" : "Losable";
+    }
+
+    if (tracker.id === "measuringTibia") {
+        return row.area;
+    }
+
+    return tracker.label;
+}
+
+function buildDetailInfoGroup(title, value) {
+    if (!value) {
+        return "";
+    }
+
+    return `
+        <section class="detail-group">
+            <h3 class="detail-group-title">${escapeText(title)}</h3>
+            <p class="detail-value">${value}</p>
+        </section>
+    `;
+}
+
+/** The one or two groups particular to this tracker, beyond the shared shell. */
+function buildDetailInfoGroups(tracker, row) {
+    if (tracker.id === "bosstiary") {
+        return [
+            buildDetailInfoGroup("Boss points", `${formatNumber(row.pointsEarned)} <span class="row-aside">of ${formatNumber(row.totalPoints)}</span>`)
+        ];
+    }
+
+    if (tracker.id === "charms") {
+        return [
+            buildDetailInfoGroup("Effect", escapeText(row.effect)),
+            buildDetailInfoGroup("Cost", row.isComplete
+                ? "Maxed"
+                : `${formatNumber(row.nextCost)} <span class="row-aside">next stage, ${formatNumber(row.totalCost)} to max</span>`)
+        ];
+    }
+
+    if (tracker.id === "achievements") {
+        return [
+            buildDetailInfoGroup("Description", plainText(row.spoiler)),
+            buildDetailInfoGroup("Grade", row.grade ? "★".repeat(row.grade) : "")
+        ];
+    }
+
+    if (tracker.id === "quests") {
+        return [buildDetailInfoGroup("Rewards", escapeText(row.rewards))];
+    }
+
+    if (tracker.id === "titles") {
+        return [buildDetailInfoGroup("Requirement", escapeText(row.requirement))];
+    }
+
+    if (tracker.id === "measuringTibia") {
+        return [
+            buildDetailInfoGroup("Area", escapeText(row.area)),
+            buildDetailInfoGroup("Bestiary creatures", row.creatureCount === null ? "" : formatNumber(row.creatureCount))
+        ];
+    }
+
+    return [];
+}
+
+/** The primary control: a stage ladder for staged trackers, a single tick for boolean ones. */
+function buildDetailPrimaryControl(tracker, row) {
+    if (tracker.id === "bosstiary") {
+        return stageControl(row, "stage", row.stageOptions, { label: "Stage" });
+    }
+
+    if (tracker.id === "charms") {
+        return stageControl(row, "stage", CHARM_STAGES, { label: "Stage" });
+    }
+
+    if (tracker.tickField) {
+        return tickControl(row, tracker.tickField, {
+            yesLabel: TICK_YES_LABELS[tracker.id] ?? "Done",
+            locked: Boolean(row.isDerived),
+            title: row.isDerived ? "Earned by completing this area in Measuring Tibia" : ""
+        });
+    }
+
+    return "";
+}
+
+/**
+ * Every tracker but Bestiary shares this one panel — only the meta line, the
+ * primary control and the extra info groups vary. Bestiary keeps its own
+ * hand-built panel because its progress control (a typed kill count with a
+ * live preview) has no equivalent among the stage/tick shapes here.
+ */
+function renderGenericTrackerDetail(tracker, row) {
+    const icon = TRACKER_DETAIL_ICONS[tracker.id] ?? "checklist";
+    const infoGroups = buildDetailInfoGroups(tracker, row).filter(Boolean).join("");
+
+    elements.detailPanelContent.innerHTML = `
+        <header class="detail-header">
+            <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">${icon}</span>${escapeText(row.name)}</h2>
+            <p class="detail-header-meta">${escapeText(buildDetailMeta(tracker, row))}</p>
+        </header>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Progress</h3>
+            ${buildDetailPrimaryControl(tracker, row)}
+        </section>
+
+        ${infoGroups}
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Tracking</h3>
+            <div class="detail-checks">
+                <div class="detail-check">${bookmarkControl(row)}<span>Bookmarked</span></div>
+            </div>
+        </section>
+
+        <section class="detail-group">
+            <h3 class="detail-group-title">Actions</h3>
+            ${row.wikiLink ? `
+                <div class="detail-actions">
+                    <a class="btn btn-secondary detail-action" href="${escapeAttribute(row.wikiLink)}" target="_blank" rel="noreferrer"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span><span>Open Tibia Wiki</span><span class="material-symbols-outlined detail-action-tail" aria-hidden="true">north_east</span></a>
+                </div>
+            ` : ""}
+            <p class="detail-last-recorded">Last recorded: ${escapeText(formatDetailRecordedAt(tracker.id, row.key))}</p>
+        </section>
+    `;
+
+    attachGenericDetailActions(tracker, row.key);
+}
+
+/**
+ * Reuses the grid's own commit functions (commitTrackerStage/Set/Flag) rather
+ * than a second write path — they already do the write-through, undo and grid
+ * refresh correctly. This only adds refreshing the detail panel itself, which
+ * those functions have no reason to know about.
+ */
+function attachGenericDetailActions(tracker, itemKey) {
+    const refresh = () => {
+        const updated = buildTrackerRows(tracker).find((candidate) => candidate.key === itemKey);
+
+        if (updated) {
+            renderGenericTrackerDetail(tracker, updated);
+        } else {
+            closeDetailPanel();
+        }
+    };
+
+    elements.detailPanelContent.querySelectorAll("[data-tracker-stage-value]").forEach((button) => {
+        button.addEventListener("click", () => {
+            commitTrackerStage(button);
+            refresh();
+        });
+    });
+
+    elements.detailPanelContent.querySelectorAll("[data-tracker-set]").forEach((button) => {
+        button.addEventListener("click", () => {
+            commitTrackerSet(button);
+            refresh();
+        });
+    });
+
+    elements.detailPanelContent.querySelectorAll("[data-tracker-flag]").forEach((button) => {
+        button.addEventListener("click", () => {
+            commitTrackerFlag(button);
+            refresh();
+        });
+    });
+}
+
 function renderTrackerDetail(tracker) {
     if (!state.selectedTrackerKey) {
         closeDetailPanel();
@@ -1496,14 +1704,7 @@ function renderTrackerDetail(tracker) {
         return;
     }
 
-    elements.detailPanelContent.innerHTML = `
-        <header class="detail-header">
-            <h2 class="detail-title"><span class="material-symbols-outlined" aria-hidden="true">description</span>${escapeText(row.name)}</h2>
-            <p class="detail-header-meta">${escapeText(tracker.label)}</p>
-        </header>
-        <section class="detail-group"><h3 class="detail-group-title">Tracker</h3><p class="detail-note">${escapeText(tracker.label)}</p></section>
-        <section class="detail-group"><h3 class="detail-group-title">Status</h3><p class="detail-value">${escapeText(row.status || "Tracked")}</p></section>
-    `;
+    renderGenericTrackerDetail(tracker, row);
 }
 
 /**
