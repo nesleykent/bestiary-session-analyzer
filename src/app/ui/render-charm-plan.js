@@ -15,7 +15,7 @@ function buildEntryRows(plan) {
     const head = buildRow([
         '<span class="row-name">Creature</span>',
         '<span class="row-num">Time to Complete</span>',
-        '<span class="row-charm">Charm</span>'
+        '<span class="row-charm">Charm Points</span>'
     ], "is-head");
     const rows = plan.entries.map((entry) => buildRow([
         `<span class="row-name">${entry.name}${buildLinkButton(entry.huntLabel, "data-plan-hunt", entry.huntId, "is-pill")}</span>`,
@@ -94,11 +94,11 @@ export function buildCharmPlanResultMarkup(planView) {
             `of ${formatTime(plan.availableMinutes)} available`,
             `${formatTime(plan.timeUsedMinutes)} used`,
             `${formatTime(plan.unusedMinutes)} unused`,
-            `${formatNumber(plan.completedCount)} bestiaries completed`
+            `${formatNumber(plan.completedCount)} Bestiary entries completed`
         ])}
 
         ${plan.entries.length ? `
-            <section class="results-section" aria-label="Bestiaries you can finish">
+            <section class="results-section" aria-label="Bestiary entries you can finish">
                 ${buildEntryRows(plan)}
             </section>
         ` : ""}
@@ -130,7 +130,7 @@ function buildConsideredSessions(planView) {
         <div class="plan-sessions-block">
             <span class="input-label" id="planSessionsLabel">Sessions Considered</span>
             ${buildRowList(rows, 4)}
-            <p class="helper-text">Ignoring a session affects Charm Plan only.</p>
+            <p class="helper-text">Ignoring a session affects Charm Points Plan only.</p>
         </div>
     `;
 }

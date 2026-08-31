@@ -143,7 +143,7 @@ const VIEW_CONTENT = {
         resultsCopy: "A creature analyzed in several sessions appears once per session; keep the one you will hunt. Combined time adds each session's longest remaining time, and total kills belong to the session that produced the entry."
     },
     charmPlan: {
-        resultsTitle: "Charm Plan",
+        resultsTitle: "Charm Points Plan",
         resultsCopy: "Charm points are only earned once an entry is complete, so partial progress counts for nothing."
     },
     tasks: {
@@ -154,10 +154,10 @@ const VIEW_CONTENT = {
     },
     opportunities: {
         resultsTitle: "Opportunities",
-        resultsCopy: "What your Bestiary is missing, not just what your sessions can see. Most of the charm points available are in creatures no log has ever covered."
+        resultsCopy: "Use your Bestiary progress and measured sessions to find quick wins, efficient known hunts, high-value locations, and started entries with no saved rate."
     },
     library: {
-        resultsTitle: "Session Library",
+        resultsTitle: "Session History",
         resultsCopy: "Every Hunt Analyzer you have stored. Name them, date them, and note the conditions so a rate you recorded months ago still means something."
     }
 };
@@ -772,7 +772,7 @@ function getCharmPlanTabMeta(planView) {
         return "None eligible";
     }
 
-    return planView.plan ? `+${formatNumber(planView.plan.charms)} charms` : "No play time";
+    return planView.plan ? `+${formatNumber(planView.plan.charms)} charm points` : "No play time";
 }
 
 function updateCharmPlanResult() {
@@ -858,7 +858,7 @@ function getOpportunityTabMeta() {
 function buildLibraryTab(view) {
     return {
         key: "library",
-        label: "Library",
+        label: "Session History",
         meta: `${formatNumber(state.hunts.length)} ${state.hunts.length === 1 ? "session" : "sessions"}`,
         isActive: view === "library"
     };
@@ -896,7 +896,7 @@ function buildFixedTabs(view) {
     return [
         {
             key: "charmPlan",
-            label: "Charm Plan",
+            label: "Charm Points Plan",
             meta: getCharmPlanTabMeta(planView),
             isActive: view === "charmPlan"
         },
@@ -2129,7 +2129,7 @@ function getPageContent() {
         const trackerDescriptions = {
             bestiary: "Character-wide progress for every creature.",
             bosstiary: "Character-wide progress for every boss.",
-            charms: "Plan charm unlocks against the points you have earned.",
+            charms: "Track Major and Minor charm stages, effects, costs, and currencies.",
             achievements: "Track achievement progress and earned points.",
             quests: "Keep every quest state in one dependable list.",
             titles: "Track the titles your character has unlocked.",
@@ -2154,8 +2154,8 @@ function getPageContent() {
     }
 
     const contentByView = {
-        charmPlan: ["Charm Plan", "Turn your measured sessions and remaining Bestiary progress into a focused hunting plan."],
-        opportunities: ["Opportunities", "Find unfinished creatures your existing measured sessions can help you complete."],
+        charmPlan: ["Charm Points Plan", "Turn your measured sessions and remaining Bestiary progress into a focused hunting plan."],
+        opportunities: ["Opportunities", "Find unfinished Bestiary objectives across known hunts, quick wins, locations, and unmeasured progress."],
         allSessions: ["Bestiary Sessions", "Compare measured sessions and see where hunting time produces the most progress."],
         library: ["Session History", "Your stored Hunt Analyzers, notes, dates, and recorded spawn conditions."],
         comparison: ["Compare Sessions", "Compare measured hunts by time, progress, and charm efficiency."],
