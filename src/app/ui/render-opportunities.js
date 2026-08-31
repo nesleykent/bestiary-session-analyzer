@@ -86,7 +86,7 @@ function buildQuickWins(analysis) {
     const head = buildRow([
         '<span class="row-name is-verbatim">Creature</span>',
         '<span class="row-num">Kills Left</span>',
-        '<span class="row-charm">Charm</span>'
+        '<span class="row-charm">Charm Points</span>'
     ], "is-head");
     const rows = analysis.quickWins.map((entry) => buildRow([
         `<span class="row-name is-verbatim">${buildCreatureAction(entry.name)}</span>`,
@@ -138,7 +138,7 @@ function buildBlindSpots(analysis) {
     const head = buildRow([
         '<span class="row-name is-verbatim">Creature</span>',
         '<span class="row-num">Kills Left</span>',
-        '<span class="row-charm">Charm</span>'
+        '<span class="row-charm">Charm Points</span>'
     ], "is-head");
     const rows = analysis.blindSpots.map((entry) => buildRow([
         `<span class="row-name is-verbatim">${buildCreatureAction(entry.name)}</span>`,

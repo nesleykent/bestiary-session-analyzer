@@ -44,7 +44,7 @@ export function renderComparison(container, comparison) {
                     <thead>
                         <tr>
                             <th>Session</th>
-                            <th>Total Charms</th>
+                            <th>Charm Points</th>
                             <th>Longest Time Remaining</th>
                             <th>Charm Rate</th>
                         </tr>

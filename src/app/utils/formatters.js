@@ -64,5 +64,5 @@ export function formatCharmsPerHour(charmsPerHour) {
         return "\u221e";
     }
 
-    return `${charmsPerHour.toFixed(2)} charms/h`;
+    return `${charmsPerHour.toFixed(2)} charm points/h`;
 }
