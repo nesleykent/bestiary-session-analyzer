@@ -3077,6 +3077,7 @@ th.is-sorted .column-sort {
     border-radius: var(--radius-surface);
     background: var(--surface);
     text-align: left;
+    cursor: pointer;
     transition: transform var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
 }
 
@@ -3095,6 +3096,16 @@ th.is-sorted .column-sort {
 
 .dashboard-card-head .material-symbols-outlined {
     color: var(--ink-500);
+}
+
+.dashboard-card-disclosure {
+    margin-left: auto;
+    transition: color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+}
+
+.dashboard-card:hover .dashboard-card-disclosure {
+    color: var(--accent);
+    transform: translateX(var(--u1));
 }
 
 .dashboard-card-title {

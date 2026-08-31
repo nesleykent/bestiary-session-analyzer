@@ -24,6 +24,7 @@ function buildCard({ tracker, totals }) {
             <div class="dashboard-card-head">
                 <span class="material-symbols-outlined" aria-hidden="true">${TRACKER_ICONS[tracker.id] ?? "checklist"}</span>
                 <span class="dashboard-card-title">${escapeText(tracker.label)}</span>
+                <span class="material-symbols-outlined dashboard-card-disclosure" aria-hidden="true">chevron_right</span>
             </div>
             ${answer.label ? `<div class="dashboard-card-eyebrow">${escapeText(answer.label)}</div>` : ""}
             <div class="dashboard-card-figure">${escapeText(answer.value)}</div>
