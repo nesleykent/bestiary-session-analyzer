@@ -218,57 +218,18 @@ h3 {
 }
 
 /*
- * The two fixed destinations (Dashboard, Record progress) sit as a compact
- * horizontal pair rather than stacked full-width rows — they're the two
- * things you reach for constantly regardless of which nav section is open
- * or closed below, so they read as a toolbar, not a list item.
+ * A sidebar is one continuous vertical list — Apple's own sidebars (Finder,
+ * Mail, Settings) never mix horizontal card rows into it. Dashboard and
+ * Record progress are ordinary rows like every other destination; only the
+ * divider below them marks them as the two fixed entries above the
+ * collapsible groups.
  */
 .app-nav-quickpair {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--u1);
     padding-bottom: var(--u4);
     margin-bottom: var(--u4);
     border-bottom: 1px solid var(--ink-100);
-}
-
-.app-nav-quickbutton {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--u1);
-    min-height: calc(var(--control-height) * 1.4);
-    padding: var(--u2) var(--u1);
-    border: 1px solid var(--ink-100);
-    border-radius: var(--radius-control);
-    background: none;
-    font-size: var(--t-100);
-    font-weight: var(--weight-medium);
-    color: var(--ink-700);
-    text-align: center;
-    cursor: pointer;
-}
-
-.app-nav-quickbutton .material-symbols-outlined {
-    font-size: calc(var(--u6) - var(--u1));
-    color: var(--ink-500);
-}
-
-.app-nav-quickbutton:hover {
-    border-color: var(--ink-300);
-    background: rgb(var(--shadow-rgb) / 0.05);
-    color: var(--ink-900);
-}
-
-.app-nav-quickbutton.is-selected {
-    border-color: var(--accent);
-    background: var(--accent-tint);
-    color: var(--accent);
-}
-
-.app-nav-quickbutton.is-selected .material-symbols-outlined {
-    color: var(--accent);
 }
 
 /*
@@ -302,7 +263,7 @@ h3 {
     min-height: var(--control-height);
     padding: 0 var(--u2);
     border: 0;
-    border-radius: 0;
+    border-radius: var(--radius-control);
     background: none;
     font-size: var(--t-200);
     color: var(--ink-700);
@@ -315,6 +276,12 @@ h3 {
     color: var(--ink-900);
 }
 
+/*
+ * Selection is a filled rounded row inset from the rail's edges — the
+ * source-list selection style macOS and iOS sidebars use — rather than a
+ * leading accent stripe, which is a web/Material convention this app was
+ * carrying over instead of an Apple one.
+ */
 .app-nav-item.is-selected {
     background: var(--accent-tint);
     color: var(--accent);
@@ -323,14 +290,6 @@ h3 {
 
 .app-nav-item.is-selected:hover {
     background: var(--accent-tint);
-}
-
-.app-nav-item.is-selected::before {
-    content: "";
-    position: absolute;
-    inset: var(--u2) auto var(--u2) 0;
-    width: calc(var(--u1) / 2);
-    background: var(--accent);
 }
 
 .app-nav-item .material-symbols-outlined {
