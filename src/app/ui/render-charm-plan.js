@@ -62,7 +62,12 @@ function buildRoute(plan) {
 
 export function buildCharmPlanResultMarkup(planView) {
     if (!planView.hasAnalyzedHunts) {
-        return buildAnswer(ANSWER_LABEL, "&mdash;", "Process a Hunt Analyzer first.");
+        return `
+            ${buildAnswer(ANSWER_LABEL, "&mdash;", "Process a Hunt Analyzer first.")}
+            <div class="answer-actions">
+                <button class="btn btn-secondary" type="button" data-empty-open-session>Open current session</button>
+            </div>
+        `;
     }
 
     if (!planView.hasModeMatchedHunts) {

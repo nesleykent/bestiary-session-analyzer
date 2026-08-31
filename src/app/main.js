@@ -1910,6 +1910,27 @@ function attachOpportunityActions() {
     elements.output.querySelectorAll("[data-opportunity-session]").forEach((button) => {
         button.addEventListener("click", () => selectHunt(button.dataset.opportunitySession));
     });
+
+    elements.output.querySelectorAll("[data-opportunity-creature]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const tracker = bestiaryTracker;
+            const row = buildTrackerRows(tracker)
+                .find((candidate) => candidate.name === button.dataset.opportunityCreature);
+            const filters = buildInitialFilters(tracker);
+
+            filters.search = button.dataset.opportunityCreature;
+            state.trackerFilters[tracker.id] = filters;
+            state.mode = "trackers";
+            state.activeTrackerId = tracker.id;
+            state.trackerPageIndex = 0;
+            state.selectedTrackerKey = row?.key ?? "";
+            leaveRecordFlow();
+            closeMobileSidebar();
+            renderApp();
+            persistState();
+            announce(`${button.dataset.opportunityCreature} opened in Bestiary.`);
+        });
+    });
 }
 
 function buildLibraryRows() {
@@ -2251,6 +2272,15 @@ function addHuntTab() {
     setModeView("session");
     renderApp();
     persistState();
+}
+
+function openCurrentSession() {
+    captureVisibleInputs();
+    state.isSessionInputOpen = true;
+    setModeView("session");
+    renderApp();
+    persistState();
+    elements.sessionLog.focus();
 }
 
 function closeHuntTab(huntId) {
@@ -3479,6 +3509,8 @@ function syncHuntTabLabel(huntId) {
  * re-render, so the caret is never disturbed while typing.
  */
 function attachLibraryFieldEditors() {
+    const savedTimers = new WeakMap();
+
     const bindField = (attribute, apply) => {
         elements.output.querySelectorAll(`[${attribute}]`).forEach((input) => {
             input.addEventListener("input", () => {
@@ -3492,6 +3524,14 @@ function attachLibraryFieldEditors() {
                 apply(hunt, input.value);
                 persistState();
                 syncHuntTabLabel(huntId);
+
+                input.classList.remove("is-saved");
+                window.clearTimeout(savedTimers.get(input));
+                savedTimers.set(input, window.setTimeout(() => {
+                    input.classList.add("is-saved");
+                    announce(`${getHuntLabelById(huntId)} saved.`);
+                    window.setTimeout(() => input.classList.remove("is-saved"), 900);
+                }, 350));
             });
         });
     };
@@ -4087,6 +4127,13 @@ elements.newSessionButton.addEventListener("click", () => {
     }
     state.bestiaryView = "session";
     addHuntTab();
+});
+elements.output.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (target?.closest("[data-empty-open-session]")) {
+        openCurrentSession();
+    }
 });
 
 initializeApp();

@@ -9,11 +9,12 @@ import {
 
 export function renderAllTabs(container, analysis, summary) {
     if (!analysis.rows.length) {
-        container.className = "empty-state";
-        container.innerHTML = `
-            <strong>No analyzed creatures.</strong>
-            <span>Process a Hunt Analyzer to list a session's creatures here.</span>
-        `;
+        container.className = "results-shell";
+        container.innerHTML = buildEmptyState(
+            "No analyzed creatures.",
+            "Process a Hunt Analyzer to list a session's creatures here.",
+            '<button class="btn btn-secondary" type="button" data-empty-open-session>Open current session</button>'
+        );
         return;
     }
 

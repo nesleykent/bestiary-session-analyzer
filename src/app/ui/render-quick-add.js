@@ -174,6 +174,8 @@ function close() {
     overlay = null;
     chosen = null;
     results = [];
+    document.body.classList.remove("has-quick-add");
+    document.querySelector(".app-shell")?.removeAttribute("inert");
 
     // Landing back where you were is the point of this flow, so focus goes home.
     if (returnFocus) {
@@ -233,6 +235,8 @@ export function openQuickAdd({ items, onSet, returnFocusSelector = "" }) {
     `;
 
     document.body.appendChild(overlay);
+    document.body.classList.add("has-quick-add");
+    document.querySelector(".app-shell")?.setAttribute("inert", "");
 
     const input = overlay.querySelector("#quickAddInput");
 
@@ -289,6 +293,29 @@ export function openQuickAdd({ items, onSet, returnFocusSelector = "" }) {
             highlighted = [...overlay.querySelectorAll(".quick-option")].indexOf(option);
             chosen = results[highlighted];
             renderValueStage();
+        }
+    });
+
+    overlay.addEventListener("keydown", (event) => {
+        if (event.key !== "Tab") {
+            return;
+        }
+
+        const focusable = [...overlay.querySelectorAll("button:not([disabled]), input:not([disabled])")]
+            .filter((element) => !element.hidden && element.getClientRects().length);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (!first || !last) {
+            return;
+        }
+
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
         }
     });
 

@@ -1,5 +1,5 @@
 import { formatNumber, formatTaskRate, formatTimeDetailed } from "../utils/formatters.js";
-import { buildLinkButton, buildPill } from "./render-blocks.js";
+import { buildEmptyState, buildLinkButton, buildPill } from "./render-blocks.js";
 
 function buildRow(session) {
     const estimate = session.estimate;
@@ -36,11 +36,12 @@ function buildRow(session) {
 
 export function renderTaskSessions(container, sessions) {
     if (!sessions.length) {
-        container.className = "empty-state";
-        container.innerHTML = `
-            <strong>No processed sessions.</strong>
-            <span>Process a Hunt Analyzer in a session, then pick the creature your task asks for.</span>
-        `;
+        container.className = "results-shell";
+        container.innerHTML = buildEmptyState(
+            "No processed sessions.",
+            "Process a Hunt Analyzer in a session, then pick the creature your task asks for.",
+            '<button class="btn btn-secondary" type="button" data-empty-open-session>Open current session</button>'
+        );
         return;
     }
 

@@ -13,11 +13,12 @@ export function escapeAttribute(value) {
         .replace(/"/g, "&quot;");
 }
 
-export function buildEmptyState(headline, detail = "") {
+export function buildEmptyState(headline, detail = "", action = "") {
     return `
         <div class="empty-state">
             <strong>${headline}</strong>
             ${detail ? `<span>${detail}</span>` : ""}
+            ${action ? `<div class="empty-state-action">${action}</div>` : ""}
         </div>
     `;
 }
